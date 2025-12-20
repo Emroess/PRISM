@@ -45,16 +45,12 @@ STEVE provides a versatile platform for benchmarking robotic manipulation on rot
 
 ### Video Demo
 
-**[Video Placeholder: STEVE in action]**
-_Real-world valve turning benchmark (2x speed)_
-
-<video id="steve-demo" src="docs/assets/Lerobot_Example.MOV" controls width="640" autoplay muted loop playsinline>
-	Your browser does not support the video tag.
-</video>
+<p align="center">
+  <img src="docs/assets/Lerobot_Example.gif" alt="STEVE rotational benchmark demo" width="640">
+</p>
 
 <p align="center">
-  <em>Demo: STEVE rotational benchmark (autoplay, 2x where supported)</em><br>
-  <a href="docs/assets/Lerobot_Example.MOV">Download video</a>
+  <em>Demo: STEVE rotational benchmark in action</em>
 </p>
 
 ---
