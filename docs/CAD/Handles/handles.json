@@ -1,0 +1,86 @@
+{
+  "handles": [
+    {
+      "id": "hydrant-handwheel",
+      "name": "Hydrant Handwheel",
+      "description": "For 4-turn valve emulation - industrial handwheel design",
+      "images": [
+        "handwheel_installed.jpeg"
+      ],
+      "purchasedBom": [
+        {
+          "name": "Handwheel Handle",
+          "link": "https://a.co/d/cDYmmxf"
+        },
+        {
+          "name": "goBILDA 1310 Series Hyper Hub (8mm REX Bore)",
+          "link": "https://www.gobilda.com/1310-series-hyper-hub-8mm-rex-bore/"
+        }
+      ],
+      "printedParts": [
+        {
+          "name": "Hand Wheel Adapter Upper.stl",
+          "path": "HydrantHandwheel/cad/Hand%20Wheel%20Adapter%20Upper.stl"
+        },
+        {
+          "name": "Handwheel Adapter Lower.stl",
+          "path": "HydrantHandwheel/cad/Handwheel%20Adapter%20Lower.stl"
+        }
+      ],
+      "fabricatedParts": [],
+      "assemblyInstructions": "HydrantHandwheel/assembly/README.md",
+      "cadFile": null,
+      "meshFile": null,
+      "simFile": null
+    },
+    {
+      "id": "quarter-turn-handle",
+      "name": "Quarter-turn Handle",
+      "description": "For quarter-turn valve emulation - 90° rotation design",
+      "images": [
+        "quarter_turn.jpeg"
+      ],
+      "purchasedBom": [
+        {
+          "name": "Quarter-Turn Valve Handle",
+          "link": "https://a.co/d/isgp3Wc"
+        },
+        {
+          "name": "goBILDA 1310 Series Hyper Hub (8mm REX Bore)",
+          "link": "https://www.gobilda.com/1310-series-hyper-hub-8mm-rex-bore/"
+        }
+      ],
+      "printedParts": [],
+      "fabricatedParts": [],
+      "assemblyInstructions": null,
+      "cadFile": null,
+      "meshFile": null,
+      "simFile": null
+    },
+    {
+      "id": "wrench-tightening",
+      "name": "Wrench Tightening",
+      "description": "Emulates tightening tasks such as bolts being tightened using standard hand-held tools",
+      "images": [
+        "8mm_wrench.jpg"
+      ],
+      "purchasedBom": [
+        {
+          "name": "8mm Wrench",
+          "link": "https://a.co/d/g34gK7M"
+        }
+      ],
+      "printedParts": [
+        {
+          "name": "Optional: Wrench Capture Washer",
+          "path": null
+        }
+      ],
+      "fabricatedParts": [],
+      "assemblyInstructions": null,
+      "cadFile": null,
+      "meshFile": null,
+      "simFile": null
+    }
+  ]
+}
