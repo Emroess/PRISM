@@ -1,240 +1,189 @@
 # STEVE: Simulated Task Exploration | Valve Emulation
 
-**A high-fidelity haptic feedback platform for valve simulation and robotics research**
+**Welcome to STEVE** — A low-cost, high-fidelity, multi-purpose benchmark and task emulator for robotics, focused on rotational tasks such as turning valves, handles, knobs, and fasteners.
+
+![Handwheel Installed](docs/CAD/images/handwheel_installed.jpeg)
 
 ---
 
-## Overview
+## 🎯 Key Capabilities
 
-STEVE (Simulated Task Exploration | Valve Emulation) is an advanced haptic control system that provides realistic, programmable valve simulation through precise force feedback. Designed for robotics engineers and researchers, STEVE delivers real-time haptic rendering with sophisticated physics-based feedback models, enabling research, training, and development applications in valve control and haptic interaction.
+<table><tr>
+<td align="center">
+<img src="docs/CAD/images/handwheel.jpg" width="80"><br>
+<strong>Multi-Task Benchmark</strong><br>
+Software-configurable valve/handle behavior
+</td>
+<td align="center">
+<img src="docs/CAD/images/8mm_wrench.jpg" width="80"><br>
+<strong>Quick-Change Interface</strong><br>
+Mount any knob/handle instantly
+</td>
+<td align="center">
+<img src="docs/CAD/images/quarter_turn.jpeg" width="80"><br>
+<strong>Haptic Feedback</strong><br>
+1+ kHz real-time force rendering
+</td>
+<td align="center">
+<img src="docs/CAD/images/handwheel_installed.jpeg" width="80"><br>
+<strong>Reproducible</strong><br>
+Standardized hardware & firmware
+</td>
+</tr></table>
 
-The system simulates realistic valve operation with configurable characteristics including damping, friction, stiffness, and virtual boundaries. Users can experience different valve types and behaviors through programmable presets, making STEVE an ideal platform for developing robotic manipulation skills, testing control algorithms, and exploring haptic interfaces.
+---
 
-## Key Features
+## Multi-Task Benchmark: Realistic Rotational Task Simulation
 
-### Valve Simulation
-- **Realistic haptic feedback** simulating various valve types and conditions
-- **Programmable valve characteristics** - damping, friction, stiffness, detents
-- **Virtual boundaries** with configurable wall stiffness and damping
-- **Multiple presets** for different valve scenarios (smooth, sticky, stiff, etc.)
-- **Real-time control** at 1 kHz+ update rates
-- **Passivity-based control** ensuring stable, energy-dissipative behavior
+STEVE provides a versatile platform for benchmarking robotic manipulation on rotational tasks. Each task simulates realistic physical properties:
 
-### Architecture
+- **Configurable valve characteristics** — damping, friction, stiffness, detents
+- **Variable initial states** — randomized task difficulty levels
+- **Real-time task feedback** — telemetry for success determination
+- **Self-resetting tasks** — no manual intervention between attempts
+- **Diverse task sub-types** — Software presets and hardware BOMs for hydrant-style handwheel and quarter-turn valves, wrench tightening of fasteners, and door handle behaviors with a systemized approach to contributing new types.
 
-STEVE is divided into two main components:
+### Video Demo
 
-#### 1. Bare-Metal C Firmware (Primary Focus)
 
-The core of STEVE is sophisticated bare-metal firmware for the **STM32H753ZI** microcontroller (ARM Cortex-M7 @ 480 MHz) that implements:
+**[Video Placeholder: STEVE in action]**
+_Real-world valve turning benchmark (2x speed)_
 
-- **Valve simulation engine** with physics-based haptic rendering
-- **CAN bus communication** for motor controller integration (ODrive S1)
-- **Ethernet networking** with lwIP TCP/IP stack
-- **REST API** for remote control and configuration
-- **HTTP server** with web-based control interface
-- **TCP streaming server** for real-time data logging (8888)
-- **Command-line interface** over USB serial
-- **Real-time performance monitoring** and diagnostics
-- **MISRA-C:2012 compliance** for reliability and maintainability
+<video id="steve-demo" src="docs/assets/Lerobot_Example.MOV" controls width="640" autoplay muted loop playsinline>
+	Your browser does not support the video tag.
+</video>
+<script>
+	// Attempt to play at 2x; some platforms (e.g., GitHub) strip scripts
+	const v = document.getElementById('steve-demo');
+	if (v) { v.playbackRate = 2; }
+</script>
 
-**Firmware Features:**
-- Modular architecture with clear separation of concerns
-- Hardware abstraction layer for drivers and peripherals
-- Non-volatile configuration storage
-- Comprehensive error handling and diagnostics
-- Zero-copy networking for optimal performance
+---
 
-#### 2. Python Client Library
+## System Architecture
 
-The **`pysteve`** Python client provides high-level access to the firmware's REST API, enabling:
+**STEVE Hardware** consists of:
 
-- **Easy integration** with custom Python applications
-- **Robotics framework support** including:
-  - **MuJoCo** physics simulation
-  - **Gymnasium** reinforcement learning environments
-  - **ROS 2** robotic middleware integration
-  - **Isaac Sim** (NVIDIA Omniverse) compatibility
-- **Data recording and analysis** with streaming support
-- **Preset management** and configuration
-- **Example code** for common workflows
+1. **STEVE DEVICE** — Physical STEVE unit including power supply, drive motor, controllers, etc.
+2. **Selectable Handle** — Handles, knobs, or other rotation interface 
 
-The Python client is designed for robotics engineers who need to integrate haptic feedback into simulations, training environments, and automated testing systems.
+**STEVE Software** consists of:
 
-### Hardware Platform
+1. **Firmware** — STM32H753ZI bare-metal C with lwIP, CAN FD, Ethernet, REST API, CLI
+2. **Motor Control** — ODrive S1 brushless motor controller via CAN
+3. **Python Client** — `pysteve` library with integrations for MuJoCo, Gymnasium, ROS 2, Isaac Sim
 
-- **STM32H753ZI Nucleo-144** development board
-- **ODrive S1** motor controller for brushless motor FOC
-- **CAN FD bus** for low-latency motor commands
-- **Ethernet** for remote monitoring and control
-- **USB serial** via onboard ST-LINK for CLI access
-- **Brushless motor** with encoder for haptic output
-
-### User Interfaces
-
-**For Firmware Interaction:**
-- **CLI** - Command-line interface over USB serial (115200 baud)
-- **REST API** - HTTP/JSON API over Ethernet (port 8080)
-- **Web Interface** - Browser-based control panel (port 8080)
-- **TCP Streaming** - Real-time data output (port 8888)
-
-**For Application Development:**
-- **Python Client** - High-level API via `pysteve` library
-- **Direct REST API** - Accessible from any language/framework
-- **TCP Streaming** - Raw data feed for custom logging/analysis
-
-## Project Structure
-
-```
-steve_can/
-├── firmware/           # STM32H7 bare-metal C firmware (primary focus)
-│   ├── src/           # Source code organized by subsystem
-│   │   ├── valve/     # Valve simulation and haptic control
-│   │   ├── network/   # Ethernet, HTTP, REST API, streaming
-│   │   ├── drivers/   # UART, CAN, hardware abstraction
-│   │   ├── protocols/ # CAN Simple protocol for ODrive
-│   │   └── app/       # CLI, performance monitoring
-│   ├── inc/           # Header files
-│   ├── third_party/   # lwIP, STM32Cube HAL, CMSIS-DSP
-│   ├── Makefile       # Build system with validation
-│   └── README.md      # Firmware architecture documentation
-│
-├── client/            # Python client library and examples
-│   ├── pysteve/       # Python package for REST API access
-│   │   ├── core/      # Client and configuration
-│   │   ├── control/   # Valve control interface
-│   │   ├── integrations/ # MuJoCo, Gymnasium, ROS2, Isaac Sim
-│   │   └── utils/     # Data recording, streaming
-│   ├── examples/      # Example scripts and integrations
-│   └── docs/          # Python client documentation
-│
-└── docs/              # Comprehensive documentation
-    ├── firmware/      # Firmware installation and development
-    ├── getting-started/ # Quick start guide
-    ├── cli/           # CLI command reference
-    ├── rest/          # REST API documentation
-    ├── stream/        # TCP streaming guide
-    └── html/          # Web interface guide
-```
+---
 
 ## Quick Start
 
-### For Firmware Developers
+### Firmware (C/STM32H7)
 
-1. **Install prerequisites**: ARM GCC toolchain, OpenOCD, Make
-2. **Build firmware**: `cd firmware && make`
-3. **Flash to board**: `make flash`
-4. **Connect via serial**: `screen /dev/ttyACM0 115200`
-5. **Explore CLI**: Type `help` to see available commands
+```bash
+cd firmware && make && make flash
+# Connect serial: screen /dev/ttyACM0 115200
+# Try: odrive_enable, valve_start, valve_preset smooth
+```
 
-See [Firmware Installation Guide](docs/firmware/firmware-installation.md) for detailed instructions.
+See [Firmware Installation](docs/firmware/firmware-installation.md).
 
-### For Robotics Engineers (Python)
+### Python Client
 
-1. **Install Python client**: `pip install -e client/`
-2. **Connect to STEVE**: Ensure firmware is running and accessible
-3. **Import library**: `from pysteve import SteveClient`
-4. **Start coding**: See [Python examples](client/examples/)
+```python
+pip install -e client/
+from pysteve import SteveClient
 
-See [Python Client Documentation](client/docs/) for API reference and integration guides.
+steve = SteveClient("192.168.1.100")
+steve.valve_start(preset="smooth")
+status = steve.get_status()
+```
 
-### For Quick Testing
+See [Python Examples](client/examples/).
 
-1. **Connect board** via USB (ST-LINK port)
-2. **Open serial terminal** at 115200 baud
-3. **Enable motor**: `odrive_enable`
-4. **Start valve simulation**: `valve_start`
-5. **Try different presets**: `valve_preset smooth`, `valve_preset stiff`
+---
 
-See [Getting Started Guide](docs/getting-started/getting-started.md) for complete walkthrough.
+## Reproducible Environment
+
+To ensure reproducibility, STEVE uses widely available components:
+
+- **"GoBilda" robotics build system componts** (8mm REX shaft standard)
+- **COTS hardware** — Nucleo-H753ZI, ODrive S1, off-the-shelf handles
+- **Open firmware** — MISRA-C:2012 compliant, modular design
+- **Standardized task initialization** — GUI tool for state randomization
+
+### Task Randomness Levels
+
+| Level | Difficulty | Use Case |
+|-------|-----------|----------|
+| **Low** | Fixed initial state | Algorithm development |
+| **Medium** | Bounded randomization | Generalization testing |
+| **High** | Maximum variation | Out-of-distribution robustness |
+
+---
+
+## Benchmark Results
+
+### Single-Task Performance
+
+**[Visualization Placeholder: Policy success rates by handle type]**
+
+Baseline RL algorithms (BC, IQL) achieve varying performance across tasks:
+- Hydrant Handwheel: High success on smooth turns, challenges on detent escape
+- Quarter-Turn: Robust with proper alignment control
+- Wrench Tightening: Requires precise torque feedback
+
+### Full-Rotation Benchmark
+
+**[Video Placeholder: BC policy on multi-turn task]**
+_Best-performing policy achieves 3 of 4 turns before slipping_
+
+---
+
+## Handle Library
+
+STEVE's modular handle system allows custom designs. Contribute new handles via our structured catalog:
+
+- **[Handle Library](docs/CAD/Handles/README.md)** — View all available handles
+- **[handles.json](docs/CAD/Handles/handles.json)** — Structured metadata
+- **[Auto-Generated Catalog](docs/CAD/Handles/catalog.md)** — Updated catalog with images & BOM
+
+Current handles:
+- 🔴 Hydrant Handwheel (4-turn industrial design)
+- 🟡 Quarter-turn Handle (90° rotation)
+- 🔵 Wrench Tightening (fastener task)
+
+---
+
+## Datasets
+
+Coming soon: Pre-collected demonstrations and benchmark datasets for offline RL training.
+
+---
+
+## Projects Using STEVE
+
+<!-- Placeholder for projects that use STEVE -->
+
+- Your research project here — [Submit a PR!](https://github.com/Emroess/STE-VE/pulls)
+
+---
 
 ## Documentation
 
-Comprehensive documentation is available in the [`docs/`](docs/) directory:
-
-- **[Main Documentation Hub](docs/README.md)** - Complete documentation index
-- **[Firmware Installation](docs/firmware/firmware-installation.md)** - Setup and installation
-- **[Getting Started](docs/getting-started/getting-started.md)** - First steps with STEVE
-- **[CLI Reference](docs/cli/cli-reference.md)** - Command-line interface guide
-- **[REST API](docs/rest/rest-api.md)** - HTTP API documentation
-- **[Streaming Guide](docs/stream/streaming-guide.md)** - Real-time data streaming
-- **[Next Steps](docs/next-steps.md)** - Future development and how to contribute
-
-## Use Cases
-
-STEVE is designed for:
-
-- **Robotics Research** - Developing and testing manipulation algorithms
-- **Reinforcement Learning** - Training agents with realistic haptic feedback
-- **Human-Robot Interaction** - Studying haptic perception and control
-- **Simulation Environments** - Adding haptic realism to virtual environments
-- **Control Algorithm Development** - Testing force control and impedance strategies
-- **Training Systems** - Teaching valve operation and manipulation skills
-- **Haptic Interface Research** - Exploring programmable haptic feedback
-
-## Technical Specifications
-
-- **Control Loop Rate**: 1+ kHz haptic update rate
-- **Communication Latency**: <1ms CAN bus to motor controller
-- **Network Throughput**: 100 Mbps Ethernet
-- **Position Resolution**: Limited by motor encoder (typically <0.1°)
-- **Force Range**: Dependent on motor/gearbox configuration
-- **API Response Time**: <10ms for REST API calls
-- **Streaming Rate**: Configurable, up to 1 kHz data output
-
-## Project Information
-
-**Institution**: University of Washington, Paul G. Allen School of Computer Science & Engineering
-
-**Project Director**: Emma Romig
-
-**Implementation**: Marcus Roessler
-
-**License**: See individual component licenses
-- Firmware utilizes open-source components (lwIP, STM32Cube HAL, CMSIS-DSP)
-- Python client library licensing MIT
-- Firmware license MIT
-
-## Contributing and Feedback
-
-We welcome community engagement! See our [Next Steps](docs/next-steps.md) document for:
-
-- How to report bugs and provide feedback
-- Future development directions
-- Ways to contribute
-- Research collaboration opportunities
-
-## Support and Resources
-
-### Hardware Resources
-- [STM32 Nucleo-H753ZI](https://www.st.com/en/evaluation-tools/nucleo-h753zi.html) - Development board
-- [ODrive Robotics](https://odriverobotics.com/) - Motor controller
-
-### Software Tools
-- [GNU ARM Embedded Toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm) - For firmware compilation
-- [OpenOCD](http://openocd.org/) - For firmware flashing and debugging
-- [STM32CubeProgrammer](https://www.st.com/en/development-tools/stm32cubeprog.html) - Alternative programming tool
-
-### Documentation
-- [Firmware README](firmware/README.md) - Detailed firmware architecture
-- [Python Client README](client/README.md) - Python library documentation
-- [Complete Documentation](docs/README.md) - Full documentation hub
-
-## Acknowledgments
-
-STEVE represents research in haptic interfaces, control systems, and embedded software engineering. The system's modular architecture, real-time performance, and comprehensive interfaces make it a powerful platform for robotics research and haptic exploration.
-
-We're grateful to the open-source community for the foundational tools and libraries that make STEVE possible, including the lwIP TCP/IP stack, STM32Cube ecosystem, and ARM CMSIS-DSP library.
+- **[Main Hub](docs/README.md)** — Complete reference
+- **[Firmware Setup](docs/firmware/firmware-installation.md)**
+- **[Getting Started](docs/getting-started/getting-started.md)**
+- **[CLI Reference](docs/cli/cli-reference.md)** | **[REST API](docs/rest/rest-api.md)** | **[Streaming](docs/stream/streaming-guide.md)**
+- **[Handle Design Guide](docs/CAD/Handles/README.md)** — Contribute custom handles
 
 ---
 
-**Ready to explore haptic valve simulation?**
+**Ready to benchmark your manipulation algorithm?**
 
-- **Start with firmware**: [Firmware Installation Guide](docs/firmware/firmware-installation.md)
-- **Start with Python**: [Python Client Examples](client/examples/)
-- **Read the docs**: [Documentation Hub](docs/README.md)
-- **See what's next**: [Next Steps & Future Development](docs/next-steps.md)
+- **[Firmware Installation](docs/firmware/firmware-installation.md)** — Set up STEVE
+- **[Python Examples](client/examples/)** — Start coding
+- **[Documentation Hub](docs/README.md)** — Learn more
 
 ---
 
-*STEVE: Bringing realistic haptic feedback to robotics research and simulation.*
+_STEVE: Benchmarking realistic rotational task manipulation for robotics research._
