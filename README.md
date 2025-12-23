@@ -2,46 +2,43 @@
 
 **Welcome to STEVE** — A low-cost, high-fidelity, multi-purpose benchmark and task emulator for robotics, focused on rotational tasks such as turning valves, handles, knobs, and fasteners.
 
-![Handwheel Installed](docs/CAD/images/handwheel_installed.jpeg)
+<p align="center">
+  <img src="docs/CAD/images/handwheel_installed.jpeg" alt="Handwheel Installed" style="width:50%">
+</p>
 
 ---
 
 ## 🎯 Key Capabilities
 
-<table><tr>
-<td align="center">
-<img src="docs/CAD/images/handwheel.jpg" width="80"><br>
-<strong>Multi-Task Benchmark</strong><br>
-Software-configurable valve/handle behavior
+### Multi-Task Benchmark — Realistic rotational task simulation
+
+<table style="width:100%"><tr>
+<td align="center" style="width:25%">
+<img src="docs/CAD/images/handwheel_installed.jpeg" style="width:100%" alt="Multi-turn valves"><br>
+<strong>Multi-turn valves</strong><br>
 </td>
-<td align="center">
-<img src="docs/CAD/images/8mm_wrench.jpg" width="80"><br>
-<strong>Quick-Change Interface</strong><br>
-Mount any knob/handle instantly
+<td align="center" style="width:25%">
+<img src="docs/CAD/images/quarter_turn.jpeg" style="width:100%" alt="Quarter-turn Valves"><br>
+<strong>Quarter-turn Valves</strong><br>
 </td>
-<td align="center">
-<img src="docs/CAD/images/quarter_turn.jpeg" width="80"><br>
-<strong>Haptic Feedback</strong><br>
-1+ kHz real-time force rendering
+<td align="center" style="width:25%">
+<img src="docs/CAD/images/door_handle_iso.jpg" style="width:100%" alt="Door Handles"><br>
+<strong>Door Handles</strong><br>
 </td>
-<td align="center">
-<img src="docs/CAD/images/handwheel_installed.jpeg" width="80"><br>
-<strong>Reproducible</strong><br>
-Standardized hardware & firmware
+<td align="center" style="width:25%">
+<img src="docs/CAD/images/wrench_free.jpg" style="width:100%" alt="Fastener Tighting"><br>
+<strong>Fastener Tighting</strong><br>
 </td>
 </tr></table>
 
+STEVE simulates common rotational tasks (valves, handles, fasteners) with configurable physical behavior and reproducible randomness. Key features:
+
+- Configurable dynamics: damping, friction, stiffness, detents
+- Controlled randomness: REPEATABLY emulate real-world rotational physics such as sticking or rusty rotation targets 
+- Real-time telemetry: position, torque/force and other signals for success detection
+- Self-resetting tasks and software presets for common sub-types (handwheel, quarter-turn, wrench, door handle)
+
 ---
-
-## Multi-Task Benchmark: Realistic Rotational Task Simulation
-
-STEVE provides a versatile platform for benchmarking robotic manipulation on rotational tasks. Each task simulates realistic physical properties:
-
-- **Configurable valve characteristics** — damping, friction, stiffness, detents
-- **Variable initial states** — randomized task difficulty levels
-- **Real-time task feedback** — telemetry for success determination
-- **Self-resetting tasks** — no manual intervention between attempts
-- **Diverse task sub-types** — Software presets and hardware BOMs for hydrant-style handwheel and quarter-turn valves, wrench tightening of fasteners, and door handle behaviors with a systemized approach to contributing new types.
 
 ### Video Demo
 
@@ -106,32 +103,9 @@ To ensure reproducibility, STEVE uses widely available components:
 - **Open firmware** — MISRA-C:2012 compliant, modular design
 - **Standardized task initialization** — GUI tool for state randomization
 
-### Task Randomness Levels
-
-| Level | Difficulty | Use Case |
-|-------|-----------|----------|
-| **Low** | Fixed initial state | Algorithm development |
-| **Medium** | Bounded randomization | Generalization testing |
-| **High** | Maximum variation | Out-of-distribution robustness |
-
----
-
 ## Benchmark Results
 
-### Single-Task Performance
-
-**[Visualization Placeholder: Policy success rates by handle type]**
-
-Baseline RL algorithms (BC, IQL) achieve varying performance across tasks:
-- Hydrant Handwheel: High success on smooth turns, challenges on detent escape
-- Quarter-Turn: Robust with proper alignment control
-- Wrench Tightening: Requires precise torque feedback
-
-### Full-Rotation Benchmark
-
-**[Video Placeholder: BC policy on multi-turn task]**
-_Best-performing policy achieves 3 of 4 turns before slipping_
-
+#### --> TODO ADD RESULTS
 ---
 
 ## Handle Library
@@ -145,6 +119,7 @@ STEVE's modular handle system allows custom designs. Contribute new handles via 
 Current handles:
 - 🔴 Hydrant Handwheel (4-turn industrial design)
 - 🟡 Quarter-turn Handle (90° rotation)
+- 🟡 Door Handle (+/- 45° rotation with self-centering)
 - 🔵 Wrench Tightening (fastener task)
 
 ---
