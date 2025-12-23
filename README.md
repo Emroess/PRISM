@@ -117,10 +117,10 @@ STEVE's modular handle system allows custom designs. Contribute new handles via 
 - **[Auto-Generated Catalog](docs/CAD/Handles/catalog.md)** — Updated catalog with images & BOM
 
 Current handles:
-- 🔴 Hydrant Handwheel (4-turn industrial design)
-- 🟡 Quarter-turn Handle (90° rotation)
-- 🟡 Door Handle (+/- 45° rotation with self-centering)
-- 🔵 Wrench Tightening (fastener task)
+- 🟢 Hydrant Handwheel (4-turn industrial design)
+- 🟢 Quarter-turn Handle (90° rotation)
+- 🟢 Door Handle (+/- 45° rotation with self-centering)
+- 🟢 Wrench Tightening (fastener task)
 
 ---
 
