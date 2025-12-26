@@ -1,96 +1,92 @@
-/**
-  * @file    http_server.c
-  * @author  STEVE firmware team
-  * @brief   HTTP server infrastructure for valve configuration and control
-  */
+/*
+ * http_server.c - HTTP server for valve configuration and control
+ *
+ * Provides REST API for valve state queries, configuration changes,
+ * and real-time telemetry. Serves embedded web UI for browser-based
+ * control and monitoring.
+ */
 
-/* Includes ------------------------------------------------------------------*/
-#include "http_server.h"
-#include "rest_api.h"
-#include "lwip/tcp.h"
-#include "valve_haptic.h"
-#include "valve_presets.h"
-#include "board.h"
-#include "drivers/uart.h"
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-/* Private define ------------------------------------------------------------*/
-#define HTTP_PORT 8080
-#define MAX_REQ_SIZE 2048
-#define MAX_RESP_SIZE 2048
-#define MAX_JSON_TOKENS 64
-#define HTTP_CONN_TIMEOUT_MS 5000U
-#define HTTP_METHOD_MAX_LEN 8
-#define HTTP_URI_MAX_LEN 64
+#include "lwip/tcp.h"
+
+#include "board.h"
+#include "config/network.h"
+#include "config/valve.h"
+#include "drivers/uart.h"
+#include "network/http.h"
+#include "network/rest.h"
+#include "valve_haptic.h"
+#include "valve_presets.h"
+
 #define HTTP_HEADER_TERMINATOR "\r\n\r\n"
-#define HTTP_MAX_CONNECTIONS    8U
-#define CFG_FIELD_VISCOUS        (1U << 0)
-#define CFG_FIELD_COULOMB        (1U << 1)
-#define CFG_FIELD_WALL_STIFFNESS (1U << 2)
-#define CFG_FIELD_WALL_DAMPING   (1U << 3)
-#define CFG_FIELD_SMOOTHING      (1U << 4)
-#define CFG_FIELD_TORQUE_LIMIT   (1U << 5)
-#define CFG_FIELD_OPEN_POS       (1U << 6)
-#define CFG_FIELD_CLOSED_POS     (1U << 7)
 
-/* Private typedef -----------------------------------------------------------*/
-typedef struct {
-  struct tcp_pcb *pcb;
-  char req_buf[MAX_REQ_SIZE];
-  char resp_buf[MAX_RESP_SIZE];  /* Per-connection response buffer */
-  uint16_t req_len;
-  uint16_t header_len;
-  uint32_t expected_len;
-  int32_t content_length;
-  uint8_t headers_parsed;
-  uint8_t request_complete;
-  uint8_t overflowed;
-  uint8_t closed;
-  uint32_t last_activity_ms;
-  char method[HTTP_METHOD_MAX_LEN];
-  char uri[HTTP_URI_MAX_LEN];
-  char auth_header[128];
-  uint8_t in_use;
-} http_state_t;
+/*
+ * Per-connection HTTP state
+ *
+ * Tracks request parsing progress, buffers, and TCP PCB association.
+ * Allocated from a static pool to avoid heap fragmentation.
+ */
+struct http_state {
+	struct tcp_pcb *pcb;
+	char req_buf[MAX_REQ_SIZE];
+	char resp_buf[MAX_RESP_SIZE];
+	uint16_t req_len;
+	uint16_t header_len;
+	uint32_t expected_len;
+	int32_t content_length;
+	uint8_t headers_parsed;
+	uint8_t request_complete;
+	uint8_t overflowed;
+	uint8_t closed;
+	uint32_t last_activity_ms;
+	char method[HTTP_METHOD_MAX_LEN];
+	char uri[HTTP_URI_MAX_LEN];
+	char auth_header[128];
+	uint8_t in_use;
+};
 
-/* Private variables ---------------------------------------------------------*/
-static struct tcp_pcb *http_pcb = NULL;
-static struct uart_handle *http_uart = NULL;
-/* Move large HTTP connection state pool out of tightly coupled DTCMRAM
- * to AXI SRAM (.ram_d1) to free fast memory for control code and allow
- * larger stack/heap. Section .ram_d1 is NOLOAD, so we explicitly
- * zero-initialize the pool at server init. */
-static http_state_t http_state_pool[HTTP_MAX_CONNECTIONS] __attribute__((section(".ram_d1")));
-static bool http_logging_enabled = false;
+static struct tcp_pcb *http_pcb;
+static struct uart_handle *http_uart;
+
+/*
+ * HTTP connection state pool
+ *
+ * Placed in AXI SRAM (.ram_d1) instead of DTCMRAM to free fast memory
+ * for control loops. Section is NOLOAD so pool is zeroed at init.
+ */
+static struct http_state http_state_pool[HTTP_MAX_CONNECTIONS]
+    __attribute__((section(".ram_d1")));
+static bool http_logging_enabled;
 
 #include "http_fs_data.h"
 
-/* Private function prototypes -----------------------------------------------*/
-static err_t http_accept(void *arg, struct tcp_pcb *newpcb, err_t err);
-static err_t http_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
-static void http_err(void *arg, err_t err);
-static err_t http_poll(void *arg, struct tcp_pcb *tpcb);
-static void http_close_conn(struct tcp_pcb *tpcb, http_state_t *hs);
-static bool http_check_auth(const char *uri, const char *auth_header);
-static void http_send_unauthorized(struct tcp_pcb *tpcb);
+static err_t http_accept(void *, struct tcp_pcb *, err_t);
+static err_t http_recv(void *, struct tcp_pcb *, struct pbuf *, err_t);
+static void http_err(void *, err_t);
+static err_t http_poll(void *, struct tcp_pcb *);
+static void http_close_conn(struct tcp_pcb *, struct http_state *);
+static bool http_check_auth(const char *, const char *);
+static void http_send_unauthorized(struct tcp_pcb *);
 static struct uart_handle *http_get_uart(void);
-static void http_log(const char *fmt, ...);
-static int http_find_header_terminator(const char *buf, uint16_t len);
-static int http_parse_headers(http_state_t *hs);
-static void http_process_buffer(struct tcp_pcb *tpcb, http_state_t *hs);
-static void http_send_json_error(struct tcp_pcb *tpcb, int code, const char *msg);
-static void http_handle_overflow(struct tcp_pcb *tpcb, http_state_t *hs);
-static int http_casecmp(const char *a, const char *b, size_t n);
-static void http_state_release(http_state_t *hs);
-static http_state_t *http_state_alloc(void);
+static void http_log(const char *, ...);
+static int http_find_header_terminator(const char *, uint16_t);
+static int http_parse_headers(struct http_state *);
+static void http_process_buffer(struct tcp_pcb *, struct http_state *);
+static void http_send_json_error(struct tcp_pcb *, int, const char *);
+static void http_handle_overflow(struct tcp_pcb *, struct http_state *);
+static int http_casecmp(const char *, const char *, size_t);
+static void http_state_release(struct http_state *);
+static struct http_state *http_state_alloc(void);
 static void http_pool_init(void);
-static bool handle_request(struct tcp_pcb *tpcb, http_state_t *hs);
-static void send_response(struct tcp_pcb *tpcb, int code, const char *content_type, const char *body);
+static bool handle_request(struct tcp_pcb *, struct http_state *);
+static void send_response(struct tcp_pcb *, int, const char *, const char *);
 
 const char index_html[] = 
 "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
@@ -277,23 +273,29 @@ static int http_casecmp(const char *a, const char *b, size_t n) {
   return 0;
 }
 
-static http_state_t *http_state_alloc(void) {
-  for (uint32_t i = 0; i < HTTP_MAX_CONNECTIONS; i++) {
-    http_state_t *hs = &http_state_pool[i];
-    if (hs->in_use == 0U) {
-      memset(hs, 0, sizeof(http_state_t));
-      hs->in_use = 1U;
-      return hs;
-    }
-  }
-  return NULL;
+static struct http_state *
+http_state_alloc(void)
+{
+	struct http_state *hs;
+	uint32_t i;
+
+	for (i = 0; i < HTTP_MAX_CONNECTIONS; i++) {
+		hs = &http_state_pool[i];
+		if (hs->in_use == 0U) {
+			memset(hs, 0, sizeof(*hs));
+			hs->in_use = 1U;
+			return hs;
+		}
+	}
+	return NULL;
 }
 
-static void http_state_release(http_state_t *hs) {
-  if (hs == NULL) {
-    return;
-  }
-  memset(hs, 0, sizeof(http_state_t));
+static void
+http_state_release(struct http_state *hs)
+{
+	if (hs == NULL)
+		return;
+	memset(hs, 0, sizeof(*hs));
 }
 
 static void http_send_json_error(struct tcp_pcb *tpcb, int code, const char *msg) {
@@ -303,13 +305,14 @@ static void http_send_json_error(struct tcp_pcb *tpcb, int code, const char *msg
   send_response(tpcb, code, "application/json", body);
 }
 
-static void http_handle_overflow(struct tcp_pcb *tpcb, http_state_t *hs) {
-  if (hs == NULL) {
-    return;
-  }
+static void
+http_handle_overflow(struct tcp_pcb *tpcb, struct http_state *hs)
+{
+	if (hs == NULL)
+		return;
 
-  http_send_json_error(tpcb, 413, "request_too_large");
-  http_close_conn(tpcb, hs);
+	http_send_json_error(tpcb, 413, "request_too_large");
+	http_close_conn(tpcb, hs);
 }
 
 static int http_find_header_terminator(const char *buf, uint16_t len) {
@@ -326,52 +329,52 @@ static int http_find_header_terminator(const char *buf, uint16_t len) {
   return -1;
 }
 
-static int http_parse_headers(http_state_t *hs) {
-  if (hs == NULL) {
-    return -1;
-  }
+static int
+http_parse_headers(struct http_state *hs)
+{
+	char *line_end, *method_end, *uri_start, *uri_end;
+	const char *header_ptr, *header_stop;
+	size_t request_line_len, method_len, uri_len;
+	int hdr_end;
 
-  int hdr_end = http_find_header_terminator(hs->req_buf, hs->req_len);
-  if (hdr_end < 0) {
-    return 0;
-  }
+	if (hs == NULL)
+		return -1;
 
-  char *line_end = strstr(hs->req_buf, "\r\n");
-  if (line_end == NULL) {
-    return -1;
-  }
+	hdr_end = http_find_header_terminator(hs->req_buf, hs->req_len);
+	if (hdr_end < 0)
+		return 0;
 
-  size_t request_line_len = (size_t)(line_end - hs->req_buf);
-  char *method_end = memchr(hs->req_buf, ' ', request_line_len);
-  if (method_end == NULL) {
-    return -1;
-  }
+	line_end = strstr(hs->req_buf, "\r\n");
+	if (line_end == NULL)
+		return -1;
 
-  size_t method_len = (size_t)(method_end - hs->req_buf);
-  if (method_len == 0U || method_len >= HTTP_METHOD_MAX_LEN) {
-    return -1;
-  }
-  memcpy(hs->method, hs->req_buf, method_len);
-  hs->method[method_len] = '\0';
+	request_line_len = (size_t)(line_end - hs->req_buf);
+	method_end = memchr(hs->req_buf, ' ', request_line_len);
+	if (method_end == NULL)
+		return -1;
 
-  char *uri_start = method_end + 1;
-  char *uri_end = memchr(uri_start, ' ', (size_t)(line_end - uri_start));
-  if (uri_end == NULL) {
-    return -1;
-  }
+	method_len = (size_t)(method_end - hs->req_buf);
+	if (method_len == 0U || method_len >= HTTP_METHOD_MAX_LEN)
+		return -1;
+	memcpy(hs->method, hs->req_buf, method_len);
+	hs->method[method_len] = '\0';
 
-  size_t uri_len = (size_t)(uri_end - uri_start);
-  if (uri_len == 0U || uri_len >= HTTP_URI_MAX_LEN) {
-    return -1;
-  }
-  memcpy(hs->uri, uri_start, uri_len);
-  hs->uri[uri_len] = '\0';
+	uri_start = method_end + 1;
+	uri_end = memchr(uri_start, ' ', (size_t)(line_end - uri_start));
+	if (uri_end == NULL)
+		return -1;
 
-  hs->header_len = (uint16_t)(hdr_end + 4);
-  hs->content_length = -1;
+	uri_len = (size_t)(uri_end - uri_start);
+	if (uri_len == 0U || uri_len >= HTTP_URI_MAX_LEN)
+		return -1;
+	memcpy(hs->uri, uri_start, uri_len);
+	hs->uri[uri_len] = '\0';
 
-  const char *header_ptr = line_end + 2;
-  const char *header_stop = hs->req_buf + hdr_end;
+	hs->header_len = (uint16_t)(hdr_end + 4);
+	hs->content_length = -1;
+
+	header_ptr = line_end + 2;
+	header_stop = hs->req_buf + hdr_end;
 
   while (header_ptr < header_stop) {
     const char *line_break = header_ptr;
@@ -438,35 +441,37 @@ static int http_parse_headers(http_state_t *hs) {
   return 1;
 }
 
-static void http_process_buffer(struct tcp_pcb *tpcb, http_state_t *hs) {
-  if (hs == NULL) {
-    return;
-  }
+static void
+http_process_buffer(struct tcp_pcb *tpcb, struct http_state *hs)
+{
+	int parse_rc;
+	bool done;
 
-  if (!hs->headers_parsed) {
-    int parse_rc = http_parse_headers(hs);
-    if (parse_rc == 0) {
-      return;
-    } else if (parse_rc < 0) {
-      if (parse_rc == -2) {
-        http_send_json_error(tpcb, 411, "content_length_required");
-      } else if (parse_rc == -3) {
-        http_send_json_error(tpcb, 413, "request_too_large");
-      } else {
-        http_send_json_error(tpcb, 400, "bad_request");
-      }
-      http_close_conn(tpcb, hs);
-      return;
-    }
-  }
+	if (hs == NULL)
+		return;
 
-  if (hs->headers_parsed && hs->req_len >= hs->expected_len) {
-    hs->request_complete = 1U;
-    bool done = handle_request(tpcb, hs);
-    if (done && !hs->closed) {
-      http_close_conn(tpcb, hs);
-    }
-  }
+	if (!hs->headers_parsed) {
+		parse_rc = http_parse_headers(hs);
+		if (parse_rc == 0)
+			return;
+		if (parse_rc < 0) {
+			if (parse_rc == -2)
+				http_send_json_error(tpcb, 411, "content_length_required");
+			else if (parse_rc == -3)
+				http_send_json_error(tpcb, 413, "request_too_large");
+			else
+				http_send_json_error(tpcb, 400, "bad_request");
+			http_close_conn(tpcb, hs);
+			return;
+		}
+	}
+
+	if (hs->headers_parsed && hs->req_len >= hs->expected_len) {
+		hs->request_complete = 1U;
+		done = handle_request(tpcb, hs);
+		if (done && !hs->closed)
+			http_close_conn(tpcb, hs);
+	}
 }
 
 static void http_pool_init(void) {
@@ -514,15 +519,19 @@ void ethernet_http_process(void) {
   /* No periodic work required */
 }
 
-static err_t http_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
-  (void)arg;
-  (void)err;
+static err_t
+http_accept(void *arg, struct tcp_pcb *newpcb, err_t err)
+{
+	struct http_state *hs;
 
-  http_state_t *hs = http_state_alloc();
-  if (hs == NULL) {
-    tcp_abort(newpcb);
-    return ERR_ABRT;
-  }
+	(void)arg;
+	(void)err;
+
+	hs = http_state_alloc();
+	if (hs == NULL) {
+		tcp_abort(newpcb);
+		return ERR_ABRT;
+	}
   
   hs->pcb = newpcb;
   hs->req_buf[0] = '\0';
@@ -540,100 +549,113 @@ static err_t http_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
   return ERR_OK;
 }
 
-static err_t http_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
-  http_state_t *hs = (http_state_t *)arg;
-  
-  if (p == NULL) {
-    http_close_conn(tpcb, hs);
-    return ERR_OK;
-  }
-  
-  if (err != ERR_OK) {
-    pbuf_free(p);
-    return err;
-  }
+static err_t
+http_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
+{
+	struct http_state *hs;
+	size_t remaining, to_copy;
 
-  if (hs != NULL) {
-    hs->last_activity_ms = board_get_systick_ms();
-  }
+	hs = arg;
 
-  if (hs != NULL && !hs->request_complete && !hs->overflowed) {
-    size_t remaining = (size_t)(MAX_REQ_SIZE - 1U - hs->req_len);
-    size_t to_copy = p->tot_len;
-    if (to_copy > remaining) {
-      to_copy = remaining;
-      hs->overflowed = 1U;
-    }
-    if (to_copy > 0U) {
-      pbuf_copy_partial(p, hs->req_buf + hs->req_len, (uint16_t)to_copy, 0);
-      hs->req_len = (uint16_t)(hs->req_len + (uint16_t)to_copy);
-      hs->req_buf[hs->req_len] = '\0';
-    } else {
-      hs->overflowed = 1U;
-    }
-  }
-  
-  tcp_recved(tpcb, p->tot_len);
-  pbuf_free(p);
+	if (p == NULL) {
+		http_close_conn(tpcb, hs);
+		return ERR_OK;
+	}
 
-  if (hs == NULL) {
-    return ERR_OK;
-  }
+	if (err != ERR_OK) {
+		pbuf_free(p);
+		return err;
+	}
 
-  if (hs->overflowed) {
-    http_handle_overflow(tpcb, hs);
-    return ERR_OK;
-  }
+	if (hs != NULL)
+		hs->last_activity_ms = board_get_systick_ms();
 
-  if (!hs->request_complete) {
-    http_process_buffer(tpcb, hs);
-  }
-  
-  return ERR_OK;
+	if (hs != NULL && !hs->request_complete && !hs->overflowed) {
+		remaining = (size_t)(MAX_REQ_SIZE - 1U - hs->req_len);
+		to_copy = p->tot_len;
+		if (to_copy > remaining) {
+			to_copy = remaining;
+			hs->overflowed = 1U;
+		}
+		if (to_copy > 0U) {
+			pbuf_copy_partial(p, hs->req_buf + hs->req_len,
+			    (uint16_t)to_copy, 0);
+			hs->req_len = (uint16_t)(hs->req_len + (uint16_t)to_copy);
+			hs->req_buf[hs->req_len] = '\0';
+		} else {
+			hs->overflowed = 1U;
+		}
+	}
+
+	tcp_recved(tpcb, p->tot_len);
+	pbuf_free(p);
+
+	if (hs == NULL)
+		return ERR_OK;
+
+	if (hs->overflowed) {
+		http_handle_overflow(tpcb, hs);
+		return ERR_OK;
+	}
+
+	if (!hs->request_complete)
+		http_process_buffer(tpcb, hs);
+
+	return ERR_OK;
 }
 
-static void http_err(void *arg, err_t err) {
-  (void)err;
-  http_state_t *hs = (http_state_t *)arg;
-  if (hs != NULL) {
-    hs->closed = 1U;
-    http_state_release(hs);
-  }
+static void
+http_err(void *arg, err_t err)
+{
+	struct http_state *hs;
+
+	(void)err;
+	hs = arg;
+	if (hs != NULL) {
+		hs->closed = 1U;
+		http_state_release(hs);
+	}
 }
 
-static err_t http_poll(void *arg, struct tcp_pcb *tpcb) {
-  http_state_t *hs = (http_state_t *)arg;
-  if (hs == NULL) {
-    return ERR_OK;
-  }
+static err_t
+http_poll(void *arg, struct tcp_pcb *tpcb)
+{
+	struct http_state *hs;
+	uint32_t now;
 
-  uint32_t now = board_get_systick_ms();
-  if ((uint32_t)(now - hs->last_activity_ms) > HTTP_CONN_TIMEOUT_MS) {
-    http_send_json_error(tpcb, 408, "timeout");
-    http_close_conn(tpcb, hs);
-  }
-  return ERR_OK;
+	hs = arg;
+	if (hs == NULL)
+		return ERR_OK;
+
+	now = board_get_systick_ms();
+	if ((uint32_t)(now - hs->last_activity_ms) > HTTP_CONN_TIMEOUT_MS) {
+		http_send_json_error(tpcb, 408, "timeout");
+		http_close_conn(tpcb, hs);
+	}
+	return ERR_OK;
 }
 
-static void http_close_conn(struct tcp_pcb *tpcb, http_state_t *hs) {
-  if (hs != NULL) {
-    if (hs->closed) {
-      return;
-    }
-    hs->closed = 1U;
-  }
+static void
+http_close_conn(struct tcp_pcb *tpcb, struct http_state *hs)
+{
+	err_t cerr;
 
-  if (tpcb != NULL) {
-    tcp_arg(tpcb, NULL);
-    tcp_sent(tpcb, NULL);
-    tcp_recv(tpcb, NULL);
-    tcp_err(tpcb, NULL);
-    tcp_poll(tpcb, NULL, 0);
-    err_t cerr = tcp_close(tpcb);
-    if (cerr != ERR_OK) {
-      tcp_abort(tpcb);
-    }
-  }
+	if (hs != NULL) {
+		if (hs->closed)
+			return;
+		hs->closed = 1U;
+	}
+
+	if (tpcb != NULL) {
+		tcp_arg(tpcb, NULL);
+		tcp_sent(tpcb, NULL);
+		tcp_recv(tpcb, NULL);
+		tcp_err(tpcb, NULL);
+		tcp_poll(tpcb, NULL, 0);
+		cerr = tcp_close(tpcb);
+		if (cerr != ERR_OK)
+			tcp_abort(tpcb);
+	}
   
   if (hs != NULL) {
     hs->pcb = NULL;
@@ -693,25 +715,35 @@ static bool http_check_auth(const char *uri, const char *auth_header) {
   return (strcmp(auth_header, HTTP_API_KEY) == 0);
 }
 
-static bool handle_request(struct tcp_pcb *tpcb, http_state_t *hs) {
-  if (hs == NULL) {
-    return true;
-  }
+/*
+ * handle_request - Dispatch HTTP request to appropriate handler
+ *
+ * Routes GET and POST requests to REST API handlers based on URI.
+ * Returns true when response is complete and connection can close.
+ */
+static bool
+handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
+{
+	char *body;
+	int body_len;
 
-  /* Check authentication for protected endpoints */
-  if (!http_check_auth(hs->uri, hs->auth_header)) {
-    http_send_unauthorized(tpcb);
-    return true;
-  }
+	if (hs == NULL)
+		return true;
 
-  char *body = NULL;
-  int body_len = 0;
-  if (hs->headers_parsed && hs->content_length >= 0) {
-    body = hs->req_buf + hs->header_len;
-    body_len = (int)hs->content_length;
-  }
+	/* Check authentication for protected endpoints */
+	if (!http_check_auth(hs->uri, hs->auth_header)) {
+		http_send_unauthorized(tpcb);
+		return true;
+	}
 
-  http_log("[HTTP] %s %s\r\n", hs->method, hs->uri);
+	body = NULL;
+	body_len = 0;
+	if (hs->headers_parsed && hs->content_length >= 0) {
+		body = hs->req_buf + hs->header_len;
+		body_len = (int)hs->content_length;
+	}
+
+	http_log("[HTTP] %s %s\r\n", hs->method, hs->uri);
   
   if (strcmp(hs->method, "GET") == 0) {
     if (strcmp(hs->uri, "/api/v1/config") == 0) {

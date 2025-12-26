@@ -7,13 +7,14 @@
  * https://docs.odriverobotics.com/v/latest/can-protocol.html
  */
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
-#include "can_simple.h"
-#include "status.h"
-#include "fdcan.h"
+
 #include "board.h"
+#include "can_simple.h"
+#include "fdcan.h"
+#include "status.h"
 
 /*
  * CANSIMPLE Handle Structure

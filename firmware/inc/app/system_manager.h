@@ -8,9 +8,14 @@
 #ifndef SYSTEM_MANAGER_H
 #define SYSTEM_MANAGER_H
 
-#include "status.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#include "status.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * Hard fault information structure
@@ -49,6 +54,10 @@ void system_enter_dfu(void) __attribute__((noreturn));
  * Returns: STATUS_OK if fault info available, STATUS_ERROR_NOT_INITIALIZED if none
  * info: Output structure to populate
  */
-status_t system_get_fault_info(struct hard_fault_info *info);
+status_t system_get_fault_info(struct hard_fault_info *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SYSTEM_MANAGER_H */

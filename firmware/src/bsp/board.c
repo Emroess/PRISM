@@ -16,14 +16,14 @@
  * - Linux kernel coding style
  */
 
-#include <stdint.h>
 #include <stddef.h>
-#include "board.h"
-#include "board_config.h"
-#include "status.h"
+#include <stdint.h>
 
-/* ONLY board.c includes hardware headers */
 #include "stm32h7xx.h"
+
+#include "board.h"
+#include "config/board.h"
+#include "status.h"
 
 /*
  * Some CMSIS headers omit the APB4 PWR clock bit definition.

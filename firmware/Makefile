@@ -33,6 +33,7 @@ src/bsp/mpu_config.c \
 third_party/stm32cube/CMSIS/Device/ST/STM32H7xx/Source/system_stm32h7xx.c \
 src/drivers/uart.c \
 src/drivers/fdcan.c \
+src/drivers/flash_utils.c \
 src/app/cli.c \
 src/protocols/can_simple.c \
 src/valve/valve_haptic.c \
@@ -308,14 +309,22 @@ misra:
 check-layering:
 	@cd firmware && ./scripts/check_layering.sh
 
+# Check for duplicate #define symbols
+.PHONY: check-defines
+check-defines:
+	@echo "=== Duplicate Define Check ==="
+	@python3 scripts/check_defines.py
+	@echo "✓ Define check complete"
+
 # Complete validation suite
 .PHONY: validate-all
-validate-all: validate misra check-layering
+validate-all: validate misra check-layering check-defines
 	@echo ""
 	@echo "=== All Validation Checks PASSED ==="
 	@echo "✓ Dual-build (optimization-independent)"
 	@echo "✓ MISRA-C compliance"
 	@echo "✓ Hardware layering"
+	@echo "✓ No duplicate defines"
 
 ######################################
 # Utility Targets

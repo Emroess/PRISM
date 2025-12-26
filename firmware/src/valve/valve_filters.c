@@ -215,46 +215,43 @@ valve_filter_status_t valve_filter_reset(valve_filter_instance_t *instance)
  *   y[n] = α * x[n] + (1 - α) * y[n-1]
  * where α = 1 - exp(-2π * fc * dt) ≈ 2π * fc * dt for small fc*dt
  *
- * Typical cutoff frequencies for haptic control: 50-200 Hz
- * (well below 1000 Hz control loop rate but above human perception ~20 Hz)
- *
- * @param input: Raw input value
- * @param previous_output: Previous filter output state
- * @param cutoff_freq_hz: Low-pass filter cutoff frequency
- * @param sample_rate_hz: Control loop sample rate (typically 1000 Hz)
- * @return: Filtered output
+ * Smooths torque commands to reduce audible motor whine from
+ * high-frequency control corrections. Without this, the motor
+ * emits an annoying buzz during precision positioning.
  */
-float valve_filter_lowpass_simple(
-    float input,
-    float previous_output,
-    float cutoff_freq_hz,
-    float sample_rate_hz)
+float
+valve_filter_lowpass_simple(float input, float previous_output,
+    float cutoff_freq_hz, float sample_rate_hz)
 {
-    // Disable filtering if cutoff frequency is zero or invalid
-    if (cutoff_freq_hz <= 0.0f || sample_rate_hz <= 0.0f) {
-        return input;
-    }
-    
-    // Prevent cutoff frequency from exceeding Nyquist limit
-    float nyquist = sample_rate_hz * 0.5f;
-    if (cutoff_freq_hz > nyquist * 0.9f) {
-        cutoff_freq_hz = nyquist * 0.9f; // Clamp to 90% of Nyquist
-    }
-    
-    // Calculate smoothing coefficient (alpha)
-    // α = 2π * fc * dt for small fc*dt (valid approximation for fc << fs)
-    float dt = 1.0f / sample_rate_hz;
-    float alpha = 6.28318530718f * cutoff_freq_hz * dt;
-    
-    // Clamp alpha to valid range [0, 1]
-    if (alpha > 1.0f) {
-        alpha = 1.0f;
-    } else if (alpha < 0.0f) {
-        alpha = 0.0f;
-    }
-    
-    // Apply exponential smoothing
-    float filtered = alpha * input + (1.0f - alpha) * previous_output;
-    
-    return filtered;
+	float nyquist;
+	float dt;
+	float alpha;
+	float filtered;
+
+	/* Disable filtering if cutoff frequency is zero or invalid */
+	if (cutoff_freq_hz <= 0.0f || sample_rate_hz <= 0.0f)
+		return input;
+
+	/* Prevent cutoff frequency from exceeding Nyquist limit */
+	nyquist = sample_rate_hz * 0.5f;
+	if (cutoff_freq_hz > nyquist * 0.9f)
+		cutoff_freq_hz = nyquist * 0.9f;
+
+	/*
+	 * Calculate smoothing coefficient (alpha)
+	 * alpha = 2*pi * fc * dt for small fc*dt (valid approximation for fc << fs)
+	 */
+	dt = 1.0f / sample_rate_hz;
+	alpha = 6.28318530718f * cutoff_freq_hz * dt;
+
+	/* Clamp alpha to valid range [0, 1] */
+	if (alpha > 1.0f)
+		alpha = 1.0f;
+	else if (alpha < 0.0f)
+		alpha = 0.0f;
+
+	/* Apply exponential smoothing */
+	filtered = alpha * input + (1.0f - alpha) * previous_output;
+
+	return filtered;
 }

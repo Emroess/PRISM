@@ -8,10 +8,15 @@
 #ifndef ODRIVE_MANAGER_H
 #define ODRIVE_MANAGER_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "protocols/can_simple.h"
 #include "status.h"
-#include <stdint.h>
-#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * ODrive connection and basic operations
@@ -81,8 +86,11 @@ struct can_bus_status {
 };
 
 status_t can_get_bus_status(struct can_simple_handle *handle, struct can_bus_status *status);
-status_t can_send_raw_frame(struct can_simple_handle *handle, uint32_t cmd_id, 
-                             uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3,
-                             uint8_t b4, uint8_t b5, uint8_t b6, uint8_t b7);
+status_t can_send_raw_frame(struct can_simple_handle *, uint32_t,
+    uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ODRIVE_MANAGER_H */

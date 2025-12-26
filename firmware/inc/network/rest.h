@@ -1,11 +1,11 @@
 /**
-  * @file    rest_api.h
+  * @file    network/rest.h
   * @author  STEVE firmware team
   * @brief   REST API handlers for valve configuration and control
   */
 
-#ifndef REST_API_H
-#define REST_API_H
+#ifndef NETWORK_REST_H
+#define NETWORK_REST_H
 
 #include "lwip/tcp.h"
 
@@ -97,4 +97,4 @@ void rest_api_handle_get_stream(struct tcp_pcb *tpcb);
  */
 void rest_api_handle_post_stream(struct tcp_pcb *tpcb, char *body, int len);
 
-#endif /* REST_API_H */
+#endif /* NETWORK_REST_H */

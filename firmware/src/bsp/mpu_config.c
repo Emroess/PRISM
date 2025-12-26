@@ -1,4 +1,4 @@
-/**
+/*
  * mpu_config.c - Memory Protection Unit configuration
  *
  * Configures memory regions to ensure cache coherency for DMA operations.
@@ -11,39 +11,43 @@
  * cache maintenance, fixing the root cause of firmware freezes ~30s after boot.
  */
 
-#include "board.h"
 #include "stm32h7xx_hal.h"
 
-/**
-  * @brief  Configure the MPU attributes
-  * @param  None
-  * @retval None
-  */
-void MPU_Config(void)
+#include "board.h"
+
+/*
+ * MPU_Config - Configure the MPU attributes
+ *
+ * Sets up D2 SRAM as non-cacheable for DMA operations.
+ */
+void
+MPU_Config(void)
 {
-  MPU_Region_InitTypeDef MPU_InitStruct = {0};
+	MPU_Region_InitTypeDef MPU_InitStruct = {0};
 
-  /* Disables the MPU */
-  HAL_MPU_Disable();
+	/* Disables the MPU */
+	HAL_MPU_Disable();
 
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  /* Configure the MPU attributes as Device not cacheable for ETH DMA descriptors and buffers in D2 SRAM */
-  /* RAM_D2 starts at 0x30000000. Size is 288KB. We use 512KB region to cover it all. */
-  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-  MPU_InitStruct.Number = MPU_REGION_NUMBER0;
-  MPU_InitStruct.BaseAddress = 0x30000000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_512KB;
-  MPU_InitStruct.SubRegionDisable = 0x00;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
-  MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
+	/*
+	 * Configure the MPU attributes as Device not cacheable
+	 * for ETH DMA descriptors and buffers in D2 SRAM.
+	 * RAM_D2 starts at 0x30000000. Size is 288KB.
+	 * We use 512KB region to cover it all.
+	 */
+	MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+	MPU_InitStruct.Number = MPU_REGION_NUMBER0;
+	MPU_InitStruct.BaseAddress = 0x30000000;
+	MPU_InitStruct.Size = MPU_REGION_SIZE_512KB;
+	MPU_InitStruct.SubRegionDisable = 0x00;
+	MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
+	MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+	MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
+	MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
+	MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+	MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
 
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
+	HAL_MPU_ConfigRegion(&MPU_InitStruct);
 
-  /* Enables the MPU */
-  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+	/* Enables the MPU */
+	HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }

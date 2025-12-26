@@ -8,21 +8,23 @@
 #ifndef VALVE_PHYSICS_H
 #define VALVE_PHYSICS_H
 
-#include "valve_haptic.h"
 #include <stdbool.h>
 
+#include "valve_haptic.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Calculate total torque using HIL physics model (viscous + Coulomb) */
-float valve_physics_calculate_torque_hil(
-    const struct valve_config *cfg,
-    float position_deg,
-    float omega_rad_s,
-    bool quiet_active
-);
+float valve_physics_calculate_torque_hil(const struct valve_config *, float,
+    float, bool);
 
 /* Clamp torque to limits */
-float valve_physics_clamp_torque(
-    float torque_nm,
-    float limit_nm
-);
+float valve_physics_clamp_torque(float, float);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VALVE_PHYSICS_H */

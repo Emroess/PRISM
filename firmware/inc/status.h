@@ -17,6 +17,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Status codes for all firmware operations
  * All driver functions must return one of these codes
@@ -60,5 +64,16 @@ void board_panic(status_t error_code, const char *file, int line)
  * Returns: Constant string (stored in ROM)
  */
 const char *status_to_string(status_t status);
+
+/*
+ * Convert valve state to human-readable string
+ * Uses int parameter to avoid circular header dependency with valve_haptic.h
+ * Returns: Constant string (stored in ROM)
+ */
+const char *valve_state_to_string(int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* STATUS_H */

@@ -4,9 +4,10 @@
  * Provides system control operations (reboot, DFU, fault info)
  */
 
-#include "system_manager.h"
-#include "stm32h7xx.h"
 #include <string.h>
+
+#include "stm32h7xx.h"
+#include "system_manager.h"
 
 extern volatile struct hard_fault_info g_hard_fault_info;
 

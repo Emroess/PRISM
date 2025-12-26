@@ -1,5 +1,5 @@
 /*
- * network_manager.h - Network service abstraction
+ * network/manager.h - Network service abstraction
  *
  * Provides clean API for network operations, hiding LwIP implementation details
  * Used by CLI, HTTP server, and other network consumers

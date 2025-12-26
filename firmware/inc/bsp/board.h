@@ -19,8 +19,13 @@
 #define BOARD_H
 
 #include <stdint.h>
+
+#include "config/board.h"
 #include "status.h"
-#include "board_config.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * Board initialization and validation
@@ -147,9 +152,11 @@ uint32_t board_get_sysclk_hz(void);
  * board_get_unique_id - Get STM32 unique device ID
  *
  * Reads the 96-bit unique ID from device.
- *
- * @id: Pointer to 3-element uint32_t array to receive ID
  */
-void board_get_unique_id(uint32_t id[3]);
+void board_get_unique_id(uint32_t[3]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BOARD_H */

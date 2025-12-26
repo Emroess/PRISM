@@ -14,16 +14,16 @@
  * - DO-178C Level A requirements
  */
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
+
+#include "stm32h7xx.h"
+
+#include "board.h"
+#include "config/board.h"
 #include "fdcan.h"
 #include "status.h"
-#include "board.h"
-#include "board_config.h"
-
-/* Hardware register access (this file is on whitelist) */
-#include "stm32h7xx.h"
 
 /*
  * FDCAN message RAM header bit field definitions

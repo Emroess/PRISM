@@ -1,45 +1,45 @@
-/**
-  * @file    ethernet_stream.c
-  * @author  STEVE firmware team
-  * @brief   TCP server for streaming valve data over Ethernet
-  */
+/*
+ * stream_server.c - TCP server for streaming valve data over Ethernet
+ */
 
-/* Includes ------------------------------------------------------------------*/
-#include "stm32h7xx_hal.h"
-#include "lwip/opt.h"
-#include "lwip/arch.h"
-#include "lwip/api.h"
-#include "lwip/tcp.h"
-#include "lwip/ip_addr.h"
-#include "lwip/ip.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
 #include <math.h>
 #include <stdbool.h>
-#include "stream_server.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "stm32h7xx_hal.h"
+
+#include "lwip/api.h"
+#include "lwip/arch.h"
+#include "lwip/ip.h"
+#include "lwip/ip_addr.h"
+#include "lwip/opt.h"
+#include "lwip/tcp.h"
+
 #include "board.h"
-#include "valve_haptic.h"
+#include "config/network.h"
 #include "drivers/uart.h"
+#include "network/stream.h"
+#include "valve_haptic.h"
 
-/* Private typedef -----------------------------------------------------------*/
-typedef struct {
-  struct tcp_pcb *pcb;
-  uint8_t connected;
-  uint32_t stream_interval_ms;
-  uint32_t last_stream_time;
-  uint32_t messages_sent;
-  err_t last_error;
-} stream_client_t;
+/*
+ * Stream client connection state
+ */
+struct stream_client {
+	struct tcp_pcb *pcb;
+	uint8_t connected;
+	uint32_t stream_interval_ms;
+	uint32_t last_stream_time;
+	uint32_t messages_sent;
+	err_t last_error;
+};
 
-/* Private define ------------------------------------------------------------*/
-#define STREAM_PORT              8888
-#define MAX_STREAM_CLIENTS       6
+/* Network defines moved to network_config.h */
 
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-static stream_client_t stream_clients[MAX_STREAM_CLIENTS];
+/* Module state */
+static struct stream_client stream_clients[MAX_STREAM_CLIENTS];
 static uint8_t stream_active = 0;
 static uint8_t stream_connected_clients = 0;
 static uint32_t stream_total_messages = 0;
@@ -56,9 +56,9 @@ static err_t stream_accept(void *arg, struct tcp_pcb *newpcb, err_t err);
 static err_t stream_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
 static void stream_error(void *arg, err_t err);
 static err_t stream_poll(void *arg, struct tcp_pcb *tpcb);
-static void stream_disconnect(stream_client_t *client, struct tcp_pcb *tpcb, const char *reason);
-static void stream_send_hello(stream_client_t *client);
-static void stream_send_buffer(stream_client_t *client, const char *buffer, size_t len);
+static void stream_disconnect(struct stream_client *client, struct tcp_pcb *tpcb, const char *reason);
+static void stream_send_hello(struct stream_client *client);
+static void stream_send_buffer(struct stream_client *client, const char *buffer, size_t len);
 static struct uart_handle *stream_get_uart(void);
 static void stream_log(const char *fmt, ...);
 void ethernet_stream_process(void);
@@ -144,7 +144,7 @@ stream_log(const char *fmt, ...)
 }
 
 static void
-stream_send_buffer(stream_client_t *client, const char *buffer, size_t len)
+stream_send_buffer(struct stream_client *client, const char *buffer, size_t len)
 {
   if (client == NULL || buffer == NULL || len == 0U || client->pcb == NULL || !client->connected) {
     return;
@@ -170,7 +170,7 @@ stream_send_buffer(stream_client_t *client, const char *buffer, size_t len)
 }
 
 static void
-stream_send_hello(stream_client_t *client)
+stream_send_hello(struct stream_client *client)
 {
   if (client == NULL) {
     return;
@@ -210,7 +210,7 @@ stream_send_hello(stream_client_t *client)
 }
 
 static void
-stream_disconnect(stream_client_t *client, struct tcp_pcb *tpcb, const char *reason)
+stream_disconnect(struct stream_client *client, struct tcp_pcb *tpcb, const char *reason)
 {
   if (client == NULL) {
     return;
@@ -237,47 +237,51 @@ stream_disconnect(stream_client_t *client, struct tcp_pcb *tpcb, const char *rea
   client->messages_sent = 0U;
   client->last_error = ERR_OK;
   client->stream_interval_ms = stream_default_interval_ms;
-  client->last_stream_time = board_get_systick_ms();
+	client->last_stream_time = board_get_systick_ms();
 
-  if (reason != NULL) {
-    stream_log("\r\n[ETH_STREAM] client %ld disconnected (%s)\r\n",
-               (long)(client - stream_clients), reason);
-  }
+	if (reason != NULL) {
+		stream_log("\r\n[ETH_STREAM] client %ld disconnected (%s)\r\n",
+		    (long)(client - stream_clients), reason);
+	}
 }
 
-/**
-  * @brief  Send JSON data to a client
-  * @param  client: client to send to
-  * @retval None
-  */
-static void stream_send_data(stream_client_t *client)
+/*
+ * Transmits real-time valve telemetry to a connected client as JSON.
+ * The streaming interface allows external tools (oscilloscopes, loggers)
+ * to monitor valve behavior without polling the REST API, which would
+ * add latency and load to the control system.
+ */
+static void
+stream_send_data(struct stream_client *client)
 {
-  char json_buffer[384];
-  uint32_t timestamp_ms = board_get_systick_ms();
-  int32_t pos_turns_milli = 0;
-  int32_t pos_deg_tenths = 0;
-  int32_t torque_milli_nm = 0;
-  int32_t filtered_torque_milli_nm = 0;
-  int32_t vel_rad_milli = 0;
-  int32_t passivity_energy_milli_j = 0;
-  /* New timing fields from control loop */
-  uint64_t t_us = 0ULL;
-  uint32_t loop_time_us = 0U;
-  uint32_t seq = 0U;
-  uint32_t last_error_code = 0U;
-  uint32_t heartbeat_age_ms = 0U;
-  char t_us_str[24];
-  const char *status_str = "NO_DATA";
-  bool pos_turns_valid = false;
-  bool pos_deg_valid = false;
-  bool torque_valid = false;
-  bool filtered_torque_valid = false;
-  bool vel_valid = false;
-  bool passivity_valid = false;
-  bool data_valid = false;
-  bool quiet_active = false;
+	struct valve_context *ctx;
+	char json_buffer[384];
+	uint32_t timestamp_ms;
+	int32_t pos_turns_milli = 0;
+	int32_t pos_deg_tenths = 0;
+	int32_t torque_milli_nm = 0;
+	int32_t filtered_torque_milli_nm = 0;
+	int32_t vel_rad_milli = 0;
+	int32_t passivity_energy_milli_j = 0;
+	/* New timing fields from control loop */
+	uint64_t t_us = 0ULL;
+	uint32_t loop_time_us = 0U;
+	uint32_t seq = 0U;
+	uint32_t last_error_code = 0U;
+	uint32_t heartbeat_age_ms = 0U;
+	char t_us_str[24];
+	const char *status_str = "NO_DATA";
+	bool pos_turns_valid = false;
+	bool pos_deg_valid = false;
+	bool torque_valid = false;
+	bool filtered_torque_valid = false;
+	bool vel_valid = false;
+	bool passivity_valid = false;
+	bool data_valid = false;
+	bool quiet_active = false;
 
-  struct valve_context *ctx = valve_haptic_get_context();
+	timestamp_ms = board_get_systick_ms();
+	ctx = valve_haptic_get_context();
   if (ctx != NULL) {
     struct valve_state *state = valve_haptic_get_state(ctx);
     if (state != NULL) {
@@ -364,57 +368,65 @@ static void stream_send_data(stream_client_t *client)
   /* Additional validation: ensure JSON structure integrity */
   if (len < 10 || json_buffer[0] != '{' || json_buffer[len-1] != '\n') {
     stream_send_errors++;
-    stream_log("\r\n[ETH_STREAM] JSON structure invalid\r\n");
-    return;
+	stream_log("\r\n[ETH_STREAM] JSON structure invalid\r\n");
+	return;
   }
 
   stream_send_buffer(client, json_buffer, (size_t)len);
 }
 
-/**
-  * @brief  Process streaming for all clients
-  * @param  None
-  * @retval None
-  */
-void ethernet_stream_process(void)
+/*
+ * Called from the main loop to push telemetry to all connected clients.
+ * Separated from the timer ISR to avoid blocking the control loop -
+ * TCP transmission can take variable time depending on network conditions.
+ */
+void
+ethernet_stream_process(void)
 {
-  if (!stream_active) return;
+	struct stream_client *client;
+	uint32_t current_time;
+	uint32_t i;
 
-  uint32_t current_time = board_get_systick_ms();
+	if (!stream_active)
+		return;
 
-  for (int i = 0; i < MAX_STREAM_CLIENTS; i++) {
-    stream_client_t *client = &stream_clients[i];
-    if (client->connected && client->pcb != NULL) {
-      if ((current_time - client->last_stream_time) >= client->stream_interval_ms) {
-        stream_send_data(client);
-        client->last_stream_time = current_time;
-      }
-    } else if (client->connected && client->pcb == NULL) {
-      stream_disconnect(client, NULL, "connection lost");
-    }
-  }
+	current_time = board_get_systick_ms();
+
+	for (i = 0; i < MAX_STREAM_CLIENTS; i++) {
+		client = &stream_clients[i];
+		if (client->connected && client->pcb != NULL) {
+			if ((current_time - client->last_stream_time) >=
+			    client->stream_interval_ms) {
+				stream_send_data(client);
+				client->last_stream_time = current_time;
+			}
+		} else if (client->connected && client->pcb == NULL) {
+			stream_disconnect(client, NULL, "connection lost");
+		}
+	}
 }
 
-/**
-  * @brief  Accept callback for new connections
-  * @param  arg: not used
-  * @param  newpcb: new TCP PCB
-  * @param  err: error code
-  * @retval err_t: error code
-  */
-static err_t stream_accept(void *arg, struct tcp_pcb *newpcb, err_t err)
+/*
+ * Handles new client connections to the streaming server.
+ * Limits concurrent connections to MAX_STREAM_CLIENTS to prevent
+ * memory exhaustion and ensure fair bandwidth allocation.
+ */
+static err_t
+stream_accept(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
-  (void)arg;
-  if (err != ERR_OK) {
-    stream_log("\r\n[ETH_STREAM] accept error %d\r\n", err);
-    return err;
-  }
+	uint32_t i;
 
-  /* Find free client slot */
-  for (int i = 0; i < MAX_STREAM_CLIENTS; i++) {
-    if (!stream_clients[i].connected) {
-      stream_clients[i].pcb = newpcb;
-      stream_clients[i].connected = 1;
+	(void)arg;
+	if (err != ERR_OK) {
+		stream_log("\r\n[ETH_STREAM] accept error %d\r\n", err);
+		return err;
+	}
+
+	/* Find free client slot */
+	for (i = 0; i < MAX_STREAM_CLIENTS; i++) {
+		if (!stream_clients[i].connected) {
+			stream_clients[i].pcb = newpcb;
+			stream_clients[i].connected = 1;
       stream_clients[i].stream_interval_ms = stream_default_interval_ms;
       stream_clients[i].last_stream_time = board_get_systick_ms();
       stream_clients[i].messages_sent = 0;
@@ -425,77 +437,80 @@ static err_t stream_accept(void *arg, struct tcp_pcb *newpcb, err_t err)
       tcp_err(newpcb, stream_error);
       tcp_poll(newpcb, stream_poll, 2); /* Poll every 500ms */
 
-      tcp_accepted(newpcb);
-      stream_connected_clients++;
+			tcp_accepted(newpcb);
+			stream_connected_clients++;
 
-      char addr_str[40];
-      ipaddr_ntoa_r(&newpcb->remote_ip, addr_str, sizeof(addr_str));
-      stream_log("\r\n[ETH_STREAM] client %d connected from %s:%u\r\n", i, addr_str, newpcb->remote_port);
-      stream_send_hello(&stream_clients[i]);
-      return ERR_OK;
-    }
-  }
+			char addr_str[40];
+			ipaddr_ntoa_r(&newpcb->remote_ip, addr_str,
+			    sizeof(addr_str));
+			stream_log(
+			    "\r\n[ETH_STREAM] client %lu connected from %s:%u\r\n",
+			    (unsigned long)i, addr_str, newpcb->remote_port);
+			stream_send_hello(&stream_clients[i]);
+			return ERR_OK;
+		}
+	}
 
-  /* No free slots */
-  tcp_close(newpcb);
-  stream_log("\r\n[ETH_STREAM] no free client slots\r\n");
-  return ERR_OK;
+	/* No free slots */
+	tcp_close(newpcb);
+	stream_log("\r\n[ETH_STREAM] no free client slots\r\n");
+	return ERR_OK;
 }
 
-/**
-  * @brief  Receive callback
-  * @param  arg: client context
-  * @param  tpcb: TCP PCB
-  * @param  p: received data
-  * @param  err: error code
-  * @retval err_t: error code
-  */
-static err_t stream_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
+/*
+ * Processes commands from streaming clients (interval changes, sync requests).
+ * The sync command enables precise time correlation between the embedded
+ * controller's microsecond timestamps and the host's wall-clock time.
+ */
+static err_t
+stream_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
-  (void)err;
-  stream_client_t *client = (stream_client_t *)arg;
+	struct stream_client *client = (struct stream_client *)arg;
 
-  if (p == NULL) {
-    stream_disconnect(client, tpcb, "remote closed");
-    return ERR_OK;
-  }
+	(void)err;
+	if (p == NULL) {
+		stream_disconnect(client, tpcb, "remote closed");
+		return ERR_OK;
+	}
 
-  /* Process received data (commands) */
-  if (p->len > 0) {
-    char *data = (char *)p->payload;
+	/* Process received data (commands) */
+	if (p->len > 0) {
+		char *data = (char *)p->payload;
 
-    /* Simple command parsing */
-    if (strncmp(data, "interval ", 9) == 0) {
-      int interval = atoi(data + 9);
-      if (interval >= 10 && interval <= 1000) {
-        client->stream_interval_ms = interval;
-      }
-    } else if (strncmp(data, "sync", 4) == 0) {
-      /* Optional token after space */
-      const char *token = NULL;
-      if (p->len > 5) {
-        /* Skip command and space */
-        token = data + 5;
-      }
+		/* Simple command parsing */
+		if (strncmp(data, "interval ", 9) == 0) {
+			int interval = atoi(data + 9);
+			if (interval >= 10 && interval <= 1000) {
+				client->stream_interval_ms = interval;
+			}
+		} else if (strncmp(data, "sync", 4) == 0) {
+			/* Optional token after space */
+			const char *token = NULL;
+			if (p->len > 5) {
+				/* Skip command and space */
+				token = data + 5;
+			}
 
-      uint64_t t_us = 0ULL;
-      uint32_t seq = 0U;
-      char t_us_str[24];
-      struct valve_context *ctx = valve_haptic_get_context();
-      if (ctx != NULL) {
-        struct valve_state *state = valve_haptic_get_state(ctx);
-        if (state != NULL) {
-          t_us = state->diag.t_us_accum;
-          seq = state->diag.sample_seq;
-        }
-      }
-      u64_to_dec_str(t_us, t_us_str, sizeof(t_us_str));
+			uint64_t t_us = 0ULL;
+			uint32_t seq = 0U;
+			char t_us_str[24];
+			struct valve_context *ctx = valve_haptic_get_context();
+			if (ctx != NULL) {
+				struct valve_state *state;
+				state = valve_haptic_get_state(ctx);
+				if (state != NULL) {
+					t_us = state->diag.t_us_accum;
+					seq = state->diag.sample_seq;
+				}
+			}
+			u64_to_dec_str(t_us, t_us_str, sizeof(t_us_str));
 
-      char resp[160];
-      int len = 0;
-      if (token != NULL && *token != '\0' && *token != '\n' && *token != '\r') {
-        /* Trim trailing newlines */
-        size_t tok_len = strcspn(token, "\r\n");
+			char resp[160];
+			int len = 0;
+			if (token != NULL && *token != '\0' &&
+			    *token != '\n' && *token != '\r') {
+				/* Trim trailing newlines */
+				size_t tok_len = strcspn(token, "\r\n");
         char tokbuf[48];
         if (tok_len >= sizeof(tokbuf)) tok_len = sizeof(tokbuf) - 1;
         memcpy(tokbuf, token, tok_len);
@@ -528,123 +543,128 @@ static err_t stream_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t 
       /* Verify null termination */
       if (resp[len] != '\0') {
         stream_log("\r\n[ETH_STREAM] sync response not null-terminated\r\n");
-        return ERR_OK;
-      }
+			return ERR_OK;
+		}
 
-      /* Basic structure validation */
-      if (len < 5 || resp[0] != '{' || strncmp(resp, "{\"sync\"", 7) != 0) {
-        stream_log("\r\n[ETH_STREAM] sync response structure invalid\r\n");
-        return ERR_OK;
-      }
+		/* Basic structure validation */
+		if (len < 5 || resp[0] != '{' ||
+		    strncmp(resp, "{\"sync\"", 7) != 0) {
+			stream_log(
+			    "\r\n[ETH_STREAM] sync response structure invalid\r\n");
+			return ERR_OK;
+		}
 
-      if (len > 0 && (size_t)len < sizeof(resp)) {
-        stream_send_buffer(client, resp, (size_t)len);
-      }
-    }
-  }
+		if (len > 0 && (size_t)len < sizeof(resp))
+			stream_send_buffer(client, resp, (size_t)len);
+		}
+	}
 
-  tcp_recved(tpcb, p->tot_len);
-  pbuf_free(p);
-  return ERR_OK;
+	tcp_recved(tpcb, p->tot_len);
+	pbuf_free(p);
+	return ERR_OK;
 }
 
-/**
-  * @brief  Error callback
-  * @param  arg: client context
-  * @param  err: error code
-  * @retval None
-  */
-static void stream_error(void *arg, err_t err)
+/*
+ * Cleans up client state when lwIP detects a connection failure.
+ * Without this, stale client slots would never be reclaimed.
+ */
+static void
+stream_error(void *arg, err_t err)
 {
-  (void)err;
-  stream_client_t *client = (stream_client_t *)arg;
-  stream_disconnect(client, NULL, "lwIP error");
+	struct stream_client *client = (struct stream_client *)arg;
+
+	(void)err;
+	stream_disconnect(client, NULL, "lwIP error");
 }
 
-/**
-  * @brief  Poll callback
-  * @param  arg: client context
-  * @param  tpcb: TCP PCB
-  * @retval err_t: error code
-  */
-static err_t stream_poll(void *arg, struct tcp_pcb *tpcb)
+/*
+ * Periodic callback from lwIP for connection health checks.
+ * Currently unused but required by the lwIP callback interface.
+ */
+static err_t
+stream_poll(void *arg, struct tcp_pcb *tpcb)
 {
-  (void)arg;
-  (void)tpcb;
-  return ERR_OK;
+	(void)arg;
+	(void)tpcb;
+	return ERR_OK;
 }
 
-/**
-  * @brief  Initialize streaming server
-  * @param  None
-  * @retval None
-  */
-bool ethernet_stream_init(void)
+/*
+ * Creates the TCP listener for real-time telemetry streaming.
+ * Must be called after lwIP initialization but before the main loop
+ * begins, so clients can connect as soon as the network is up.
+ */
+bool
+ethernet_stream_init(void)
 {
-  struct tcp_pcb *pcb;
+	struct tcp_pcb *pcb;
 
-  if (stream_active) {
-    stream_log("\r\n[ETH_STREAM] server already running\r\n");
-    return true;
-  }
+	if (stream_active) {
+		stream_log("\r\n[ETH_STREAM] server already running\r\n");
+		return true;
+	}
 
-  stream_total_messages = 0;
-  stream_send_errors = 0;
-  stream_invalid_samples = 0;
-  stream_last_send_tick = 0;
-  stream_connected_clients = 0;
-  stream_listener_pcb = NULL;
-  stream_invalid_warned = 0;
+	stream_total_messages = 0;
+	stream_send_errors = 0;
+	stream_invalid_samples = 0;
+	stream_last_send_tick = 0;
+	stream_connected_clients = 0;
+	stream_listener_pcb = NULL;
+	stream_invalid_warned = 0;
 
-  /* Initialize client array */
-  memset(stream_clients, 0, sizeof(stream_clients));
+	/* Initialize client array */
+	memset(stream_clients, 0, sizeof(stream_clients));
 
-  /* Create TCP PCB */
-  pcb = tcp_new();
-  if (pcb == NULL) {
-    stream_log("\r\n[ETH_STREAM] failed to create PCB\r\n");
-    return false;
-  }
+	/* Create TCP PCB */
+	pcb = tcp_new();
+	if (pcb == NULL) {
+		stream_log("\r\n[ETH_STREAM] failed to create PCB\r\n");
+		return false;
+	}
 
-  ip_set_option(pcb, SOF_REUSEADDR);
+	ip_set_option(pcb, SOF_REUSEADDR);
 
-  /* Bind to port */
-  if (tcp_bind(pcb, IP_ADDR_ANY, STREAM_PORT) != ERR_OK) {
-    tcp_close(pcb);
-    stream_log("\r\n[ETH_STREAM] tcp_bind failed\r\n");
-    return false;
-  }
+	/* Bind to port */
+	if (tcp_bind(pcb, IP_ADDR_ANY, STREAM_PORT) != ERR_OK) {
+		tcp_close(pcb);
+		stream_log("\r\n[ETH_STREAM] tcp_bind failed\r\n");
+		return false;
+	}
 
-  /* Listen for connections */
-  pcb = tcp_listen(pcb);
-  if (pcb == NULL) {
-    stream_log("\r\n[ETH_STREAM] tcp_listen failed\r\n");
-    return false;
-  }
+	/* Listen for connections */
+	pcb = tcp_listen(pcb);
+	if (pcb == NULL) {
+		stream_log("\r\n[ETH_STREAM] tcp_listen failed\r\n");
+		return false;
+	}
 
-  /* Set accept callback */
-  tcp_accept(pcb, stream_accept);
-  stream_listener_pcb = pcb;
+	/* Set accept callback */
+	tcp_accept(pcb, stream_accept);
+	stream_listener_pcb = pcb;
 
-  stream_active = 1;
-  stream_log("\r\n[ETH_STREAM] server started on port %d (interval %lu ms)\r\n",
-             STREAM_PORT, (unsigned long)stream_default_interval_ms);
-  return true;
+	stream_active = 1;
+	stream_log("\r\n[ETH_STREAM] server started on port %d (interval %lu ms)\r\n",
+	    STREAM_PORT, (unsigned long)stream_default_interval_ms);
+	return true;
 }
 
-/**
-  * @brief  Stop streaming server
-  * @param  None
-  * @retval None
-  */
-void ethernet_stream_stop(void)
+/*
+ * Gracefully shuts down all streaming connections before system reset.
+ * Ensures clients receive proper TCP FIN rather than RST, allowing
+ * them to distinguish intentional shutdown from network failure.
+ */
+void
+ethernet_stream_stop(void)
 {
-  /* Close all client connections */
-  for (int i = 0; i < MAX_STREAM_CLIENTS; i++) {
-    if (stream_clients[i].connected) {
-      stream_disconnect(&stream_clients[i], stream_clients[i].pcb, "server stop");
-    }
-  }
+	uint32_t i;
+
+	/* Close all client connections */
+	for (i = 0; i < MAX_STREAM_CLIENTS; i++) {
+		if (stream_clients[i].connected) {
+			stream_disconnect(&stream_clients[i],
+			    stream_clients[i].pcb, "server stop");
+		}
+	}
 
   if (stream_listener_pcb != NULL) {
     err_t err = tcp_close(stream_listener_pcb);

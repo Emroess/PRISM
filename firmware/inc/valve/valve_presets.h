@@ -1,56 +1,36 @@
 /*
- * valve_presets.h
+ * valve_presets.h - Valve preset management for haptic simulation
  *
- * Simplified valve preset presets for haptic simulation.
- * Provides user-friendly preset levels that map to physics parameters.
+ * Maps user-friendly preset levels to physics parameters.
+ * Presets persist in NVM and can be modified via CLI or REST API.
  */
 
 #ifndef VALVE_PRESETS_H
 #define VALVE_PRESETS_H
 
+#include "config/nvm.h"
 #include "valve_haptic.h"
 #include "valve_nvm.h"
 
-#define VALVE_PRESET_COUNT 4
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* Global preset parameters */
+#define VALVE_PRESET_COUNT	VALVE_NVM_PRESET_COUNT
+
 extern struct preset_params preset_params[VALVE_PRESET_COUNT];
 
-/* Initialize presets from NVM */
 status_t valve_presets_init(void);
+status_t valve_presets_save(const struct preset_params[VALVE_PRESET_COUNT]);
+status_t valve_preset_get(int, struct preset_params *);
+status_t valve_preset_set(int, const struct preset_params *);
+status_t valve_preset_from_preset(int, float, struct valve_config *);
+status_t valve_preset_validate(const struct valve_config *);
+float	valve_preset_get_default_travel(int);
+status_t valve_preset_save_current(struct valve_context *, uint8_t);
 
-/* Save presets to NVM */
-status_t valve_presets_save(const struct preset_params new_presets[VALVE_PRESET_COUNT]);
-
-/* Get a single preset */
-status_t valve_preset_get(int index, struct preset_params *out);
-
-/* Set a single preset and save to NVM */
-status_t valve_preset_set(int index, const struct preset_params *in);
-
-/* Generate valve configuration from preset preset and travel range
- * 
- * @param preset: Resistance level (LIGHT, MEDIUM, HEAVY, INDUSTRIAL)
- * @param travel_degrees: Total rotation range (e.g., 90, 180, 360)
- * @param cfg: Output configuration structure to populate
- * @return: STATUS_OK on success, error code on invalid parameters
- */
-status_t valve_preset_from_preset(valve_preset_t preset, float travel_degrees, struct valve_config *cfg);
-
-/* Validate preset configuration */
-status_t valve_preset_validate(const struct valve_config *cfg);
-
-/* Get default travel range for a preset */
-float valve_preset_get_default_travel(valve_preset_t preset);
-
-/*
- * Save current valve configuration as a preset
- *
- * Returns: STATUS_OK on success, error code on failure
- * ctx: Valve context
- * preset_idx: Preset index (0-3)
- */
-status_t valve_preset_save_current(struct valve_context *ctx,
-    uint8_t preset_idx);
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VALVE_PRESETS_H */

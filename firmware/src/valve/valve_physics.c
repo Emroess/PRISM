@@ -68,29 +68,32 @@ static inline float valve_signf(float x)
 }
 
 /*
- * valve_smooth_sign - Smooth sign function approximation
- *
- * Approximates the sign function using a smooth tanh-based polynomial
- * to avoid discontinuities at zero. This prevents numerical instabilities
- * in Coulomb friction calculations where sharp transitions can cause
- * limit-cycle oscillations in the control loop.
+ * Approximates sign(x) with a smooth tanh-like curve.
+ * Hard sign transitions cause limit-cycle oscillations in the
+ * Coulomb friction model, making the valve "buzz" at rest.
  */
 static inline float valve_smooth_sign(float x, float smoothing_width)
 {
-    if (smoothing_width <= 0.0f) {
-        return valve_signf(x);
-    }
-    
-    float ratio = x / smoothing_width;
-    
-    // Clamp to ±1 outside smoothing region
-    if (ratio > 3.0f) return 1.0f;
-    if (ratio < -3.0f) return -1.0f;
-    
-    // Polynomial approximation of tanh for |ratio| < 3
-    // tanh(x) ≈ x - x³/3 + 2x⁵/15 (good enough for smoothing)
-    float ratio2 = ratio * ratio;
-    return ratio * (1.0f - ratio2 * (0.3333f - 0.1333f * ratio2));
+	float ratio;
+	float ratio2;
+
+	if (smoothing_width <= 0.0f)
+		return valve_signf(x);
+
+	ratio = x / smoothing_width;
+
+	/* Clamp to ±1 outside smoothing region */
+	if (ratio > 3.0f)
+		return 1.0f;
+	if (ratio < -3.0f)
+		return -1.0f;
+
+	/*
+	 * Polynomial approximation of tanh for |ratio| < 3
+	 * tanh(x) ≈ x - x³/3 + 2x⁵/15 (good enough for smoothing)
+	 */
+	ratio2 = ratio * ratio;
+	return ratio * (1.0f - ratio2 * (0.3333f - 0.1333f * ratio2));
 }
 
 /*
@@ -103,31 +106,26 @@ static inline float valve_smooth_sign(float x, float smoothing_width)
  * Uses a cubic Hermite interpolation in the transition region for C1 continuity
  * (continuous first derivative), ensuring smooth motor behavior.
  *
- * @param x: Input value
- * @param limit: Saturation limit (symmetric ±limit)
- * @param transition_width: Width of smooth transition region (0.0 to 1.0 of limit)
- * @return: Smoothly saturated output
+ * x: Input value
+ * limit: Saturation limit (symmetric ±limit)
+ * transition_width: Width of smooth transition region (0.0 to 1.0 of limit)
+ * Returns smoothly saturated output.
  */
 /* Smooth saturation previously used by the more complex model; no longer needed */
 
 /*
- * valve_physics_clamp_torque - Torque safety limiter
- *
- * Clamps commanded torque to symmetric limits to prevent motor damage
- * or mechanical failure. Essential safety function that ensures the
- * haptic system never exceeds the motor's rated torque capacity,
- * protecting both hardware and user safety.
+ * Hard limit on motor torque to prevent hardware damage.
+ * This is the last line of defense if the physics model or
+ * upstream code produces unreasonable values.
  */
-float valve_physics_clamp_torque(
-    float torque_nm,
-    float limit_nm)
+float
+valve_physics_clamp_torque(float torque_nm, float limit_nm)
 {
-    if (torque_nm > limit_nm) {
-        return limit_nm;
-    } else if (torque_nm < -limit_nm) {
-        return -limit_nm;
-    }
-    return torque_nm;
+	if (torque_nm > limit_nm)
+		return limit_nm;
+	else if (torque_nm < -limit_nm)
+		return -limit_nm;
+	return torque_nm;
 }
 
 /*
@@ -203,11 +201,13 @@ static inline float valve_hil_compute_wall_torque(
         return 0.0f;
     }
 
-    // Wall stiffness torque (proportional to penetration)
+    /* Wall stiffness torque (proportional to penetration) */
     float stiffness_torque = -kw * penetration;
 
-    // Wall damping torque (proportional to penetration velocity)
-    // ṗ ≈ ω when moving into/out of wall
+    /*
+     * Wall damping torque (proportional to penetration velocity)
+     * p_dot ~= omega when moving into/out of wall
+     */
     float penetration_velocity = (penetration != 0.0f) ? omega_turns_per_s : 0.0f;
     float damping_torque = -cw * penetration_velocity;
 
@@ -227,30 +227,36 @@ static inline float valve_hil_compute_virtual_torque(
     float omega_turns_per_s,
     float theta_off,
     float theta_on,
-    float b,      // viscous damping [N·m·s/rad]
-    float tau_c,  // Coulomb friction [N·m]
-    float kw,     // wall stiffness [N·m/turn]
-    float cw,     // wall damping [N·m·s/turn]
-    float eps,    // smoothing parameter
+    float b,
+    float tau_c,
+    float kw,
+    float cw,
+    float eps,
     float max_torque)
 {
-    // Convert omega from turns/s to rad/s for physical units
-    float omega_rad_s = omega_turns_per_s * VALVE_TWO_PI;
+    float omega_rad_s;
+    float viscous_torque;
+    float friction_torque;
+    float wall_torque;
+    float total_torque;
 
-    // Viscous damping term
-    float viscous_torque = -b * omega_rad_s;
+    /* Convert omega from turns/s to rad/s for physical units */
+    omega_rad_s = omega_turns_per_s * VALVE_TWO_PI;
 
-    // Coulomb/static friction term
-    float friction_torque = -tau_c * valve_hil_smooth_sign(omega_rad_s, eps);
+    /* Viscous damping term: b in [N*m*s/rad] */
+    viscous_torque = -b * omega_rad_s;
 
-    // Wall interaction torque
-    float wall_torque = valve_hil_compute_wall_torque(
+    /* Coulomb/static friction term: tau_c in [N*m] */
+    friction_torque = -tau_c * valve_hil_smooth_sign(omega_rad_s, eps);
+
+    /* Wall interaction torque: kw [N*m/turn], cw [N*m*s/turn] */
+    wall_torque = valve_hil_compute_wall_torque(
         theta_turns, omega_turns_per_s, theta_off, theta_on, kw, cw);
 
-    // Combine all torque components
-    float total_torque = viscous_torque + friction_torque + wall_torque;
+    /* Combine all torque components */
+    total_torque = viscous_torque + friction_torque + wall_torque;
 
-    // Apply safety limits
+    /* Apply safety limits */
     total_torque = valve_fmaxf(-max_torque, valve_fminf(max_torque, total_torque));
 
     return total_torque;

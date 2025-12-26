@@ -5,8 +5,8 @@
  * Used by both CLI and HTTP API to ensure consistent behavior.
  */
 
+#include "config/valve.h"
 #include "valve_manager.h"
-#include "valve_config.h"
 #include "valve_presets.h"
 
 status_t
@@ -129,4 +129,16 @@ const struct preset_params *
 valve_get_presets(void)
 {
 	return preset_params;
+}
+
+struct valve_context *
+valve_get_context(void)
+{
+	return valve_haptic_get_context();
+}
+
+status_t
+valve_stage_config(struct valve_context *ctx, const struct valve_config *cfg, uint32_t field_mask)
+{
+	return valve_haptic_stage_config(ctx, cfg, field_mask);
 }

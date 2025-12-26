@@ -13,18 +13,18 @@
  * - DO-178C Level A requirements
  */
 
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
 #include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
-#include "uart.h"
-#include "status.h"
-#include "board.h"
-#include "board_config.h"
+#include <string.h>
 
-/* Hardware register access (this file is on whitelist) */
 #include "stm32h7xx.h"
+
+#include "board.h"
+#include "config/board.h"
+#include "status.h"
+#include "uart.h"
 
 /*
  * RX ring buffer size (must be power of 2 for efficient modulo)

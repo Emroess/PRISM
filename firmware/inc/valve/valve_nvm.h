@@ -9,6 +9,10 @@
 
 #include "status.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Preset parameters structure (matches valve_presets.c) */
 struct preset_params {
     char name[16];  /* User-editable preset name */
@@ -25,12 +29,16 @@ struct preset_params {
 status_t valve_nvm_init(void);
 
 /* Load presets from NVM */
-status_t valve_nvm_load_presets(struct preset_params presets_out[4]);
+status_t valve_nvm_load_presets(struct preset_params[4]);
 
 /* Access built-in default presets */
 const struct preset_params *valve_nvm_get_default_presets(void);
 
 /* Save presets to NVM */
-status_t valve_nvm_save_presets(const struct preset_params presets_in[4]);
+status_t valve_nvm_save_presets(const struct preset_params[4]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VALVE_NVM_H */

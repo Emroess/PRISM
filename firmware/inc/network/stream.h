@@ -1,11 +1,11 @@
 /**
-  * @file    stream_server.h
+  * @file    network/stream.h
   * @author  STEVE firmware team
   * @brief   Ethernet stream server for real-time valve data
   */
 
-#ifndef STREAM_SERVER_H
-#define STREAM_SERVER_H
+#ifndef NETWORK_STREAM_H
+#define NETWORK_STREAM_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -37,4 +37,4 @@ void ethernet_stream_get_stats(ethernet_stream_stats_t *stats);
 }
 #endif
 
-#endif /* STREAM_SERVER_H */
+#endif /* NETWORK_STREAM_H */

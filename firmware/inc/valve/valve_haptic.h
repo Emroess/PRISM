@@ -1,60 +1,49 @@
 /*
- * valve_haptic.h
+ * valve_haptic.h - Haptic valve simulation using ODrive S1
  *
- * Haptic valve simulation using Odrive S1 as force-feedback actuator.
- * Control loop runs at 1000 Hz with float-based physics calculations.
- *
- * AUTONOMOUS OPERATION:
- * The valve control loop operates entirely independently from the main
- * application once started. TIM6 ISR latches data at exactly 1kHz (1ms period)
- * and PendSV executes the control loop deterministically. No periodic service
- * calls are required.
+ * Control loop runs autonomously at 1000 Hz in TIM6 ISR.
+ * No periodic service calls required after valve_haptic_start().
  *
  * Usage:
- *   1. Initialize: valve_haptic_init()
- *   2. Configure: valve_haptic_load_preset(ctx, VALVE_PRESET_MEDIUM, 90.0f)
- *   3. Start: valve_haptic_start()  -> Begins autonomous 1kHz operation
- *   4. Stop: valve_haptic_stop()    -> Halts autonomous operation
- *
- * The control loop processes encoder feedback, calculates physics-based
- * torque commands, and sends them to the ODrive completely independently.
- * The main application can query status but does not need to service the loop.
+ *   1. valve_haptic_init() - Initialize hardware and state
+ *   2. valve_haptic_load_preset() - Load physics parameters
+ *   3. valve_haptic_start() - Begin autonomous 1kHz operation
+ *   4. valve_haptic_stop() - Halt operation
  */
 
 #ifndef VALVE_HAPTIC_H
 #define VALVE_HAPTIC_H
 
 #include <stdint.h>
+
+#include "config/valve.h"
 #include "status.h"
 #include "valve_filters.h"
-#include "protocols/can_simple.h"
 
-/* Valve preset presets - user-friendly resistance levels */
-typedef enum {
-    VALVE_PRESET_LIGHT = 0,       /* Butterfly/faucet - minimal resistance */
-    VALVE_PRESET_MEDIUM = 1,      /* Ball valve - moderate resistance */
-    VALVE_PRESET_HEAVY = 2,       /* Gate valve - substantial resistance */
-    VALVE_PRESET_INDUSTRIAL = 3   /* Globe/gas main - heavy industrial feel */
-} valve_preset_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Forward declarations */
 struct can_simple_handle;
 
+/* Valve preset indices */
+#define VALVE_PRESET_LIGHT		0	/* Butterfly/faucet */
+#define VALVE_PRESET_MEDIUM		1	/* Ball valve */
+#define VALVE_PRESET_HEAVY		2	/* Gate valve */
+#define VALVE_PRESET_INDUSTRIAL		3	/* Globe/gas main */
+
 /* Valve simulation states */
-typedef enum {
-    VALVE_STATE_IDLE = 0,
-    VALVE_STATE_INITIALIZING,
-    VALVE_STATE_RUNNING,
-    VALVE_STATE_ERROR
-} valve_state_t;
+#define VALVE_STATE_IDLE		0
+#define VALVE_STATE_INITIALIZING	1
+#define VALVE_STATE_RUNNING		2
+#define VALVE_STATE_ERROR		3
 
 /* Error types */
-typedef enum {
-    VALVE_ERROR_NONE = 0,
-    VALVE_ERROR_CAN,           /* CAN communication failure */
-    VALVE_ERROR_ODRIVE,        /* Odrive reported error */
-    VALVE_ERROR_LIMIT          /* Torque or position limit exceeded */
-} valve_error_t;
+#define VALVE_ERROR_NONE		0
+#define VALVE_ERROR_CAN			1	/* CAN communication failure */
+#define VALVE_ERROR_ODRIVE		2	/* ODrive reported error */
+#define VALVE_ERROR_LIMIT		3	/* Torque or position limit */
 
 /* Valve configuration (loaded from preset) */
 struct valve_config {
@@ -82,17 +71,12 @@ struct valve_safety_diagnostics {
     uint32_t axis_error_events;         /* Count of ODrive axis errors */
     uint32_t motor_error_events;        /* Count of motor errors */
     uint32_t encoder_error_events;      /* Count of encoder errors */
-    uint32_t overtemp_events;           /* Count of overtemperature events */
     uint32_t torque_discontinuity_events; /* Count of torque discontinuities */
     uint32_t emergency_stops;           /* Count of emergency stops triggered */
     float max_torque_derivative;        /* Maximum torque derivative observed (Nm/ms) */
     uint32_t last_error_code;           /* Last ODrive error code */
     uint32_t last_error_timestamp_ms;   /* Timestamp of last error (ms) */
-    /* Phase 2: Performance and monitoring */
-    uint32_t saturation_events;         /* Count of torque saturation events */
-    uint32_t collision_events;          /* Count of collision detections */
-    uint32_t thermal_throttle_events;   /* Count of thermal throttling events */
-    float peak_iq_measured;             /* Peak |Iq_measured| observed (A) */
+    /* Temperature monitoring (read-only; limits enforced by ODrive S1) */
     float peak_fet_temperature_c;       /* Peak FET temperature (°C) */
     float peak_motor_temperature_c;     /* Peak motor temperature (°C) */
 };
@@ -104,7 +88,6 @@ struct valve_diagnostics_simple {
     uint32_t heartbeat_age_ms; /* Age of heartbeat telemetry */
     status_t last_can_status;  /* Last CAN operation status */
     uint8_t can_retry_count;   /* CAN retries in current iteration */
-    uint32_t loop_overrun_events; /* Count of missed/overrun control iterations */
     struct valve_safety_diagnostics safety; /* Safety event tracking */
     /* Phase 2: Loop timing diagnostics */
     uint32_t loop_time_min_us;  /* Minimum loop execution time (µs) */
@@ -115,17 +98,11 @@ struct valve_diagnostics_simple {
     uint64_t t_us_accum;         /* Monotonic timestamp (µs) for stream alignment */
     uint32_t last_loop_time_us;  /* Instantaneous loop time (µs) for this iteration */
     uint32_t sample_seq;         /* Monotonic sample sequence counter */
-    uint32_t last_sample_timestamp_us; /* Last latched sample timestamp (µs) */
     /* Encoder data age statistics */
     uint32_t encoder_age_min_us;  /* Minimum encoder data age (µs) */
     uint32_t encoder_age_max_us;  /* Maximum encoder data age (µs) */
     uint32_t encoder_age_sum_us;  /* Sum for median/average calculation (µs) */
     uint32_t encoder_age_count;   /* Number of encoder age samples */
-    /* PendSV scheduling delay diagnostics */
-    uint32_t pendsv_delay_min_us; /* Minimum PendSV delay from TIM6 trigger (µs) */
-    uint32_t pendsv_delay_max_us; /* Maximum PendSV delay from TIM6 trigger (µs) */
-    uint32_t pendsv_delay_sum_us; /* Sum for average calculation (µs) */
-    uint32_t pendsv_delay_count;  /* Number of PendSV delay samples */
 };
 
 /* Simplified unified valve state */
@@ -141,90 +118,13 @@ struct valve_state {
     float previous_torque_nm;  /* Previous torque for rate limiting (Nm) */
     float filtered_torque_nm;  /* Low-pass filtered torque output (Nm) */
     float passivity_energy_j;  /* Energy tank for passivity guard (J) */
-    float startup_ramp_progress; /* Startup ramp progress [0.0, 1.0] */
-    uint32_t startup_start_ms;  /* Timestamp when startup began (ms) */
     uint8_t status;            /* State/status flags */
     uint8_t in_emergency_stop; /* Emergency stop flag (0=normal, 1=stopped) */
-    uint8_t thermal_throttle_active; /* Thermal throttling flag */
     uint8_t quiet_active;      /* 1 when quiet-at-rest gate is suppressing torque */
-    float torque_limit_scale;  /* Dynamic torque limit scaling [0.0, 1.0] */
-    /* Phase 2: Saturation and collision detection state */
-    float last_iq_setpoint;    /* Previous Iq setpoint for saturation detection */
-    uint32_t saturation_start_ms; /* Timestamp when saturation first detected */
     struct valve_diagnostics_simple diag; /* Basic diagnostics */
     struct can_simple_handle *odrive;     /* Odrive handle for CAN communication */
     float encoder_zero_turns;  /* Encoder zero reference */
 };
-
-/* Control loop configuration */
-#define VALVE_CONTROL_LOOP_HZ          1000U
-#define VALVE_CONTROL_LOOP_PERIOD_S    (1.0f / (float)VALVE_CONTROL_LOOP_HZ)
-#define VALVE_CONTROL_LOOP_PERIOD_MS   (1000U / VALVE_CONTROL_LOOP_HZ)
-#define VALVE_CONTROL_LOOP_PERIOD_US   (1000000U / VALVE_CONTROL_LOOP_HZ)
-#define VALVE_LOOP_DT_S                VALVE_CONTROL_LOOP_PERIOD_S  /* Fixed timing assumption */
-
-/* TIM6 timer configuration */
-#define TIM6_PRESCALER                 199U    /* 200MHz -> 1MHz */
-#define TIM6_BASE_FREQUENCY_HZ         1000000U /* 1 MHz after prescaling */
-
-/* Safety limits */
-#define VALVE_MAX_POSITION_DEG         3600.0f  /* 10 turns maximum position */
-
-/* Mathematical constants */
-#define VALVE_TWO_PI                   6.28318530718f  /* 2 * PI */
-#define VALVE_TWO_PI_APPROX            6.28f           /* Approximate 2 * PI for calculations */
-#define VALVE_DEFAULT_DEGREES_PER_TURN 360.0f          /* Default: 1 encoder turn = 360 valve degrees */
-
-/* Hardware constants */
-#define VALVE_CPU_CLOCK_MHZ            400U            /* CPU clock in MHz */
-
-/* Control constants */
-#define VALVE_STOP_BOUNCE_THRESHOLD_DPS 10.0f          /* Velocity threshold for bounce detection */
-#define VALVE_STARTUP_RATE_LIMIT_NM_PER_S 20.0f        /* Reduced rate limit during startup */
-#define VALVE_STARTUP_TORQUE_LIMIT_NM    2.0f          /* Initial torque limit during startup ramp (Nm) */
-#define VALVE_STARTUP_HOLD_TIME_MS       200U          /* Initial hold period for encoder stability (ms) */
-#define VALVE_STARTUP_RAMP_TIME_MS       500U          /* Torque ramp duration after hold (ms) */
-#define VALVE_TORQUE_LIMIT_MARGIN        1.1f          /* Safety margin for torque limit checks */
-#define VALVE_VELOCITY_DEADZONE_DPS      0.1f          /* Velocity below this is considered zero */
-
-/* Loop overrun emergency threshold */
-#define VALVE_OVERRUN_EMERGENCY_THRESHOLD 10U          /* E-stop after 10 consecutive overruns */
-
-/* Safety thresholds for Phase 1 implementation */
-#define VALVE_ENCODER_STALE_THRESHOLD_MS  10U          /* Critical: encoder data >10ms old triggers E-stop */
-#define VALVE_ENCODER_WARNING_THRESHOLD_MS 5U          /* Warning: encoder data >5ms old */
-#define VALVE_TORQUE_DERIVATIVE_LIMIT_NM_PER_MS 0.05f  /* Max allowed torque derivative (~50 Nm/s) */
-#define VALVE_TORQUE_DISCONTINUITY_THRESHOLD 0.1f      /* Discontinuity detection threshold (Nm) */
-#define VALVE_TORQUE_FILTER_CUTOFF_HZ        400.0f     /* Torque smoothing low-pass cutoff */
-#define VALVE_PASSIVITY_ENERGY_CAP_J         2.0f      /* Max stored passive energy (|J|) */
-
-/* Phase 2: Torque observer and thermal protection thresholds */
-#define VALVE_IQ_SATURATION_THRESHOLD_A    2.0f         /* |Iq_measured - Iq_setpoint| > 2A indicates saturation */
-#define VALVE_IQ_SATURATION_DURATION_MS    50U          /* Saturation must persist for 50ms */
-#define VALVE_IQ_SETPOINT_MIN_FOR_SAT_A    5.0f         /* Only check saturation if |Iq_setpoint| > 5A */
-#define VALVE_IQ_COLLISION_THRESHOLD_A     8.0f         /* |Iq_measured| > 8A indicates collision */
-#define VALVE_IQ_COLLISION_SETPOINT_MAX_A  3.0f         /* Collision if |Iq_setpoint| < 3A */
-#define VALVE_TEMP_FET_WARNING_C           72.0f        /* FET temperature warning threshold */
-#define VALVE_TEMP_MOTOR_WARNING_C         62.0f        /* Motor temperature warning threshold */
-#define VALVE_TEMP_FET_CRITICAL_C          85.0f        /* FET temperature critical threshold */
-#define VALVE_TEMP_MOTOR_CRITICAL_C        75.0f        /* Motor temperature critical threshold */
-#define VALVE_THERMAL_THROTTLE_SCALE       0.75f        /* Torque scale during thermal throttling */
-
-/* Phase 2: Feedforward compensation */
-#define VALVE_INERTIA_KGM2                 0.00010f     /* Reduced system inertia for stability (kg·m²) */
-#define VALVE_DEG_TO_RAD                   0.0174533f   /* Conversion: degrees to radians */
-#define VALVE_RAD_TO_DEG                   (1.0f / VALVE_DEG_TO_RAD)
-
-/* Diagnostic constants */
-#define VALVE_SETTLING_TIME_FACTOR       5.0f           /* Factor for settling time calculation */
-#define VALVE_MIN_SAMPLES_FOR_STABILITY  100U           /* Minimum samples for stability analysis */
-#define VALVE_MIN_VEL_PEAK_FOR_STABILITY 5.0f           /* Minimum velocity peak for stability analysis */
-
-/* Safety limits */
-#define VALVE_MAX_TORQUE_LIMIT_NM      30.0f           /* Maximum allowed torque limit */
-#define VALVE_MAX_STOP_CUSHION_DEG     45.0f           /* Maximum stop cushion angle */
-#define VALVE_ODRIVE_VEL_LIMIT_TURNS_PER_S 20.0f        /* ODrive velocity limit (turns/s) */
-#define VALVE_ODRIVE_CURRENT_LIMIT_A    120.0f          /* ODrive current limit (amps) Odrive multiples this by the motor torque constant 120*0.083=10AMPS */
 
 /* Valve context (combines simplified state and config) */
 struct valve_context {
@@ -233,40 +133,27 @@ struct valve_context {
     struct valve_config staged_config;
     uint32_t staged_field_mask;
     volatile uint8_t staged_pending;
-    /* Double-buffered ISR data latched in TIM6 and consumed in PendSV */
-    struct valve_isr_sample {
-        uint32_t timestamp_us;       /* ISR timestamp (DWT, µs) */
-        uint32_t pendsv_trigger_us;  /* Timestamp when PendSV was triggered (µs) */
-        struct can_simple_encoder_estimates encoder;
-        uint32_t encoder_age_ms;
-        status_t encoder_status;
-        struct can_simple_heartbeat heartbeat;
-        uint32_t heartbeat_age_ms;
-        status_t heartbeat_status;
-        uint32_t seq;                /* Monotonic sample sequence */
-    } isr_buffer[2];
-    volatile uint8_t isr_write_idx;   /* Write index for ISR (0 or 1) */
-    volatile uint8_t pendsv_pending;  /* Tracks posted-but-not-run PendSV */
-    uint32_t isr_seq;                 /* Sequence counter for samples */
-    uint32_t last_processed_seq;      /* Last sequence processed in PendSV */
 };
 
 /* Public API */
-status_t valve_haptic_init(struct valve_context *ctx, struct can_simple_handle *odrive);
-status_t valve_haptic_load_preset(struct valve_context *ctx, valve_preset_t preset, float travel_degrees);
-status_t valve_haptic_start(struct valve_context *ctx);  /* Start autonomous 1kHz control loop */
-void valve_haptic_stop(struct valve_context *ctx);       /* Stop autonomous control loop */
-void valve_haptic_process(struct valve_context *ctx);    /* Internal: called by TIM6 ISR */
-void valve_haptic_timer_isr(void);                       /* Internal: TIM6 ISR callback */
-void TIM6_DAC_IRQHandler(void);                          /* TIM6 interrupt handler */
-void PendSV_Handler(void);                               /* PendSV handler dispatch */
-void valve_haptic_pendsv_handler(void);                  /* Internal: called by PendSV_Handler */
-void valve_haptic_process_with_latched(struct valve_context *ctx, const struct valve_isr_sample *latched); /* Internal: called by PendSV */
-struct valve_state *valve_haptic_get_state(struct valve_context *ctx);
-struct valve_config *valve_haptic_get_config(struct valve_context *ctx);
+status_t valve_haptic_init(struct valve_context *, struct can_simple_handle *);
+status_t valve_haptic_load_preset(struct valve_context *, int, float);
+status_t valve_haptic_start(struct valve_context *);
+void	valve_haptic_stop(struct valve_context *);
+void	valve_haptic_process(struct valve_context *);
+void	valve_haptic_timer_isr(void);
+void	TIM6_DAC_IRQHandler(void);
+struct valve_state *valve_haptic_get_state(struct valve_context *);
+struct valve_config *valve_haptic_get_config(struct valve_context *);
 struct valve_context *valve_haptic_get_context(void);
-status_t valve_haptic_stage_config(struct valve_context *ctx, const struct valve_config *cfg, uint32_t field_mask);
-float valve_haptic_calc_settling_time_ms(void);          /* Calculate settling time from perfmon data */
-status_t valve_haptic_get_loop_timing(struct valve_context *ctx, uint32_t *min_us, uint32_t *avg_us, uint32_t *max_us); /* Get timing statistics */
+status_t valve_haptic_stage_config(struct valve_context *, const struct valve_config *,
+	    uint32_t);
+float	valve_haptic_calc_settling_time_ms(void);
+status_t valve_haptic_get_loop_timing(struct valve_context *, uint32_t *, uint32_t *,
+	    uint32_t *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VALVE_HAPTIC_H */

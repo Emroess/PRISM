@@ -1,3 +1,9 @@
+/*
+ * network/nvm.h - Network NVM storage
+ *
+ * Persistent storage for network configuration (IP, gateway, etc.)
+ */
+
 #ifndef NETWORK_NVM_H
 #define NETWORK_NVM_H
 
@@ -5,11 +11,7 @@
 #include <stdbool.h>
 #include "config/nvm.h"
 
-/* NVM magic and version now defined in nvm_config.h:
- * - NETWORK_NVM_MAGIC
- * - NETWORK_NVM_VERSION
- * - NETWORK_NVM_FLASH_ADDR (replaces NETWORK_CONFIG_ADDR)
- */
+/* NVM magic and version defined in config/nvm.h */
 
 struct network_nvm_config {
     uint32_t magic;           // Magic number for validation

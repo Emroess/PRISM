@@ -15,10 +15,11 @@
  * - DO-178C Level A requirements
  */
 
-#include <stdint.h>
-#include "stm32h7xx.h"
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
+
+#include "stm32h7xx.h"
 
 /*
  * External ISR handlers from drivers
@@ -27,7 +28,6 @@ extern void SysTick_Handler(void);
 extern void USART3_IRQHandler(void);
 extern void TIM6_DAC_IRQHandler(void);
 extern void ETH_IRQHandler(void);
-extern void valve_haptic_pendsv_handler(void);
 
 /*
  * Cortex-M7 core exception handler prototypes
@@ -111,6 +111,8 @@ __attribute__((naked)) void HardFault_Handler(void)
 
 void hard_fault_capture(uint32_t *stack_ptr)
 {
+	char buf[96];
+
 	g_hard_fault_info.stacked_r0  = stack_ptr[0];
 	g_hard_fault_info.stacked_r1  = stack_ptr[1];
 	g_hard_fault_info.stacked_r2  = stack_ptr[2];
@@ -126,20 +128,24 @@ void hard_fault_capture(uint32_t *stack_ptr)
 	g_hard_fault_info.valid       = 1U;
 
 	fault_uart_write("\r\n*** HARD FAULT ***\r\n");
-	/* Minimal register dump */
-	char buf[96];
 	/* Print in chunks to avoid large formatting dependencies */
-	sprintf(buf, "PC=0x%08lX LR=0x%08lX PSR=0x%08lX\r\n", (unsigned long)g_hard_fault_info.stacked_pc,
-			(unsigned long)g_hard_fault_info.stacked_lr, (unsigned long)g_hard_fault_info.stacked_psr);
+	sprintf(buf, "PC=0x%08lX LR=0x%08lX PSR=0x%08lX\r\n",
+	    (unsigned long)g_hard_fault_info.stacked_pc,
+	    (unsigned long)g_hard_fault_info.stacked_lr,
+	    (unsigned long)g_hard_fault_info.stacked_psr);
 	fault_uart_write(buf);
 	sprintf(buf, "CFSR=0x%08lX HFSR=0x%08lX MMFAR=0x%08lX BFAR=0x%08lX\r\n",
-			(unsigned long)g_hard_fault_info.cfsr, (unsigned long)g_hard_fault_info.hfsr,
-			(unsigned long)g_hard_fault_info.mmfar, (unsigned long)g_hard_fault_info.bfar);
+	    (unsigned long)g_hard_fault_info.cfsr,
+	    (unsigned long)g_hard_fault_info.hfsr,
+	    (unsigned long)g_hard_fault_info.mmfar,
+	    (unsigned long)g_hard_fault_info.bfar);
 	fault_uart_write(buf);
 	sprintf(buf, "R0=0x%08lX R1=0x%08lX R2=0x%08lX R3=0x%08lX R12=0x%08lX\r\n",
-			(unsigned long)g_hard_fault_info.stacked_r0, (unsigned long)g_hard_fault_info.stacked_r1,
-			(unsigned long)g_hard_fault_info.stacked_r2, (unsigned long)g_hard_fault_info.stacked_r3,
-			(unsigned long)g_hard_fault_info.stacked_r12);
+	    (unsigned long)g_hard_fault_info.stacked_r0,
+	    (unsigned long)g_hard_fault_info.stacked_r1,
+	    (unsigned long)g_hard_fault_info.stacked_r2,
+	    (unsigned long)g_hard_fault_info.stacked_r3,
+	    (unsigned long)g_hard_fault_info.stacked_r12);
 	fault_uart_write(buf);
 	fault_uart_write("System halted. Cycle reset to continue.\r\n");
 
@@ -215,7 +221,7 @@ DebugMon_Handler(void)
 void
 PendSV_Handler(void)
 {
-	valve_haptic_pendsv_handler();
+	/* Not used in this firmware */
 }
 
 /*

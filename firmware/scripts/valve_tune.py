@@ -58,15 +58,6 @@ def main():
         print("\n--- Step 4: Valve Status ---")
         send_command(ser, "valve_status", 1)
         
-        print("\n--- Step 5: Comprehensive Tuning Diagnostics ---")
-        send_command(ser, "valve_tune_status", 2)
-        
-        print("\n--- Step 6: Stability Analysis ---")
-        send_command(ser, "valve_stability", 2)
-        
-        print("\n--- Step 7: Performance Monitor ---")
-        send_command(ser, "perfmon", 1)
-        
         print("\n\n=== Diagnostics Complete ===")
         print("Review output above for tuning recommendations.")
         

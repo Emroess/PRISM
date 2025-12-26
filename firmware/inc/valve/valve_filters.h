@@ -10,9 +10,14 @@
 #ifndef VALVE_FILTERS_H
 #define VALVE_FILTERS_H
 
-#include "arm_math.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#include "arm_math.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Mathematical constants */
 #define VALVE_PI 3.14159265358979323846f
@@ -174,10 +179,10 @@ valve_filter_status_t valve_filter_design_biquad(float *coeffs,
  * @param sample_rate_hz: Sample rate in Hz (e.g., 1000 Hz for 1ms loop)
  * @return: Filtered output value
  */
-float valve_filter_lowpass_simple(
-    float input,
-    float previous_output,
-    float cutoff_freq_hz,
-    float sample_rate_hz);
+float valve_filter_lowpass_simple(float, float, float, float);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VALVE_FILTERS_H */

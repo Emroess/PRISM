@@ -12,10 +12,15 @@
 #ifndef CAN_SIMPLE_H
 #define CAN_SIMPLE_H
 
-#include <stdint.h>
 #include <stdbool.h>
-#include "status.h"
+#include <stdint.h>
+
 #include "fdcan.h"
+#include "status.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * CANSIMPLE Command IDs (5 bits)
@@ -376,11 +381,15 @@ status_t can_simple_get_cached_bus_voltage_current(struct can_simple_handle *h,
 /*
  * Utility: Parse float from CAN data (little-endian IEEE 754)
  */
-float can_simple_parse_float(const uint8_t *data);
+float can_simple_parse_float(const uint8_t *);
 
 /*
  * Utility: Pack float to CAN data (little-endian IEEE 754)
  */
-void can_simple_pack_float(uint8_t *data, float value);
+void can_simple_pack_float(uint8_t *, float);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAN_SIMPLE_H */

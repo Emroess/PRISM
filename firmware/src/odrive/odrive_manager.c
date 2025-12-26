@@ -4,9 +4,10 @@
  * Wraps can_simple operations with proper error handling and business logic.
  */
 
-#include "odrive_manager.h"
-#include "board.h"
 #include <string.h>
+
+#include "board.h"
+#include "odrive_manager.h"
 
 status_t
 odrive_init(struct can_simple_handle *odrive)
@@ -50,33 +51,31 @@ status_t
 odrive_calibrate(struct can_simple_handle *odrive)
 {
 	status_t status;
-	
+	struct can_simple_heartbeat hb;
+	uint32_t timeout_start;
+	const uint32_t timeout_ms = 30000;
+
 	/* Request calibration */
 	status = can_simple_set_axis_state(odrive, AXIS_STATE_FULL_CALIBRATION);
-	if (status != STATUS_OK) {
+	if (status != STATUS_OK)
 		return status;
-	}
-	
+
 	/* Wait for calibration to complete (typically 10-20 seconds) */
-	struct can_simple_heartbeat hb;
-	uint32_t timeout_start = board_get_systick_ms();
-	const uint32_t timeout_ms = 30000; /* 30 second timeout */
-	
+	timeout_start = board_get_systick_ms();
+
 	while ((board_get_systick_ms() - timeout_start) < timeout_ms) {
 		board_delay_ms(500);
 		status = can_simple_get_heartbeat(odrive, &hb);
-		if (status != STATUS_OK) {
+		if (status != STATUS_OK)
 			return status;
-		}
 		if (hb.axis_state == AXIS_STATE_IDLE) {
 			/* Calibration complete, check for errors */
-			if (hb.axis_error != 0) {
+			if (hb.axis_error != 0)
 				return STATUS_ERROR_HARDWARE_FAULT;
-			}
 			return STATUS_OK;
 		}
 	}
-	
+
 	return STATUS_ERROR_TIMEOUT;
 }
 

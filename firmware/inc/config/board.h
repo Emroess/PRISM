@@ -1,5 +1,5 @@
 /*
- * board_config.h - Hardware configuration for NUCLEO-H753ZI
+ * config/board.h - Hardware configuration for NUCLEO-H753ZI
  *
  * This is the SINGLE SOURCE OF TRUTH for all hardware configuration.
  * Per IMPROVE_FIRMWARE_PLAN.md section 0.2:
@@ -17,8 +17,8 @@
  * - DO-178C Level A requirements
  */
 
-#ifndef BOARD_CONFIG_H
-#define BOARD_CONFIG_H
+#ifndef CONFIG_BOARD_H
+#define CONFIG_BOARD_H
 
 #include <stdint.h>
 
@@ -235,4 +235,4 @@ _Static_assert(BOARD_FDCAN1_RAM_BASE == 0x4000AC00U,
 _Static_assert(BOARD_FDCAN1_RAM_SIZE_WORDS == 2560U,
 	"FDCAN1 message RAM size per RM0433 Section 56.3.1");
 
-#endif /* BOARD_CONFIG_H */
+#endif /* CONFIG_BOARD_H */

@@ -6,31 +6,35 @@
  * with rounding by adding 0.5f before casting: (int)(float_value + 0.5f)
  */
 
-#include <string.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <string.h>
+
+#include "arm_math.h"
+
+#include "lwip/ip_addr.h"
+#include "lwip/netif.h"
+#include "lwip/timeouts.h"
+
+#include "board.h"
 #include "cli.h"
 #include "cli_internal.h"
-#include "board.h"
+#include "config/all.h"
+#include "drivers/uart.h"
+#include "ethernetif.h"
+#include "network/http.h"
+#include "network/manager.h"
+#include "network/net_init.h"
+#include "network/nvm.h"
+#include "network/ping.h"
+#include "network/stream.h"
+#include "odrive_manager.h"
 #include "protocols/can_simple.h"
 #include "valve_manager.h"
 #include "valve_nvm.h"
 #include "valve_presets.h"
-#include "network_manager.h"
-#include "network_nvm.h"
-#include "odrive_manager.h"
-#include "performance_manager.h"
-#include "drivers/uart.h"
-#include "arm_math.h"
-#include "network/stream_server.h"
-#include "network/http_server.h"
-#include "network/net_init.h"
-#include "ethernetif.h"
-#include "network/ping.h"
-#include "lwip/ip_addr.h"
-#include "lwip/netif.h"
-#include "lwip/timeouts.h"
+
 extern struct netif gnetif;
 
 /* Forward declaration of hard fault info structure from stm32h7xx_it.c */
@@ -187,25 +191,7 @@ cli_cmd_valve_status(struct cli_context *ctx, int argc, char *argv[])
 	(void)argc;
 	(void)argv;
 	struct valve_state *state = valve_get_state(ctx->valve_ctx);
-	const char *state_str;
-	
-	switch (state->status) {
-	case VALVE_STATE_IDLE:
-		state_str = "IDLE";
-		break;
-	case VALVE_STATE_INITIALIZING:
-		state_str = "INITIALIZING";
-		break;
-	case VALVE_STATE_RUNNING:
-		state_str = "RUNNING";
-		break;
-	case VALVE_STATE_ERROR:
-		state_str = "ERROR";
-		break;
-	default:
-		state_str = "UNKNOWN";
-		break;
-	}
+	const char *state_str = valve_state_to_string(state->status);
 	
 	uart_printf(ctx->uart, "\r\nValve Status:\r\n");
 	uart_printf(ctx->uart, "State:              %s\r\n", state_str);
@@ -355,18 +341,20 @@ cli_cmd_setip(struct cli_context *ctx, int argc, char *argv[])
 static int
 cli_cmd_nvm_status(struct cli_context *ctx, int argc, char *argv[])
 {
+	const struct network_nvm_config *flash_config;
+	struct network_nvm_config config;
+	bool loaded;
+
 	(void)argc;
 	(void)argv;
-	
-	struct network_nvm_config config;
-	bool loaded = network_nvm_load(&config);
-	
+
+	loaded = network_nvm_load(&config);
+
 	uart_write_string(ctx->uart, "\r\nNVM Network Config Status:\r\n", 100);
 	uart_printf(ctx->uart, "Loaded: %s\r\n", loaded ? "YES" : "NO");
-	
-	// Read raw flash data
-	const struct network_nvm_config *flash_config =
-	    (const struct network_nvm_config *)NETWORK_CONFIG_ADDR;
+
+	/* Read raw flash data */
+	flash_config = (const struct network_nvm_config *)NETWORK_CONFIG_ADDR;
 	uart_write_string(ctx->uart, "\r\nRaw Flash Data:\r\n", 100);
 	uart_printf(ctx->uart, "Magic: 0x%08lX\r\n", (unsigned long)flash_config->magic);
 	uart_printf(ctx->uart, "Version: %lu\r\n", (unsigned long)flash_config->version);
@@ -374,13 +362,15 @@ cli_cmd_nvm_status(struct cli_context *ctx, int argc, char *argv[])
 	uart_printf(ctx->uart, "IP: %.16s\r\n", flash_config->ip_addr);
 	uart_printf(ctx->uart, "Netmask: %.16s\r\n", flash_config->netmask);
 	uart_printf(ctx->uart, "Gateway: %.16s\r\n", flash_config->gateway);
-	
+
 	if (loaded) {
+		uint32_t expected;
+
 		uart_printf(ctx->uart, "\r\nLoaded Config:\r\n", 100);
 		uart_printf(ctx->uart, "Magic: 0x%08lX (expected 0x%08lX)\r\n", (unsigned long)config.magic, (unsigned long)NETWORK_NVM_MAGIC);
 		uart_printf(ctx->uart, "Version: %lu (expected %lu)\r\n", (unsigned long)config.version, (unsigned long)NETWORK_NVM_VERSION);
 		uart_printf(ctx->uart, "Checksum: 0x%08lX\r\n", (unsigned long)config.checksum);
-		uint32_t expected = network_nvm_calculate_checksum(&config);
+		expected = network_nvm_calculate_checksum(&config);
 		uart_printf(ctx->uart, "Expected Checksum: 0x%08lX\r\n", (unsigned long)expected);
 		uart_printf(ctx->uart, "IP: %s\r\n", config.ip_addr);
 		uart_printf(ctx->uart, "Netmask: %s\r\n", config.netmask);
@@ -1080,8 +1070,8 @@ cli_cmd_valve_preset_show(struct cli_context *ctx, int argc, char *argv[])
 	const struct preset_params *presets = valve_get_presets();
 	
 	uart_write_string(ctx->uart, "\r\nValve Presets:\r\n", 100);
-	for (int i = 0; i < VALVE_PRESET_COUNT; i++) {
-		uart_printf(ctx->uart, "\r\nPreset %d: %s\r\n", i, presets[i].name);
+	for (uint32_t i = 0; i < VALVE_PRESET_COUNT; i++) {
+		uart_printf(ctx->uart, "\r\nPreset %u: %s\r\n", i, presets[i].name);
 		uart_printf(ctx->uart, "  Torque limit:     %.3f N·m\r\n", presets[i].torque_limit_nm);
 		uart_printf(ctx->uart, "  Default travel:   %.1f deg\r\n", presets[i].default_travel_deg);
 		uart_printf(ctx->uart, "  Viscous damping:  %.3f N·m·s/rad\r\n", presets[i].hil_b_viscous_nm_s_per_rad);
@@ -1225,7 +1215,7 @@ cli_init(struct cli_context *ctx, struct uart_handle *uart, struct fdcan_handle 
 	/* Initialize CAN simple for Odrive communication */
 	struct can_simple_config can_cfg = {
 		.can = can,
-		.node_id = 1,  /* Odrive node ID */
+		.node_id = ODRIVE_DEFAULT_NODE_ID,
 		.timeout_ms = 1000,  /* 1 second timeout */
 	};
 	status = can_simple_init(&ctx->odrive, &can_cfg);

@@ -9,11 +9,6 @@ This directory contains high-level application interfaces and utilities.
   - Parameter validation
   - Help system and auto-completion
 
-- **`perfmon.c`** - Performance monitoring
-  - System resource tracking
-  - Performance metrics collection
-  - Diagnostic data export
-
 ## Architecture
 
 Application interfaces provide:

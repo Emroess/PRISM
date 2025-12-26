@@ -1,25 +1,22 @@
 /*
  * fdcan.h - FDCAN driver API for FDCAN1
  *
- * Per IMPROVE_FIRMWARE_PLAN.md:
- * - Opaque handle pattern
- * - Bit timing calculated from kernel clock (no hard-coded values)
- * - Message RAM configuration per RM0433
- * - External loopback test support
- * - DMA buffers in .sram3_dma section
- *
- * Compliant with:
- * - MISRA-C:2012
- * - OpenBSD style guide (no typedefs for structs)
- * - DO-178C Level A requirements
+ * Provides CAN bus communication via the STM32H7 FDCAN peripheral.
+ * Supports standard CAN 2.0B frames, hardware filtering, and interrupt-driven
+ * reception. Bit timing is calculated dynamically from kernel clock.
  */
 
 #ifndef FDCAN_H
 #define FDCAN_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+
 #include "status.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * CAN loopback modes
@@ -249,5 +246,9 @@ status_t fdcan_get_protocol_status(const struct fdcan_handle *h,
 status_t fdcan_set_std_range_filter(struct fdcan_handle *h,
                                     uint16_t id_start, uint16_t id_end,
                                     uint8_t fifo);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* FDCAN_H */
