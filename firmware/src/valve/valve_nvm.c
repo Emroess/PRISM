@@ -1,8 +1,9 @@
 /*
  * valve_nvm.c
  *
- * Non-volatile memory management for valve presets using STM32H7 flash.
- * Stores user-editable presets persistently across reboots.
+ * Non-volatile memory management for valve presets and encoder zero
+ * calibration using STM32H7 flash.
+ * Stores user-editable presets and calibration data persistently across reboots.
  */
 
 #include <stddef.h>
@@ -27,6 +28,17 @@ struct nvm_data {
 	struct preset_params presets[VALVE_NVM_PRESET_COUNT];
 };
 
+/*
+ * Zero calibration NVM data structure.
+ * Stored at ZERO_CAL_NVM_FLASH_ADDR (offset from valve presets).
+ */
+struct zero_cal_nvm_data {
+	uint32_t magic;                     /* ZERO_CAL_NVM_MAGIC if valid */
+	uint32_t version;                   /* ZERO_CAL_NVM_VERSION */
+	uint32_t checksum;                  /* CRC32 of data after header */
+	struct valve_zero_calibration cal;  /* Calibration data */
+};
+
 /* Size of NVM data for flash operations */
 #define NVM_DATA_SIZE sizeof(struct nvm_data)
 
@@ -40,7 +52,9 @@ static const struct preset_params default_presets[VALVE_NVM_PRESET_COUNT] = {
         .hil_tau_c_coulomb_nm = 0.06f,
         .hil_k_w_wall_stiffness_nm_per_turn = 10.0f,
         .hil_c_w_wall_damping_nm_s_per_turn = 0.1f,
-        .hil_eps_smoothing = 1e-3f
+        .hil_eps_smoothing = 1e-3f,
+        .theta_closed_deg = 0.0f,
+        .theta_open_deg = 90.0f
     },
     /* VALVE_PRESET_MEDIUM */
     {
@@ -51,7 +65,9 @@ static const struct preset_params default_presets[VALVE_NVM_PRESET_COUNT] = {
         .hil_tau_c_coulomb_nm = 0.12f,
         .hil_k_w_wall_stiffness_nm_per_turn = 15.0f,
         .hil_c_w_wall_damping_nm_s_per_turn = 0.2f,
-        .hil_eps_smoothing = 1e-3f
+        .hil_eps_smoothing = 1e-3f,
+        .theta_closed_deg = 0.0f,
+        .theta_open_deg = 90.0f
     },
     /* VALVE_PRESET_HEAVY */
     {
@@ -62,7 +78,9 @@ static const struct preset_params default_presets[VALVE_NVM_PRESET_COUNT] = {
         .hil_tau_c_coulomb_nm = 0.25f,
         .hil_k_w_wall_stiffness_nm_per_turn = 25.0f,
         .hil_c_w_wall_damping_nm_s_per_turn = 0.4f,
-        .hil_eps_smoothing = 1e-3f
+        .hil_eps_smoothing = 1e-3f,
+        .theta_closed_deg = 0.0f,
+        .theta_open_deg = 360.0f
     },
     /* VALVE_PRESET_INDUSTRIAL */
     {
@@ -73,7 +91,9 @@ static const struct preset_params default_presets[VALVE_NVM_PRESET_COUNT] = {
         .hil_tau_c_coulomb_nm = 0.40f,
         .hil_k_w_wall_stiffness_nm_per_turn = 35.0f,
         .hil_c_w_wall_damping_nm_s_per_turn = 0.6f,
-        .hil_eps_smoothing = 1e-3f
+        .hil_eps_smoothing = 1e-3f,
+        .theta_closed_deg = 0.0f,
+        .theta_open_deg = 360.0f
     }
 };
 
@@ -210,5 +230,147 @@ valve_nvm_save_presets(const struct preset_params presets_in[VALVE_NVM_PRESET_CO
 	if (program_nvm_data(&data) != STATUS_OK)
 		return STATUS_ERROR;
 
+	return STATUS_OK;
+}
+
+/*
+ * ===========================================================================
+ * Zero Calibration NVM Functions
+ * ===========================================================================
+ */
+
+/* Calculate checksum for zero calibration data */
+static uint32_t
+calculate_zero_cal_checksum(const struct zero_cal_nvm_data *data)
+{
+	/* Checksum covers everything after the header (magic, version, checksum) */
+	const uint8_t *payload = (const uint8_t *)&data->cal;
+	size_t payload_size = sizeof(struct zero_cal_nvm_data) - 
+	    offsetof(struct zero_cal_nvm_data, cal);
+	return flash_calculate_checksum(payload, payload_size);
+}
+
+/* Load zero calibration data from flash */
+static status_t
+load_zero_cal_data(struct zero_cal_nvm_data *data)
+{
+	uint32_t stored_checksum;
+	uint32_t calculated_checksum;
+
+	memcpy(data, (const void *)ZERO_CAL_NVM_FLASH_ADDR,
+	    sizeof(struct zero_cal_nvm_data));
+
+	/* Validate magic and version */
+	if (data->magic != ZERO_CAL_NVM_MAGIC)
+		return STATUS_ERROR;
+
+	if (data->version != ZERO_CAL_NVM_VERSION)
+		return STATUS_ERROR;
+
+	/* Validate checksum */
+	stored_checksum = data->checksum;
+	calculated_checksum = calculate_zero_cal_checksum(data);
+
+	if (calculated_checksum != stored_checksum)
+		return STATUS_ERROR;
+
+	return STATUS_OK;
+}
+
+/* Program zero calibration data to flash (within same sector as presets) */
+static status_t
+program_zero_cal_data(const struct zero_cal_nvm_data *cal_data)
+{
+	size_t aligned_size;
+	__attribute__((aligned(32))) struct nvm_data preset_data;
+
+	/* Load existing preset data first (we share the flash sector) */
+	status_t preset_status = load_nvm_data(&preset_data);
+
+	/* Erase sector (erases both presets and calibration) */
+	if (erase_nvm_sector() != STATUS_OK)
+		return STATUS_ERROR;
+
+	/* Reprogram preset data if it was valid */
+	if (preset_status == STATUS_OK) {
+		aligned_size = ((NVM_DATA_SIZE + 31U) / 32U) * 32U;
+		if (flash_program_data(VALVE_NVM_FLASH_ADDR, &preset_data,
+		    aligned_size) != STATUS_OK)
+			return STATUS_ERROR;
+	}
+
+	/* Program calibration data */
+	aligned_size = ((sizeof(struct zero_cal_nvm_data) + 31U) / 32U) * 32U;
+	return flash_program_data(ZERO_CAL_NVM_FLASH_ADDR, cal_data, aligned_size);
+}
+
+/* Load zero calibration from NVM */
+status_t
+valve_nvm_load_zero_calibration(struct valve_zero_calibration *cal)
+{
+	struct zero_cal_nvm_data data;
+
+	if (cal == NULL)
+		return STATUS_ERROR_INVALID_PARAM;
+
+	if (load_zero_cal_data(&data) != STATUS_OK)
+		return STATUS_ERROR;
+
+	*cal = data.cal;
+	return STATUS_OK;
+}
+
+/* Save zero calibration to NVM */
+status_t
+valve_nvm_save_zero_calibration(const struct valve_zero_calibration *cal)
+{
+	__attribute__((aligned(32))) struct zero_cal_nvm_data data;
+
+	if (cal == NULL)
+		return STATUS_ERROR_INVALID_PARAM;
+
+	/* Initialize structure */
+	memset(&data, 0, sizeof(data));
+
+	data.magic = ZERO_CAL_NVM_MAGIC;
+	data.version = ZERO_CAL_NVM_VERSION;
+	data.cal = *cal;
+	data.checksum = calculate_zero_cal_checksum(&data);
+
+	return program_zero_cal_data(&data);
+}
+
+/* Check if zero calibration is valid */
+status_t
+valve_nvm_is_zero_calibration_valid(void)
+{
+	struct zero_cal_nvm_data data;
+	return load_zero_cal_data(&data);
+}
+
+/* Clear zero calibration */
+status_t
+valve_nvm_clear_zero_calibration(void)
+{
+	__attribute__((aligned(32))) struct zero_cal_nvm_data data;
+	__attribute__((aligned(32))) struct nvm_data preset_data;
+	size_t aligned_size;
+
+	/* Load existing preset data */
+	status_t preset_status = load_nvm_data(&preset_data);
+
+	/* Erase sector */
+	if (erase_nvm_sector() != STATUS_OK)
+		return STATUS_ERROR;
+
+	/* Reprogram preset data only (calibration will be gone) */
+	if (preset_status == STATUS_OK) {
+		aligned_size = ((NVM_DATA_SIZE + 31U) / 32U) * 32U;
+		if (flash_program_data(VALVE_NVM_FLASH_ADDR, &preset_data,
+		    aligned_size) != STATUS_OK)
+			return STATUS_ERROR;
+	}
+
+	(void)data;  /* Suppress unused variable warning */
 	return STATUS_OK;
 }

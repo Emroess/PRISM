@@ -239,6 +239,39 @@ class SteveAsyncClient:
         """Get ODrive motor controller status."""
         return await self._request("GET", "odrive")
 
+    # Calibration Methods
+
+    async def get_calibration(self) -> Dict[str, Any]:
+        """Get absolute position calibration status."""
+        return await self._request("GET", "calibration")
+
+    async def set_zero_here(self) -> Dict[str, Any]:
+        """Set current position as the absolute zero reference."""
+        return await self._request("POST", "calibration", json={"action": "set_zero"})
+
+    async def set_zero_at(self, encoder_turns: float) -> Dict[str, Any]:
+        """Set zero reference to a specific encoder value."""
+        return await self._request("POST", "calibration", json={
+            "action": "set_zero_at",
+            "value": encoder_turns
+        })
+
+    async def validate_calibration(self) -> bool:
+        """Check if calibration is still valid."""
+        result = await self._request("POST", "calibration", json={"action": "validate"})
+        return result.get("valid", False)
+
+    async def clear_calibration(self) -> Dict[str, Any]:
+        """Clear all calibration data."""
+        return await self._request("DELETE", "calibration")
+
+    async def get_absolute_position(self) -> Optional[float]:
+        """Get current absolute position in degrees (None if not calibrated)."""
+        cal = await self.get_calibration()
+        if not cal.get("calibrated", False):
+            return None
+        return cal.get("current_position", {}).get("absolute_position_deg")
+
     @property
     def is_connected(self) -> bool:
         """Check if client is connected."""

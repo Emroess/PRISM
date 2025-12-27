@@ -31,6 +31,7 @@
 #include "network/stream.h"
 #include "odrive_manager.h"
 #include "protocols/can_simple.h"
+#include "valve_haptic.h"
 #include "valve_manager.h"
 #include "valve_nvm.h"
 #include "valve_presets.h"
@@ -1079,17 +1080,155 @@ cli_cmd_valve_preset_show(struct cli_context *ctx, int argc, char *argv[])
 		uart_printf(ctx->uart, "  Wall stiffness:   %.3f N·m/turn\r\n", presets[i].hil_k_w_wall_stiffness_nm_per_turn);
 		uart_printf(ctx->uart, "  Wall damping:     %.3f N·m·s/turn\r\n", presets[i].hil_c_w_wall_damping_nm_s_per_turn);
 		uart_printf(ctx->uart, "  Smoothing eps:    %.6f\r\n", presets[i].hil_eps_smoothing);
+		uart_printf(ctx->uart, "  Theta closed:     %.1f deg\r\n", presets[i].theta_closed_deg);
+		uart_printf(ctx->uart, "  Theta open:       %.1f deg\r\n", presets[i].theta_open_deg);
 	}
 	
 	return 0;
 }
 
+/*
+ * Calibration Commands
+ *
+ * cal zero         - Set current position as absolute zero reference
+ * cal zero <turns> - Set zero reference to specific encoder value
+ * cal show         - Show current calibration data
+ * cal clear        - Clear all calibration data
+ * cal validate     - Validate calibration (check for disturbance)
+ * pos abs          - Show current absolute position
+ */
+
+/*
+ * cli_cmd_cal - Calibration commands
+ */
+static int
+cli_cmd_cal(struct cli_context *ctx, int argc, char *argv[])
+{
+	struct valve_context *valve_ctx = valve_haptic_get_context();
+	struct valve_state *state;
+	struct valve_zero_calibration cal;
+	int result;
+
+	if (valve_ctx == NULL) {
+		uart_write_string(ctx->uart, "\r\nError: Valve context not available\r\n", 100);
+		return -1;
+	}
+
+	state = valve_haptic_get_state(valve_ctx);
+
+	if (argc < 2) {
+		uart_write_string(ctx->uart, "\r\nUsage: cal <zero|show|clear|validate>\r\n", 100);
+		uart_write_string(ctx->uart, "  cal zero         - Set current position as absolute zero\r\n", 100);
+		uart_write_string(ctx->uart, "  cal zero <turns> - Set zero to specific encoder value\r\n", 100);
+		uart_write_string(ctx->uart, "  cal show         - Show calibration status\r\n", 100);
+		uart_write_string(ctx->uart, "  cal clear        - Clear all calibration\r\n", 100);
+		uart_write_string(ctx->uart, "  cal validate     - Validate calibration\r\n", 100);
+		return 0;
+	}
+
+	if (strcmp(argv[1], "zero") == 0) {
+		if (argc >= 3) {
+			/* Set zero to specific encoder value */
+			float turns = strtof(argv[2], NULL);
+			result = valve_haptic_set_zero_at(valve_ctx, turns);
+			if (result == 0) {
+				uart_printf(ctx->uart, "\r\nZero reference set to %.6f turns\r\n", turns);
+			} else {
+				uart_printf(ctx->uart, "\r\nError setting zero reference: %d\r\n", result);
+			}
+		} else {
+			/* Set zero at current position */
+			if (state->status != VALVE_STATE_RUNNING) {
+				uart_write_string(ctx->uart, "\r\nError: Valve must be running to calibrate\r\n", 100);
+				return 0;
+			}
+			result = valve_haptic_set_zero_here(valve_ctx);
+			if (result == 0) {
+				uart_printf(ctx->uart, "\r\nZero reference set at current position\r\n");
+				uart_printf(ctx->uart, "Encoder value: %.6f turns\r\n", state->encoder_zero_turns);
+			} else {
+				uart_printf(ctx->uart, "\r\nError setting zero: %d\r\n", result);
+			}
+		}
+	} else if (strcmp(argv[1], "show") == 0) {
+		int is_calibrated = valve_haptic_is_calibrated(valve_ctx);
+		uart_printf(ctx->uart, "\r\nCalibration Status:\r\n");
+		uart_printf(ctx->uart, "  Zero calibrated:    %s\r\n", is_calibrated ? "YES" : "NO");
+		uart_printf(ctx->uart, "  Using absolute ref: %s\r\n", state->uses_absolute_ref ? "YES" : "NO");
+
+		if (valve_nvm_load_zero_calibration(&cal) == 0) {
+			uart_printf(ctx->uart, "  Zero reference:     %.6f turns\r\n", cal.absolute_zero_turns);
+			uart_printf(ctx->uart, "  Validation sample:  %.6f turns\r\n", cal.validation_sample);
+		}
+
+		uart_printf(ctx->uart, "\r\nCurrent Position:\r\n");
+		uart_printf(ctx->uart, "  Raw encoder:        %.6f turns\r\n", state->raw_position_turns);
+		uart_printf(ctx->uart, "  Zero reference:     %.6f turns\r\n", state->encoder_zero_turns);
+		if (is_calibrated) {
+			float abs_pos = valve_haptic_get_absolute_position(valve_ctx);
+			uart_printf(ctx->uart, "  Absolute position:  %.2f deg\r\n", abs_pos);
+		}
+
+	} else if (strcmp(argv[1], "clear") == 0) {
+		result = valve_haptic_clear_calibration(valve_ctx);
+		if (result == 0) {
+			uart_write_string(ctx->uart, "\r\nCalibration cleared\r\n", 100);
+		} else {
+			uart_printf(ctx->uart, "\r\nError clearing calibration: %d\r\n", result);
+		}
+	} else if (strcmp(argv[1], "validate") == 0) {
+		int valid = valve_haptic_validate_calibration(valve_ctx);
+		if (valid) {
+			uart_write_string(ctx->uart, "\r\nCalibration VALID\r\n", 100);
+		} else {
+			uart_write_string(ctx->uart, "\r\nCalibration INVALID or not set\r\n", 100);
+			uart_write_string(ctx->uart, "Encoder may have been disturbed since calibration\r\n", 100);
+		}
+	} else {
+		uart_printf(ctx->uart, "\r\nUnknown cal subcommand: %s\r\n", argv[1]);
+	}
+
+	return 0;
+}
+
+/*
+ * cli_cmd_pos_abs - Show absolute position
+ */
+static int
+cli_cmd_pos_abs(struct cli_context *ctx, int argc, char *argv[])
+{
+	(void)argc;
+	(void)argv;
+
+	struct valve_context *valve_ctx = valve_haptic_get_context();
+	if (valve_ctx == NULL) {
+		uart_write_string(ctx->uart, "\r\nError: Valve context not available\r\n", 100);
+		return -1;
+	}
+
+	struct valve_state *state = valve_haptic_get_state(valve_ctx);
+	int is_calibrated = valve_haptic_is_calibrated(valve_ctx);
+
+	uart_printf(ctx->uart, "\r\nPosition Information:\r\n");
+	uart_printf(ctx->uart, "  Raw encoder:      %.6f turns\r\n", state->raw_position_turns);
+	uart_printf(ctx->uart, "  Relative:         %.2f deg\r\n", state->position_deg);
+
+	if (is_calibrated) {
+		float abs_pos = valve_haptic_get_absolute_position(valve_ctx);
+		uart_printf(ctx->uart, "  Absolute:         %.2f deg (calibrated)\r\n", abs_pos);
+	} else {
+		uart_write_string(ctx->uart, "  Absolute:         N/A (not calibrated)\r\n", 100);
+	}
+
+	return 0;
+}
 
 
 /*
  * CLI command table - sorted alphabetically for binary search
  */
 const struct cli_command cli_commands[] = {
+	{"cal", cli_cmd_cal, "Calibration commands (zero, theta_closed, theta_open, show, clear, validate)"},
 	{"can_encoder", cli_cmd_can_encoder, "Read CAN encoder position and velocity"},
 	{"can_status", cli_cmd_can_status, "Show CAN bus status"},
 	{"can_telemetry", cli_cmd_can_telemetry, "Read CAN bus voltage, current, and temperatures"},
@@ -1114,6 +1253,7 @@ const struct cli_command cli_commands[] = {
 	{"odrive_torque", cli_cmd_odrive_torque, "Set ODrive torque command"},
 	{"odrive_velocity", cli_cmd_odrive_velocity, "Set ODrive velocity command"},
 	{"ping", cli_cmd_ping, "Ping an IP address to test network connectivity"},
+	{"pos_abs", cli_cmd_pos_abs, "Show absolute position (calibrated)"},
 	{"setip", cli_cmd_setip, "Set static IP address, subnet mask, and gateway"},
 	{"valve_damping", cli_cmd_valve_damping, "Set viscous damping (N·m·s/rad)"},
 	{"valve_energy", cli_cmd_valve_energy, "Show passivity energy tank status"},

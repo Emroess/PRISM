@@ -17,6 +17,7 @@
 #include "protocols/can_simple.h"
 #include "valve_filters.h"
 #include "valve_haptic.h"
+#include "valve_nvm.h"
 #include "valve_physics.h"
 #include "valve_presets.h"
 
@@ -45,6 +46,12 @@ static bool velocity_filters_initialized = false;
 #define VALVE_QUIET_EXIT_RAD_S        (2.0f * VALVE_DEG_TO_RAD)
 #define VALVE_TORQUE_SIGN 1.0f  /* Odrive is positive torque */
 #define VALVE_TORQUE_FILTER_SAMPLE_RATE_HZ ((float)VALVE_CONTROL_LOOP_HZ)
+
+/* Homing parameters for safe startup movement to zero position */
+#define VALVE_HOME_VEL_LIMIT_TURNS_S  0.25f   /* 90 deg/s max homing speed */
+#define VALVE_HOME_ACCEL_LIMIT_TURNS_S2 0.5f /* 180 deg/s^2 accel/decel */
+#define VALVE_HOME_TIMEOUT_MS         10000U  /* 10 second max homing time */
+#define VALVE_HOME_POLL_INTERVAL_MS   20U     /* Poll trajectory done every 20ms */
 
 /* Consistent error handling macro (simplified) */
 #define VALVE_ERROR_CHECK(expr) do { \
@@ -418,6 +425,113 @@ status_t valve_haptic_stage_config(struct valve_context *ctx, const struct valve
 }
 
 /*
+ * valve_haptic_home_to_zero - Move valve slowly to calibrated zero position
+ *
+ * Uses ODrive trapezoidal trajectory mode for smooth, safe movement.
+ * Called during startup when absolute calibration exists.
+ *
+ * Prerequisites:
+ * - ODrive must be in CLOSED_LOOP_CONTROL state
+ * - Calibration must be loaded (encoder_zero_turns valid)
+ *
+ * Sequence:
+ * 1. Configure slow velocity/acceleration limits for trajectory
+ * 2. Switch to position control with trapezoidal trajectory input mode
+ * 3. Command movement to absolute zero position
+ * 4. Wait for trajectory_done flag in heartbeat
+ * 5. Return to torque control mode for haptic operation
+ *
+ * Returns STATUS_OK on success, error code on failure or timeout
+ */
+static status_t
+valve_haptic_home_to_zero(struct valve_state *state)
+{
+	struct can_simple_heartbeat hb;
+	uint32_t hb_age_ms = 0U;
+	uint32_t start_ms;
+	status_t status;
+
+	if (state == NULL || state->odrive == NULL) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
+
+	/* Only home if we have absolute calibration */
+	if (!state->uses_absolute_ref) {
+		return STATUS_OK;  /* No calibration, skip homing */
+	}
+
+	/* Configure trajectory limits for safe, slow movement */
+	status = can_simple_set_traj_vel_limit(state->odrive, VALVE_HOME_VEL_LIMIT_TURNS_S);
+	if (status != STATUS_OK) {
+		return status;
+	}
+
+	status = can_simple_set_traj_accel_limits(state->odrive,
+	    VALVE_HOME_ACCEL_LIMIT_TURNS_S2, VALVE_HOME_ACCEL_LIMIT_TURNS_S2);
+	if (status != STATUS_OK) {
+		return status;
+	}
+
+	/* Switch to position control with trapezoidal trajectory mode */
+	status = can_simple_set_controller_mode(state->odrive,
+	    CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_TRAP_TRAJ);
+	if (status != STATUS_OK) {
+		return status;
+	}
+
+	/* Small delay for mode change to take effect */
+	board_delay_ms(10);
+
+	/* Command movement to absolute zero position (encoder_zero_turns) */
+	status = can_simple_set_position(state->odrive, state->encoder_zero_turns, 0, 0);
+	if (status != STATUS_OK) {
+		/* Try to restore torque control mode before returning */
+		(void)can_simple_set_controller_mode(state->odrive,
+		    CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH);
+		return status;
+	}
+
+	/* Wait for trajectory to complete */
+	start_ms = board_get_systick_ms();
+	while ((board_get_systick_ms() - start_ms) < VALVE_HOME_TIMEOUT_MS) {
+		if (can_simple_get_cached_heartbeat(state->odrive, &hb, &hb_age_ms) == STATUS_OK &&
+		    hb_age_ms < VALVE_HEARTBEAT_TIMEOUT_MS) {
+			/* Check for errors during homing */
+			if (hb.axis_error != 0) {
+				(void)can_simple_set_controller_mode(state->odrive,
+				    CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH);
+				return STATUS_ERROR_HARDWARE_FAULT;
+			}
+			/* Check trajectory done flag */
+			if (hb.trajectory_done) {
+				break;
+			}
+		}
+		board_delay_ms(VALVE_HOME_POLL_INTERVAL_MS);
+	}
+
+	/* Check if we timed out */
+	if (!hb.trajectory_done) {
+		(void)can_simple_set_controller_mode(state->odrive,
+		    CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH);
+		return STATUS_ERROR_TIMEOUT;
+	}
+
+	/* Switch back to torque control mode for haptic operation */
+	status = can_simple_set_controller_mode(state->odrive,
+	    CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH);
+	if (status != STATUS_OK) {
+		return status;
+	}
+
+	/* Update position state - we're now at zero */
+	state->position_deg = 0.0f;
+	state->command_position_deg = 0.0f;
+
+	return STATUS_OK;
+}
+
+/*
  * Start valve control loop (torque-control, purely resistive model)
  *
  * Initialization sequence:
@@ -427,7 +541,8 @@ status_t valve_haptic_stage_config(struct valve_context *ctx, const struct valve
  * 4. Apply velocity/current limits derived from the preset torque limit
  * 5. Transition the axis to CLOSED_LOOP_CONTROL and confirm via heartbeat
  * 6. Sample encoder once to establish zero and seed velocity filters
- * 7. Start TIM6 timer and enter RUNNING state for autonomous 1 kHz operation
+ * 7. If calibrated, home to zero position using trapezoidal trajectory
+ * 8. Start TIM6 timer and enter RUNNING state for autonomous 1 kHz operation
  *
  * Returns STATUS_OK on success, error code on failure
  */
@@ -564,13 +679,56 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		return enc_status;  /* Propagate specific encoder error (e.g., buffer empty) */
 	}
 	
-	/* Establish zero reference but track absolute shaft angle for commands.
-	 * We seed command_position_deg to the actual measured angle so the
-	 * ODrive holds wherever the user left the shaft when we enter RUNNING.
+	/* Establish zero reference - use stored calibration if available.
+	 * If calibration exists, use the stored absolute zero reference.
+	 * Otherwise, fall back to current position as zero (legacy behavior).
 	 */
-	state->encoder_zero_turns = est.position;
 	state->raw_position_turns = est.position;
-	state->position_deg = est.position * state->degrees_per_turn;
+
+	struct valve_zero_calibration stored_cal;
+	if (valve_nvm_load_zero_calibration(&stored_cal) == 0) {
+		/* Use calibrated absolute zero reference */
+		state->encoder_zero_turns = stored_cal.absolute_zero_turns;
+		state->uses_absolute_ref = 1U;
+		/* Position is relative to calibrated zero */
+		state->position_deg = (est.position - state->encoder_zero_turns) *
+		    state->degrees_per_turn;
+		/* Wrap to [0, 360) for consistent reporting */
+		while (state->position_deg < 0.0f) {
+			state->position_deg += 360.0f;
+		}
+		while (state->position_deg >= 360.0f) {
+			state->position_deg -= 360.0f;
+		}
+	} else {
+		/* No calibration - use current position as zero (legacy) */
+		state->encoder_zero_turns = est.position;
+		state->uses_absolute_ref = 0U;
+		state->position_deg = 0.0f;
+	}
+
+	/* If calibrated, home to zero position before starting haptic control.
+	 * This ensures the valve starts at a known reference point.
+	 * Homing is skipped if no calibration exists (uses_absolute_ref == 0).
+	 */
+	if (state->uses_absolute_ref) {
+		status_t home_status = valve_haptic_home_to_zero(state);
+		if (home_status != STATUS_OK) {
+			/* Homing failed - abort startup */
+			can_simple_set_axis_state(state->odrive, AXIS_STATE_IDLE);
+			state->status = VALVE_STATE_IDLE;
+			return home_status;
+		}
+		/* Re-read encoder after homing to get accurate starting position */
+		enc_status = can_simple_get_cached_encoder(state->odrive, &est, &encoder_age_ms, NULL);
+		if (enc_status == STATUS_OK) {
+			state->raw_position_turns = est.position;
+			state->position_deg = (est.position - state->encoder_zero_turns) *
+			    state->degrees_per_turn;
+			/* Should be very close to 0.0 after homing */
+		}
+	}
+
 	state->command_position_deg = state->position_deg;
 	float turn_to_rad = state->degrees_per_turn * VALVE_DEG_TO_RAD;
 	state->omega_rad_s = est.velocity * turn_to_rad;
@@ -1065,4 +1223,193 @@ float
 valve_haptic_calc_settling_time_ms(void)
 {
 	return 0.0f;
+}
+
+/*
+ * Zero Calibration API
+ *
+ * These functions manage the absolute encoder reference point stored in NVM.
+ * Once calibrated, the zero reference persists across power cycles.
+ */
+
+/* Wrap angle to [0, 360) range for consistent position reporting */
+static inline float wrap_angle_360(float angle)
+{
+	while (angle < 0.0f) {
+		angle += 360.0f;
+	}
+	while (angle >= 360.0f) {
+		angle -= 360.0f;
+	}
+	return angle;
+}
+
+/* Set the current position as the absolute zero reference */
+int valve_haptic_set_zero_here(struct valve_context *ctx)
+{
+	struct valve_state *state;
+	struct valve_zero_calibration cal;
+	int result;
+
+	if (ctx == NULL) {
+		return -1;
+	}
+
+	state = &ctx->state;
+
+	/* Require running state to have valid encoder data */
+	if (state->status != VALVE_STATE_RUNNING) {
+		return -2;  /* Must be running to calibrate */
+	}
+
+	/* Build calibration data from current position */
+	cal.absolute_zero_turns = state->raw_position_turns;
+	cal.validation_sample = state->raw_position_turns;
+	cal.validation_offset = 0.0f;  /* No offset - sample taken at zero */
+	cal.calibration_time = board_get_systick_ms();
+
+	/* Save to NVM */
+	result = valve_nvm_save_zero_calibration(&cal);
+	if (result != 0) {
+		return -3;  /* NVM write failed */
+	}
+
+	/* Apply immediately */
+	state->encoder_zero_turns = cal.absolute_zero_turns;
+	state->uses_absolute_ref = 1U;
+
+	/* Recalculate current position relative to new zero */
+	state->position_deg = (state->raw_position_turns - state->encoder_zero_turns) *
+	    state->degrees_per_turn;
+	state->position_deg = wrap_angle_360(state->position_deg);
+
+	return 0;
+}
+
+/* Set zero reference to a specific encoder position (for restoration) */
+int valve_haptic_set_zero_at(struct valve_context *ctx, float encoder_turns)
+{
+	struct valve_state *state;
+	struct valve_zero_calibration cal;
+	int result;
+
+	if (ctx == NULL) {
+		return -1;
+	}
+
+	state = &ctx->state;
+
+	/* Build calibration data */
+	cal.absolute_zero_turns = encoder_turns;
+	cal.validation_sample = encoder_turns;
+	cal.validation_offset = 0.0f;
+	cal.calibration_time = board_get_systick_ms();
+
+	/* Save to NVM */
+	result = valve_nvm_save_zero_calibration(&cal);
+	if (result != 0) {
+		return -3;
+	}
+
+	/* Apply immediately if running */
+	state->encoder_zero_turns = cal.absolute_zero_turns;
+	state->uses_absolute_ref = 1U;
+
+	if (state->status == VALVE_STATE_RUNNING) {
+		state->position_deg = (state->raw_position_turns - state->encoder_zero_turns) *
+		    state->degrees_per_turn;
+		state->position_deg = wrap_angle_360(state->position_deg);
+	}
+
+	return 0;
+}
+
+/* Get current absolute position (degrees, wrapped to [0,360)) */
+float valve_haptic_get_absolute_position(struct valve_context *ctx)
+{
+	struct valve_state *state;
+	float pos_deg;
+
+	if (ctx == NULL) {
+		return 0.0f;
+	}
+
+	state = &ctx->state;
+	pos_deg = (state->raw_position_turns - state->encoder_zero_turns) *
+	    state->degrees_per_turn;
+
+	return wrap_angle_360(pos_deg);
+}
+
+/* Validate that the encoder hasn't been disturbed since calibration */
+int valve_haptic_validate_calibration(struct valve_context *ctx)
+{
+	struct valve_state *state;
+	struct valve_zero_calibration cal;
+	float error;
+
+	if (ctx == NULL) {
+		return 0;
+	}
+
+	/* Load stored calibration */
+	if (valve_nvm_load_zero_calibration(&cal) != 0) {
+		return 0;  /* No valid calibration */
+	}
+
+	state = &ctx->state;
+
+	/* For a valid calibration, the absolute encoder should return consistent
+	 * readings within one turn. Check if the fractional part matches. */
+	float actual_frac = state->raw_position_turns - (float)(int)state->raw_position_turns;
+
+	/* Handle negative fractions */
+	if (actual_frac < 0.0f) actual_frac += 1.0f;
+
+	/* Compare zero reference fractional position */
+	float zero_frac = cal.absolute_zero_turns - (float)(int)cal.absolute_zero_turns;
+	if (zero_frac < 0.0f) zero_frac += 1.0f;
+
+	/* The fractional difference between current and zero should match
+	 * the fractional difference at calibration time */
+	error = actual_frac - zero_frac;
+	if (error < -0.5f) error += 1.0f;
+	if (error > 0.5f) error -= 1.0f;
+
+	/* Allow up to 2 degrees of drift (about 0.006 turns) */
+	float tolerance_turns = 2.0f / state->degrees_per_turn;
+	if (safe_fabsf(error - cal.validation_offset / state->degrees_per_turn) < tolerance_turns) {
+		return 1;  /* Valid */
+	}
+
+	return 0;  /* Inconsistent - encoder may have been disturbed */
+}
+
+/* Check if zero calibration has been performed */
+int valve_haptic_is_calibrated(struct valve_context *ctx)
+{
+	(void)ctx;  /* Context not needed for NVM check */
+	return valve_nvm_is_zero_calibration_valid();
+}
+
+/* Clear all calibration data */
+int valve_haptic_clear_calibration(struct valve_context *ctx)
+{
+	struct valve_state *state;
+
+	if (ctx == NULL) {
+		return -1;
+	}
+
+	state = &ctx->state;
+
+	/* Clear NVM calibration */
+	if (valve_nvm_clear_zero_calibration() != 0) {
+		return -2;
+	}
+
+	/* Clear runtime state */
+	state->uses_absolute_ref = 0U;
+
+	return 0;
 }

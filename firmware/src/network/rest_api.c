@@ -29,7 +29,9 @@
 #include "network/rest.h"
 #include "network/stream.h"
 #include "odrive_manager.h"
+#include "valve_haptic.h"
 #include "valve_manager.h"
+#include "valve_nvm.h"
 #include "valve_presets.h"
 
 static struct uart_handle *rest_uart;
@@ -621,6 +623,7 @@ void rest_api_handle_get_presets(struct tcp_pcb *tpcb) {
 
   for (uint32_t i = 0; i < VALVE_PRESET_COUNT; i++) {
     char viscous_buf[24], coulomb_buf[24], stiff_buf[24], damp_buf[24], travel_buf[24], torque_buf[24], smoothing_buf[24];
+    char theta_closed_buf[24], theta_open_buf[24];
     rest_format_float(viscous_buf, sizeof(viscous_buf), preset_params[i].hil_b_viscous_nm_s_per_rad, 4U);
     rest_format_float(coulomb_buf, sizeof(coulomb_buf), preset_params[i].hil_tau_c_coulomb_nm, 4U);
     rest_format_float(stiff_buf, sizeof(stiff_buf), preset_params[i].hil_k_w_wall_stiffness_nm_per_turn, 2U);
@@ -628,11 +631,15 @@ void rest_api_handle_get_presets(struct tcp_pcb *tpcb) {
     rest_format_float(travel_buf, sizeof(travel_buf), preset_params[i].default_travel_deg, 1U);
     rest_format_float(torque_buf, sizeof(torque_buf), preset_params[i].torque_limit_nm, 2U);
     rest_format_float(smoothing_buf, sizeof(smoothing_buf), preset_params[i].hil_eps_smoothing, 6U);
+    rest_format_float(theta_closed_buf, sizeof(theta_closed_buf), preset_params[i].theta_closed_deg, 1U);
+    rest_format_float(theta_open_buf, sizeof(theta_open_buf), preset_params[i].theta_open_deg, 1U);
 
     written = snprintf(ptr, (size_t)remaining,
       "{\"index\":%lu,\"name\":\"%s\",\"viscous\":%s,\"coulomb\":%s,\"wall_stiffness\":%s,"
-      "\"wall_damping\":%s,\"travel\":%s,\"torque_limit\":%s,\"smoothing\":%s}%s",
+      "\"wall_damping\":%s,\"travel\":%s,\"torque_limit\":%s,\"smoothing\":%s,"
+      "\"theta_closed\":%s,\"theta_open\":%s}%s",
       (unsigned long)i, preset_params[i].name, viscous_buf, coulomb_buf, stiff_buf, damp_buf, travel_buf, torque_buf, smoothing_buf,
+      theta_closed_buf, theta_open_buf,
       (i < VALVE_PRESET_COUNT - 1U) ? "," : "");
     if (written < 0 || written >= remaining) {
       rest_send_json_error(tpcb, 500, "response_overflow");
@@ -678,7 +685,9 @@ void rest_api_handle_post_presets(struct tcp_pcb *tpcb, char *body, int len) {
   char name[16] = "";
   float viscous = 0.0f, coulomb = 0.0f, wall_stiffness = 0.0f, wall_damping = 0.0f, travel = 90.0f;
   float torque_limit = 8.0f, smoothing = 1e-3f;
+  float theta_closed = 0.0f, theta_open = 90.0f;
   bool has_torque = false, has_smoothing = false;
+  bool has_theta_closed = false, has_theta_open = false;
   
   for (int i = 1; i < r; i++) {
     if (t[i].type != JSMN_STRING) {
@@ -748,6 +757,20 @@ void rest_api_handle_post_presets(struct tcp_pcb *tpcb, char *body, int len) {
       }
       has_smoothing = true;
       i++;
+    } else if (jsoneq(body, &t[i], "theta_closed") == 0) {
+      if (!rest_token_float(body, val_tok, &theta_closed)) {
+        rest_send_json_error(tpcb, 400, "invalid_theta_closed");
+        return;
+      }
+      has_theta_closed = true;
+      i++;
+    } else if (jsoneq(body, &t[i], "theta_open") == 0) {
+      if (!rest_token_float(body, val_tok, &theta_open)) {
+        rest_send_json_error(tpcb, 400, "invalid_theta_open");
+        return;
+      }
+      has_theta_open = true;
+      i++;
     } else if (jsoneq(body, &t[i], "save_current") == 0) {
       save_current = true;
       i++;
@@ -792,6 +815,12 @@ void rest_api_handle_post_presets(struct tcp_pcb *tpcb, char *body, int len) {
     }
     if (has_smoothing) {
       target->hil_eps_smoothing = smoothing;
+    }
+    if (has_theta_closed) {
+      target->theta_closed_deg = theta_closed;
+    }
+    if (has_theta_open) {
+      target->theta_open_deg = theta_open;
     }
 
     /* Update name if provided */
@@ -1211,4 +1240,199 @@ void rest_api_handle_post_stream(struct tcp_pcb *tpcb, char *body, int len) {
   }
 
   rest_send_response(tpcb, 200, "application/json", "{\"status\":\"ok\"}");
+}
+
+/*
+ * Calibration API Handlers
+ *
+ * GET  /api/v1/calibration - Get calibration status
+ * POST /api/v1/calibration - Set calibration (zero, theta_closed, theta_open)
+ * DELETE /api/v1/calibration - Clear all calibration
+ */
+
+void rest_api_handle_get_calibration(struct tcp_pcb *tpcb) {
+  struct valve_context *valve_ctx = valve_haptic_get_context();
+  if (valve_ctx == NULL) {
+    rest_send_json_error(tpcb, 503, "valve_not_available");
+    return;
+  }
+
+  struct valve_state *state = valve_haptic_get_state(valve_ctx);
+  struct valve_zero_calibration cal;
+  int is_calibrated = valve_haptic_is_calibrated(valve_ctx);
+  int is_valid = valve_haptic_validate_calibration(valve_ctx);
+
+  char zero_turns_buf[24], val_sample_buf[24], val_offset_buf[24];
+  char raw_pos_buf[24], enc_zero_buf[24], abs_pos_buf[24];
+
+  if (valve_nvm_load_zero_calibration(&cal) == 0) {
+    rest_format_float(zero_turns_buf, sizeof(zero_turns_buf), cal.absolute_zero_turns, 6);
+    rest_format_float(val_sample_buf, sizeof(val_sample_buf), cal.validation_sample, 6);
+    rest_format_float(val_offset_buf, sizeof(val_offset_buf), cal.validation_offset, 2);
+  } else {
+    snprintf(zero_turns_buf, sizeof(zero_turns_buf), "null");
+    snprintf(val_sample_buf, sizeof(val_sample_buf), "null");
+    snprintf(val_offset_buf, sizeof(val_offset_buf), "null");
+  }
+
+  rest_format_float(raw_pos_buf, sizeof(raw_pos_buf), state->raw_position_turns, 6);
+  rest_format_float(enc_zero_buf, sizeof(enc_zero_buf), state->encoder_zero_turns, 6);
+
+  float abs_pos = valve_haptic_get_absolute_position(valve_ctx);
+  rest_format_float(abs_pos_buf, sizeof(abs_pos_buf), abs_pos, 2);
+
+  char resp[384];
+  int len = snprintf(resp, sizeof(resp),
+    "{"
+    "\"calibrated\":%s,"
+    "\"valid\":%s,"
+    "\"uses_absolute_ref\":%s,"
+    "\"zero_reference\":{"
+      "\"absolute_zero_turns\":%s,"
+      "\"validation_sample\":%s,"
+      "\"validation_offset\":%s"
+    "},"
+    "\"current_position\":{"
+      "\"raw_encoder_turns\":%s,"
+      "\"encoder_zero_turns\":%s,"
+      "\"absolute_position_deg\":%s"
+    "}"
+    "}",
+    is_calibrated ? "true" : "false",
+    is_valid ? "true" : "false",
+    state->uses_absolute_ref ? "true" : "false",
+    zero_turns_buf,
+    val_sample_buf,
+    val_offset_buf,
+    raw_pos_buf,
+    enc_zero_buf,
+    abs_pos_buf
+  );
+
+  if (len < 0 || (size_t)len >= sizeof(resp)) {
+    rest_send_json_error(tpcb, 500, "response_overflow");
+    return;
+  }
+
+  rest_send_response(tpcb, 200, "application/json", resp);
+}
+
+void rest_api_handle_post_calibration(struct tcp_pcb *tpcb, char *body, int len) {
+  if (body == NULL || len <= 0) {
+    rest_send_json_error(tpcb, 400, "invalid_request");
+    return;
+  }
+
+  struct valve_context *valve_ctx = valve_haptic_get_context();
+  if (valve_ctx == NULL) {
+    rest_send_json_error(tpcb, 503, "valve_not_available");
+    return;
+  }
+
+  jsmn_parser p;
+  jsmntok_t t[MAX_JSON_TOKENS];
+
+  jsmn_init(&p);
+  int r = jsmn_parse(&p, body, len, t, MAX_JSON_TOKENS);
+
+  if (r < 0) {
+    rest_send_json_error(tpcb, 400, "json_parse_error");
+    return;
+  }
+
+  char action_buf[24] = {0};
+  float value = 0.0f;
+  bool has_action = false;
+  bool has_value = false;
+
+  for (int i = 1; i < r; i++) {
+    if (t[i].type != JSMN_STRING) {
+      continue;
+    }
+
+    if ((i + 1) >= r) {
+      rest_send_json_error(tpcb, 400, "malformed_json");
+      return;
+    }
+
+    jsmntok_t *val_tok = &t[i + 1];
+
+    if (jsoneq(body, &t[i], "action") == 0) {
+      if (!rest_token_string(body, val_tok, action_buf, sizeof(action_buf))) {
+        rest_send_json_error(tpcb, 400, "invalid_action");
+        return;
+      }
+      has_action = true;
+      i++;
+    } else if (jsoneq(body, &t[i], "value") == 0) {
+      if (!rest_token_float(body, val_tok, &value)) {
+        rest_send_json_error(tpcb, 400, "invalid_value");
+        return;
+      }
+      has_value = true;
+      i++;
+    }
+  }
+
+  if (!has_action) {
+    rest_send_json_error(tpcb, 400, "missing_action");
+    return;
+  }
+
+  int result;
+  char resp[128];
+
+  if (strcmp(action_buf, "set_zero") == 0 || strcmp(action_buf, "set_zero_here") == 0) {
+    result = valve_haptic_set_zero_here(valve_ctx);
+    if (result != 0) {
+      if (result == -2) {
+        rest_send_json_error(tpcb, 400, "valve_not_running");
+      } else {
+        rest_send_json_error(tpcb, 500, "calibration_failed");
+      }
+      return;
+    }
+    struct valve_state *state = valve_haptic_get_state(valve_ctx);
+    char zero_buf[24];
+    rest_format_float(zero_buf, sizeof(zero_buf), state->encoder_zero_turns, 6);
+    snprintf(resp, sizeof(resp), "{\"status\":\"ok\",\"zero_reference\":%s}", zero_buf);
+
+  } else if (strcmp(action_buf, "set_zero_at") == 0) {
+    if (!has_value) {
+      rest_send_json_error(tpcb, 400, "missing_value");
+      return;
+    }
+    result = valve_haptic_set_zero_at(valve_ctx, value);
+    if (result != 0) {
+      rest_send_json_error(tpcb, 500, "calibration_failed");
+      return;
+    }
+    snprintf(resp, sizeof(resp), "{\"status\":\"ok\"}");
+
+  } else if (strcmp(action_buf, "validate") == 0) {
+    int valid = valve_haptic_validate_calibration(valve_ctx);
+    snprintf(resp, sizeof(resp), "{\"status\":\"ok\",\"valid\":%s}", valid ? "true" : "false");
+
+  } else {
+    rest_send_json_error(tpcb, 400, "unsupported_action");
+    return;
+  }
+
+  rest_send_response(tpcb, 200, "application/json", resp);
+}
+
+void rest_api_handle_delete_calibration(struct tcp_pcb *tpcb) {
+  struct valve_context *valve_ctx = valve_haptic_get_context();
+  if (valve_ctx == NULL) {
+    rest_send_json_error(tpcb, 503, "valve_not_available");
+    return;
+  }
+
+  int result = valve_haptic_clear_calibration(valve_ctx);
+  if (result != 0) {
+    rest_send_json_error(tpcb, 500, "clear_failed");
+    return;
+  }
+
+  rest_send_response(tpcb, 200, "application/json", "{\"status\":\"ok\",\"message\":\"calibration_cleared\"}");
 }

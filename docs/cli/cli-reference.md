@@ -8,6 +8,7 @@ This document provides a complete reference for all commands available in the ST
 - [Valve Control Commands](#valve-control-commands)
 - [Valve Configuration Commands](#valve-configuration-commands)
 - [Valve Preset Commands](#valve-preset-commands)
+- [Valve Calibration Commands](#valve-calibration-commands)
 - [ODrive Motor Control Commands](#odrive-motor-control-commands)
 - [ODrive Configuration Commands](#odrive-configuration-commands)
 - [CAN Bus Commands](#can-bus-commands)
@@ -421,6 +422,208 @@ Available Presets:
 - Shows all parameters for each preset
 - Helps compare different configurations
 - Useful for documentation and version control
+
+---
+
+## Valve Calibration Commands
+
+The calibration system establishes a persistent absolute position reference that remains constant across power cycles and valve simulations. This ensures that 0.00° always refers to the same physical position, enabling consistent preset position definitions (theta_closed and theta_open) and repeatable valve behavior.
+
+### Overview
+
+When calibration is active:
+- The valve automatically homes to 0.00° on startup
+- All positions are reported relative to the calibrated zero reference
+- Theta_closed and theta_open positions in presets are offsets from this zero
+- The system validates calibration on each startup to detect encoder disturbance
+
+### `cal zero`
+
+Set the current valve position as the absolute 0.00° reference. This position is stored in non-volatile memory and used as the zero reference for all future operations.
+
+**Usage:**
+```
+cal zero
+```
+
+**Example:**
+```
+> cal zero
+Zero reference set at current position
+Encoder value: 2.456789 turns
+```
+
+**When to use:**
+- During initial system setup to define the zero position
+- After mechanical changes that affect the valve's reference position
+- To redefine what physical position represents 0.00°
+
+**Notes:**
+- Valve must be running (use `valve_start` first)
+- This is typically done with the valve at its fully closed position
+- Stores the current encoder value in NVM as the absolute zero reference
+- Creates a validation sample for detecting encoder disturbance
+
+### `cal zero <turns>`
+
+Set the absolute zero reference to a specific encoder position (in turns). This is useful for advanced calibration scenarios or restoring a known zero position.
+
+**Usage:**
+```
+cal zero <turns>
+```
+
+**Parameters:**
+- `<turns>` - Encoder position in turns (float)
+
+**Example:**
+```
+> cal zero 2.456789
+Zero reference set to 2.456789 turns
+```
+
+**Notes:**
+- Useful when you know the exact encoder value for the zero position
+- Can be used to restore calibration from a backup
+- More advanced than the current-position method
+
+### `cal show`
+
+Display the current calibration status and position information.
+
+**Usage:**
+```
+cal show
+```
+
+**Example:**
+```
+> cal show
+Calibration Status: VALID
+Zero Reference:     2.456789 turns
+Validation Offset:  1.000000 turns
+Calibration Time:   1234567 ms
+Current Position:   45.2 degrees
+Absolute Position:  2.582189 turns
+```
+
+**Information displayed:**
+- Whether calibration exists and is valid
+- The stored zero reference encoder position
+- Validation sample position for disturbance detection
+- Time when calibration was performed (system uptime)
+- Current position in degrees relative to zero
+- Current absolute encoder position
+
+**Use cases:**
+- Verify calibration is loaded correctly
+- Check current absolute and relative positions
+- Troubleshoot position reporting issues
+- Document calibration values for backup
+
+### `cal validate`
+
+Check if the calibration is still valid by comparing the current encoder reading with the validation sample. This detects if the encoder or magnet has been disturbed.
+
+**Usage:**
+```
+cal validate
+```
+
+**Example:**
+```
+> cal validate
+Calibration: VALID
+Expected offset: 1.000000 turns
+Measured offset: 1.000234 turns
+Difference: 0.000234 turns (0.084 degrees)
+```
+
+**Validation logic:**
+- Compares current position difference between zero and validation sample
+- Tolerance: ±2 degrees deviation allowed
+- If difference exceeds tolerance, calibration is marked invalid
+
+**When validation fails:**
+- The encoder/magnet may have slipped or been disturbed
+- Mechanical changes might have occurred
+- Re-calibration is recommended
+
+**Notes:**
+- Valve must be running for validation
+- Automatic validation occurs during startup
+- Helps ensure position consistency over time
+
+### `cal clear`
+
+Clear all calibration data from non-volatile memory. After clearing, the system reverts to startup-relative mode where the power-on position becomes 0.00°.
+
+**Usage:**
+```
+cal clear
+```
+
+**Example:**
+```
+> cal clear
+Calibration cleared
+```
+
+**Effects:**
+- Removes stored zero reference from NVM
+- Next startup will use current position as zero (legacy behavior)
+- Theta_closed and theta_open positions in presets become relative to startup position
+- No automatic homing to zero on startup
+
+**When to use:**
+- Resetting system to factory behavior
+- Troubleshooting calibration issues
+- Before performing mechanical changes
+
+### `pos_abs`
+
+Display the current absolute position in degrees, relative to the calibrated zero reference.
+
+**Usage:**
+```
+pos_abs
+```
+
+**Example:**
+```
+> pos_abs
+Absolute position: 45.23 degrees
+```
+
+**Notes:**
+- Only available when calibration exists
+- Shows position relative to the stored zero reference
+- Useful for verifying consistent position reporting
+- Returns error if no calibration is present
+
+### Calibration Workflow
+
+**Initial Setup:**
+1. Install and mechanically align the valve
+2. Start valve control: `valve_start`
+3. Manually position valve to desired zero position (typically fully closed)
+4. Set calibration: `cal zero`
+5. Verify: `cal show`
+
+**Using Calibration:**
+- System automatically homes to 0.00° on each `valve_start`
+- Homing uses slow, safe trajectory (90°/s, 180°/s² acceleration)
+- Positions are always reported relative to calibrated zero
+- Set theta_closed and theta_open in presets as offsets from zero
+
+**Maintenance:**
+- Periodically run `cal validate` to check for disturbance
+- Re-calibrate if validation fails or after mechanical changes
+- Use `cal show` to document calibration values
+
+**Backup/Restore:**
+- Record encoder value from `cal show`
+- Restore with `cal zero <turns>` if needed
 
 ---
 

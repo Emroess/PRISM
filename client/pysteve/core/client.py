@@ -515,6 +515,126 @@ class SteveClient:
         """
         return self._request("GET", "can")
 
+    # Calibration Methods
+
+    def get_calibration(self) -> Dict[str, Any]:
+        """
+        Get absolute position calibration status.
+        
+        Returns:
+            Dictionary containing:
+                - calibrated: Whether zero reference has been set
+                - valid: Whether calibration appears undisturbed
+                - uses_absolute_ref: Whether absolute reference is active
+                - zero_reference: Zero reference details (turns, validation)
+                - current_position: Current encoder and absolute position
+        
+        Example:
+            >>> cal = steve.get_calibration()
+            >>> if cal['calibrated']:
+            ...     print(f"Absolute position: {cal['current_position']['absolute_position_deg']:.1f}°")
+        """
+        return self._request("GET", "calibration")
+
+    def set_zero_here(self) -> Dict[str, Any]:
+        """
+        Set current position as the absolute zero reference.
+        
+        The current encoder position is stored in NVM and used as the
+        reference for all future position measurements. This setting
+        persists across power cycles.
+        
+        The valve must be running to calibrate.
+        
+        Returns:
+            Dictionary containing zero_reference value
+        
+        Example:
+            >>> steve.start_valve()
+            >>> # Move shaft to desired zero position
+            >>> steve.set_zero_here()
+            >>> print("Zero calibrated at current position")
+        """
+        return self._request("POST", "calibration", json={"action": "set_zero"})
+
+    def set_zero_at(self, encoder_turns: float) -> Dict[str, Any]:
+        """
+        Set zero reference to a specific encoder value.
+        
+        Useful for restoring a known calibration without having to
+        physically position the shaft.
+        
+        Args:
+            encoder_turns: Raw encoder position in turns to use as zero
+        
+        Returns:
+            Response data
+        
+        Example:
+            >>> # Restore previously known calibration
+            >>> steve.set_zero_at(0.234567)
+        """
+        return self._request("POST", "calibration", json={
+            "action": "set_zero_at",
+            "value": encoder_turns
+        })
+
+    def validate_calibration(self) -> bool:
+        """
+        Check if calibration is still valid.
+        
+        Validates that the magnetic encoder hasn't been disturbed since
+        calibration. Returns True if the encoder reading is consistent
+        with the stored calibration reference.
+        
+        Returns:
+            True if calibration is valid, False if disturbed or uncalibrated
+        
+        Example:
+            >>> if steve.validate_calibration():
+            ...     print("Calibration OK")
+            ... else:
+            ...     print("WARNING: Calibration may be invalid")
+        """
+        result = self._request("POST", "calibration", json={"action": "validate"})
+        return result.get("valid", False)
+
+    def clear_calibration(self) -> Dict[str, Any]:
+        """
+        Clear all calibration data.
+        
+        Removes the stored zero reference.
+        After clearing, the system returns to relative positioning mode.
+        
+        Returns:
+            Response data
+        
+        Example:
+            >>> steve.clear_calibration()
+            >>> print("Calibration cleared")
+        """
+        return self._request("DELETE", "calibration")
+
+    def get_absolute_position(self) -> Optional[float]:
+        """
+        Get current absolute position in degrees.
+        
+        Returns the position relative to the calibrated zero reference.
+        Returns None if not calibrated.
+        
+        Returns:
+            Position in degrees (0-360), or None if not calibrated
+        
+        Example:
+            >>> pos = steve.get_absolute_position()
+            >>> if pos is not None:
+            ...     print(f"Absolute position: {pos:.1f}°")
+        """
+        cal = self.get_calibration()
+        if not cal.get("calibrated", False):
+            return None
+        return cal.get("current_position", {}).get("absolute_position_deg")
+
     # Utility Methods
 
     @property

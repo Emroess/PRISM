@@ -154,6 +154,8 @@ const char index_html[] =
 "<div class=\"config-item\"><label class=\"config-label\">Travel (deg)</label><input class=\"config-input\" type=\"number\" id=\"ptravel\" step=\"1\" min=\"1\" max=\"360\"></div>"
 "<div class=\"config-item\"><label class=\"config-label\">Torque Limit (Nm)</label><input class=\"config-input\" type=\"number\" id=\"ptorque\" step=\"0.1\" min=\"0\" max=\"30\"></div>"
 "<div class=\"config-item\"><label class=\"config-label\">Smoothing (ε)</label><input class=\"config-input\" type=\"number\" id=\"psmoothing\" step=\"0.0001\" min=\"0\"></div>"
+"<div class=\"config-item\"><label class=\"config-label\">Theta Closed (deg)</label><input class=\"config-input\" type=\"number\" id=\"ptheta_closed\" step=\"0.1\"></div>"
+"<div class=\"config-item\"><label class=\"config-label\">Theta Open (deg)</label><input class=\"config-input\" type=\"number\" id=\"ptheta_open\" step=\"0.1\"></div>"
 "</div>"
 "<div style=\"margin-top:12px\">"
 "<button onclick=\"savePreset()\">Save Preset Changes</button>"
@@ -196,7 +198,9 @@ const char index_html[] =
 "document.getElementById('pdamping').value=p[e].wall_damping,"
 "document.getElementById('ptravel').value=p[e].travel,"
 "document.getElementById('ptorque').value=p[e].torque_limit,"
-"document.getElementById('psmoothing').value=p[e].smoothing)}"
+"document.getElementById('psmoothing').value=p[e].smoothing,"
+"document.getElementById('ptheta_closed').value=p[e].theta_closed,"
+"document.getElementById('ptheta_open').value=p[e].theta_open)}"
 "function loadAndApplyPreset(){const e=parseInt(document.getElementById('presetLoad').value);"
 "fetch('/api/v1/control',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':'" HTTP_API_KEY "'},body:JSON.stringify({preset:e})})}"
 "function loadPresetIntoFields(){const e=parseInt(document.getElementById('presetLoad').value);p[e]&&("
@@ -215,7 +219,9 @@ const char index_html[] =
 "wall_damping:parseFloat(document.getElementById('pdamping').value),"
 "travel:parseFloat(document.getElementById('ptravel').value),"
 "torque_limit:parseFloat(document.getElementById('ptorque').value),"
-"smoothing:parseFloat(document.getElementById('psmoothing').value)};"
+"smoothing:parseFloat(document.getElementById('psmoothing').value),"
+"theta_closed:parseFloat(document.getElementById('ptheta_closed').value),"
+"theta_open:parseFloat(document.getElementById('ptheta_open').value)};"
 "fetch('/api/v1/presets',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':'" HTTP_API_KEY "'},body:JSON.stringify(t)}).then(()=>loadPresets())}"
 "function saveCurrentAsPreset(){const e=parseInt(document.getElementById('presetSelect').value);"
 "fetch('/api/v1/presets',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':'" HTTP_API_KEY "'},body:JSON.stringify({index:e,save_current:!0})}).then(()=>loadPresets())}"
@@ -758,6 +764,8 @@ handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
       rest_api_handle_get_can(tpcb);
     } else if (strcmp(hs->uri, "/api/v1/stream") == 0) {
       rest_api_handle_get_stream(tpcb);
+    } else if (strcmp(hs->uri, "/api/v1/calibration") == 0) {
+      rest_api_handle_get_calibration(tpcb);
     } else if (strcmp(hs->uri, "/") == 0) {
       rest_api_handle_get_index(tpcb);
     } else {
@@ -786,6 +794,19 @@ handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
       return true;
     } else if (strcmp(hs->uri, "/api/v1/stream") == 0) {
       rest_api_handle_post_stream(tpcb, body, body_len);
+      return true;
+    } else if (strcmp(hs->uri, "/api/v1/calibration") == 0) {
+      rest_api_handle_post_calibration(tpcb, body, body_len);
+      return true;
+    } else {
+      http_send_json_error(tpcb, 404, "not_found");
+      return true;
+    }
+  }
+
+  if (strcmp(hs->method, "DELETE") == 0) {
+    if (strcmp(hs->uri, "/api/v1/calibration") == 0) {
+      rest_api_handle_delete_calibration(tpcb);
       return true;
     } else {
       http_send_json_error(tpcb, 404, "not_found");

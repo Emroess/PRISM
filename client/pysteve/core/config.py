@@ -90,6 +90,8 @@ class PresetConfig:
         travel: Total angular travel [degrees] (1-360)
         torque_limit: Maximum torque [N·m]
         smoothing: Friction smoothing epsilon
+        theta_closed: Closed position offset from zero reference [degrees]
+        theta_open: Open position offset from zero reference [degrees]
     """
 
     index: int
@@ -101,6 +103,8 @@ class PresetConfig:
     travel: float = 90.0
     torque_limit: float = 0.5
     smoothing: float = 0.001
+    theta_closed: float = 0.0
+    theta_open: float = 90.0
 
     def __post_init__(self) -> None:
         """Validate parameters after initialization."""
@@ -128,6 +132,8 @@ class PresetConfig:
             "travel": self.travel,
             "torque_limit": self.torque_limit,
             "smoothing": self.smoothing,
+            "theta_closed": self.theta_closed,
+            "theta_open": self.theta_open,
         }
 
     @classmethod
@@ -143,4 +149,6 @@ class PresetConfig:
             travel=data.get("travel", 90.0),
             torque_limit=data.get("torque_limit", 0.5),
             smoothing=data.get("smoothing", 0.001),
+            theta_closed=data.get("theta_closed", 0.0),
+            theta_open=data.get("theta_open", 90.0),
         )

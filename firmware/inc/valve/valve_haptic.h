@@ -121,9 +121,10 @@ struct valve_state {
     uint8_t status;            /* State/status flags */
     uint8_t in_emergency_stop; /* Emergency stop flag (0=normal, 1=stopped) */
     uint8_t quiet_active;      /* 1 when quiet-at-rest gate is suppressing torque */
+    uint8_t uses_absolute_ref; /* 1 if using calibrated absolute reference */
     struct valve_diagnostics_simple diag; /* Basic diagnostics */
     struct can_simple_handle *odrive;     /* Odrive handle for CAN communication */
-    float encoder_zero_turns;  /* Encoder zero reference */
+    float encoder_zero_turns;  /* Encoder zero reference (absolute if calibrated) */
 };
 
 /* Valve context (combines simplified state and config) */
@@ -151,6 +152,46 @@ status_t valve_haptic_stage_config(struct valve_context *, const struct valve_co
 float	valve_haptic_calc_settling_time_ms(void);
 status_t valve_haptic_get_loop_timing(struct valve_context *, uint32_t *, uint32_t *,
 	    uint32_t *);
+
+/* Zero calibration API */
+/**
+ * Set the current position as the absolute zero reference.
+ * This captures the raw encoder position and stores it in NVM.
+ * Returns 0 on success, negative on error.
+ */
+int valve_haptic_set_zero_here(struct valve_context *ctx);
+
+/**
+ * Set the zero reference to a specific raw encoder position (in turns).
+ * Useful for restoring a known reference point.
+ * Returns 0 on success, negative on error.
+ */
+int valve_haptic_set_zero_at(struct valve_context *ctx, float encoder_turns);
+
+/**
+ * Get the current absolute position relative to the calibrated zero.
+ * Returns position in degrees (0-360 wrapped for single-turn).
+ */
+float valve_haptic_get_absolute_position(struct valve_context *ctx);
+
+/**
+ * Validate that the current encoder reading is consistent with the stored
+ * calibration. Detects if the magnetic encoder was disturbed.
+ * Returns 1 if valid, 0 if inconsistent or uncalibrated.
+ */
+int valve_haptic_validate_calibration(struct valve_context *ctx);
+
+/**
+ * Check if calibration has been performed (zero reference stored in NVM).
+ * Returns 1 if calibrated, 0 otherwise.
+ */
+int valve_haptic_is_calibrated(struct valve_context *ctx);
+
+/**
+ * Clear all calibration data (zero reference).
+ * Returns 0 on success, negative on error.
+ */
+int valve_haptic_clear_calibration(struct valve_context *ctx);
 
 #ifdef __cplusplus
 }

@@ -97,4 +97,29 @@ void rest_api_handle_get_stream(struct tcp_pcb *tpcb);
  */
 void rest_api_handle_post_stream(struct tcp_pcb *tpcb, char *body, int len);
 
+/**
+ * @brief Handle GET /api/v1/calibration request - Get calibration status
+ * @param tpcb TCP PCB for the connection
+ */
+void rest_api_handle_get_calibration(struct tcp_pcb *tpcb);
+
+/**
+ * @brief Handle POST /api/v1/calibration request - Set calibration
+ * @param tpcb TCP PCB for the connection
+ * @param body Request body (JSON with action, value fields)
+ * @param len Body length
+ * 
+ * Supported actions:
+ * - set_zero / set_zero_here: Set current position as zero reference
+ * - set_zero_at: Set zero to specific encoder value (requires "value")
+ * - validate: Check if calibration is still valid
+ */
+void rest_api_handle_post_calibration(struct tcp_pcb *tpcb, char *body, int len);
+
+/**
+ * @brief Handle DELETE /api/v1/calibration request - Clear all calibration
+ * @param tpcb TCP PCB for the connection
+ */
+void rest_api_handle_delete_calibration(struct tcp_pcb *tpcb);
+
 #endif /* NETWORK_REST_H */

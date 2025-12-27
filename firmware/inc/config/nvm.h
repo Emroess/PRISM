@@ -41,6 +41,18 @@ extern uint8_t __nvm_data_start[];
 
 /*
  * ===========================================================================
+ * Encoder Zero Calibration NVM Configuration
+ * ===========================================================================
+ */
+#define ZERO_CAL_NVM_MAGIC          0x5A45524FU  /* "ZERO" as ASCII */
+#define ZERO_CAL_NVM_VERSION        1U
+
+/* Calibration data stored after valve presets (offset 4KB into NVM region) */
+#define ZERO_CAL_NVM_OFFSET         0x1000U
+#define ZERO_CAL_NVM_FLASH_ADDR     (VALVE_NVM_FLASH_ADDR + ZERO_CAL_NVM_OFFSET)
+
+/*
+ * ===========================================================================
  * Network Config NVM Configuration
  * ===========================================================================
  */
