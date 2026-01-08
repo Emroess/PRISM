@@ -162,14 +162,17 @@ To interact with the firmware via UART, install a serial terminal:
 ```bash
 screen /dev/ttyACM0 115200
 ```
-
-**Option B: minicom**
+**Option B: picocom** 
+```bash
+picocom -b 115200 /dev/ttyACM0 
+```
+**Option C: minicom**
 ```bash
 sudo apt-get install minicom
 minicom -D /dev/ttyACM0 -b 115200
 ```
 
-**Option C: PuTTY** (GUI option)
+**Option D: PuTTY** (GUI option)
 ```bash
 sudo apt-get install putty
 ```
