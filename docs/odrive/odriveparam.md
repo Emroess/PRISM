@@ -10,6 +10,8 @@ This page lists the ODrive S1 parameters that must be configured for reliable va
  
  Connect the ODrive S1 via its USB C port to a PC and use the [Odrive WebGUI](https://gui.odriverobotics.com/configuration)
 
+Values below can be found in the `Inspector` tab of the Web GUI and can be searched for individually 
+
  **Option 2:** 
  
 Connect ODrive via USB C and run `odrivetool` 
@@ -22,10 +24,6 @@ Connect ODrive via USB C and run `odrivetool`
 > ```
 
 ## CAN Configuration Parameters
-
-These parameters control Node ID, message rates, and scaling on the ODrive S1.  
-Set via `odrivetool` or (`odrivegui`). [See Odrive CAN Config](https://docs.odriverobotics.com/v/latest/guides/can-guide.html#setting-up-the-odrive-via-usb).
-Values below are the **current STEVE runtime defaults** (optimized for low bus load while providing essential telemetry).
 
 | Parameter                     | Path                                   | Value | Notes |
 |-------------------------------|----------------------------------------|-------|-------|
