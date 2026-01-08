@@ -39,7 +39,7 @@ Basic familiarity with:
 
 The Nucleo-H753ZI has two USB connectors:
 - **CN1 (USB ST-LINK)**: Micro-USB connector at the top of the board - **Use this one for programming**
-- **CN13 (USB USER)**: USB Type-C connector - This is for the target MCU, not for programming
+- **CN13 (USB USER)**: Micro-USB connector close to RJ45 network port- This is for the target MCU, not for programming
 
 ### 2. Connect the Board
 
@@ -48,8 +48,8 @@ The Nucleo-H753ZI has two USB connectors:
 3. The board should power on - you should see the following LEDs:
    - **LD1 (COM)**: Red/Green - Indicates ST-LINK communication
    - **LD2 (Power)**: Green - Board is powered
-   - **LD3 (PWR)**: Red - 3.3V rail is active
-
+  <!-- **LD3 (PWR)**: Red - 3.3V rail is active
+-->
 ### 3. Verify Connection (Linux)
 
 After connecting, verify the ST-LINK is detected:
