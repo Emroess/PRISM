@@ -39,7 +39,7 @@ Welcome! This guide will help you connect to your STEVE (Simulated Task Explorat
 1. **Locate the ST-LINK USB port** on your Nucleo-H753ZI board
    - This is typically the USB connection farthest fromthe Ethernet port.
      
-        > **Note:** If the 3D printed enclosure and USB extention is intalled, this connection will be to the side of the AC power input cable. 
+        > **Note:** If the 3D printed enclosure and USB extention is installed, this connection will be to the side of the AC power input cable. 
    - Labeled "USB ST-LINK" or "CN1" on the board
 
 2. **Connect the USB cable** between your computer and the ST-LINK port
