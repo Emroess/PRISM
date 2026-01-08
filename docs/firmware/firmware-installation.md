@@ -253,7 +253,7 @@ You should see:
 ---
 
 ## Flashing the Firmware
-
+> **_NOTE:_** Flashing the firmware to the Nucleo-STM32H7ZI while a CAN transceiver is connected might result in a OpenOCD core timeout error.
 ### Method 1: Using Make (Recommended)
 
 The simplest way to flash the firmware is using the provided Makefile target:
