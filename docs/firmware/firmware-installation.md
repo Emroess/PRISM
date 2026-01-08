@@ -184,7 +184,7 @@ sudo apt-get install putty
 ### 1. Navigate to Firmware Directory
 
 ```bash
-cd /path/to/steve_can/firmware
+cd /path/to/STEVE/firmware
 ```
 
 ### 2. Clean Previous Builds (Optional)
