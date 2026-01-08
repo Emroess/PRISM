@@ -18,17 +18,16 @@ Welcome! This guide will help you connect to your STEVE (Simulated Task Explorat
 
 ### Hardware
 - **STEVE Device** - STM32 Nucleo-H753ZI development board with firmware
-- **USB Cable** - Standard USB Type-B or Micro-USB cable
+- **USB Cable** - Standard Micro-USB cable
 - **Computer** - Windows, Mac, or Linux PC
 
 ### Software
 - **Serial Terminal** - One of the following:
   - Windows: PuTTY, TeraTerm, or Windows Terminal
-  - Mac/Linux: screen, minicom, or CoolTerm
+  - Mac/Linux: screen, minicom, or picocom
   - Cross-platform: Arduino IDE Serial Monitor
 
 ### Optional
-- **ODrive Motor Controller** - Connected via CAN bus for haptic control
 - **Ethernet Cable** - For network features (web interface, streaming)
 
 ---
@@ -38,7 +37,9 @@ Welcome! This guide will help you connect to your STEVE (Simulated Task Explorat
 ### Physical Connection
 
 1. **Locate the ST-LINK USB port** on your Nucleo-H753ZI board
-   - This is typically the USB connector closest to the Ethernet port
+   - This is typically the USB connection farthest fromthe Ethernet port.
+     
+        > **Note:** If the 3D printed enclosure and USB extention is intalled, this connection will be to the side of the AC power input cable. 
    - Labeled "USB ST-LINK" or "CN1" on the board
 
 2. **Connect the USB cable** between your computer and the ST-LINK port
