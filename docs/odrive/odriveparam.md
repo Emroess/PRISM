@@ -1,14 +1,20 @@
 # ODrive S1 Configuration Reference for STEVE
 
-This page lists **all ODrive S1 parameters** that must be configured for reliable valve emulation with the **STM32H753ZI + SimpleCAN** setup.  
+This page lists the ODrive S1 parameters that must be configured for reliable valve emulation with the Nucleo-STM32H753ZI & SimpleCAN setup.  
 
-Parameters are grouped by category.  
-Values are the **recommended STEVE defaults** (tuned for torque control, low latency, and safety).  
-Change only if you know what you're doing — always test after saving.
+> Values are the **recommended STEVE defaults** (tuned for torque control, low latency, and safety).  
+> Change only if you know what you're doing — always test after saving.
 
-> **How to Apply**  
-> Connect ODrive via USB and run `odrivetool` (or use the Web GUI).  
-> Example:  
+ ### How to Apply Configration Changes 
+ **Option 1:** 
+ 
+ Connect the ODrive S1 via its USB C port to a PC and use the [Odrive WebGUI](https://gui.odriverobotics.com/configuration)
+
+ **Option 2:** 
+ 
+Connect ODrive via USB C and run `odrivetool` 
+
+ Example:  
 > ```bash
 > odrivetool
 > >>> odrv0.axis0.controller.config.input_mode = InputMode.TORQUE_CONTROL
