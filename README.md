@@ -1,10 +1,26 @@
-# STEVE: Simulated Task Exploration | Valve Emulation
+<div align="center">
+  
+# STEVE
 
-**Welcome to STEVE** — A low-cost, high-fidelity, multi-purpose benchmark and task emulator for robotics, focused on rotational tasks such as turning valves, handles, knobs, and fasteners.
+### **Simulated Task Exploration | Valve Emulation**
 
-<p align="center">
-  <img src="docs/CAD/images/handwheel_installed.jpeg" alt="Handwheel Installed" style="width:50%">
-</p>
+An open-source, low-cost task emulator engineered to replicate the dynamics of real-world valves, handles, knobs, etc. 
+
+STEVE can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior. 
+</div>
+
+--- 
+
+
+<div align="center">
+  <div>
+    <img src="docs/CAD/images/PXL_20260112_203312414.PORTRAIT.jpg"
+         alt="Handwheel installed on STEVE"
+         width="70%">
+  </div>
+  <br>
+  <em>Handwheel attchement being used on STEVE </em>
+</div>
 
 ---
 
@@ -14,7 +30,7 @@
 
 <table style="width:100%"><tr>
 <td align="center" style="width:25%">
-<img src="docs/CAD/images/handwheel_installed.jpeg" style="width:100%" alt="Multi-turn valves"><br>
+<img src="docs/CAD/images/PXL_20260112_203228289.PORTRAIT.jpg" style="width:100%" alt="Multi-turn valves"><br>
 <strong>Multi-turn valves</strong><br>
 </td>
 <td align="center" style="width:25%">
@@ -31,11 +47,16 @@
 </td>
 </tr></table>
 
-STEVE simulates common rotational tasks (valves, handles, fasteners) with configurable physical behavior and reproducible randomness. Key features:
+STEVE simulates common rotational tasks (valves, handles, fasteners) with configurable physical behavior and reproducible randomness. 
+<div align="center">
+  
+### Key Features
+</div>
 
-- Configurable dynamics: damping, friction, stiffness, detents
+- Configurable dynamics: Damping, friction, stiffness, and endstops
 - Controlled randomness: REPEATABLY emulate real-world rotational physics such as sticking or rusty rotation targets 
 - Real-time telemetry: position, torque/force and other signals for success detection
+- Velocity Maximums: Prevents dammage to robotic manipulators or STEVE
 - Self-resetting tasks and software presets for common sub-types (handwheel, quarter-turn, wrench, door handle)
 
 ---
