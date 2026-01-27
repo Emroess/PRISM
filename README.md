@@ -2,7 +2,7 @@
 
 # PRISM 
 
-### Programmable Rotary Impedance Suite for Manipulation. to speed things up and cut costs.
+### Programmable Rotary Impedance Suite for Manipulation
 
 An open-source, low-cost task emulator engineered to replicate the dynamics of real-world valves, handles, knobs, etc. 
 
