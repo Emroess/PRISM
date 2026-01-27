@@ -1,5 +1,37 @@
 <div align="center">
 
+   <h1>PRISM: Programmable Rotary Impedance Suite for Manipulation </h1>
+   <div style="display: flex; gap: 1rem; justify-content: center; align-items: center;" >
+   <img
+      src="media/SO101_Follower.webp?raw=true"
+      alt="SO-101 follower arm"
+      title="SO-101 follower arm"
+      style="width: 40%;"
+    />
+   <img
+      src="media/SO101_Leader.webp?raw=true"
+      alt="SO-101 leader arm"
+      title="SO-101 leader arm"
+      style="width: 40%;"
+    />
+</div>
+
+<h2>
+    <p>Build Your Own SO-101 Robot!</p>
+</h2>
+
+The SO‑101 is the next‑generation version of the SO‑100 robot arm, originally designed by the [RobotStudio](https://www.therobotstudio.com) in collaboration with [Hugging Face](https://huggingface.co/lerobot). It has improved wiring, is easier to assemble (no gear removal) and uses updated motors for the leader arm.
+
+These arms are designed to work seamlessly with the open‑source 🤗 LeRobot library. Join our community on [Discord](https://discord.gg/ggrqhPTsMe) to collaborate on both hardware and software, and help make end‑to‑end AI for robotics more accessible.
+
+</div>
+
+
+
+
+
+<div align="center">
+
 # PRISM 
 
 ### Programmable Rotary Impedance Suite for Manipulation
