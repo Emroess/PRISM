@@ -3,15 +3,7 @@
    <h1>PRISM: Programmable Rotary Impedance Suite for Manipulation </h1>
    <div style="display: flex; gap: 1rem; justify-content: center; align-items: center;" >
    <img
-      src="media/SO101_Follower.webp?raw=true"
-      alt="SO-101 follower arm"
-      title="SO-101 follower arm"
-      style="width: 40%;"
-    />
-   <img
-      src="media/SO101_Leader.webp?raw=true"
-      alt="SO-101 leader arm"
-      title="SO-101 leader arm"
+      src="docs/CAD/images/PRISM LOGO Square.jpg"
       style="width: 40%;"
     />
 </div>
