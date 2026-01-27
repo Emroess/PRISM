@@ -21,20 +21,6 @@ An open-source, low-cost task emulator engineered to replicate the dynamics of r
 
 PRISM can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior. 
 </div>
-
---- 
-
-
-<div align="center">
-  <div>
-    <img src="docs/CAD/images/PXL_20260112_203312414.PORTRAIT.jpg"
-         alt="Handwheel installed on STEVE"
-         width="70%">
-  </div>
-  <br>
-  <em>Handwheel attchement being used on PRISm </em>
-</div>
-
 ---
 
 ## 🎯 Key Capabilities
