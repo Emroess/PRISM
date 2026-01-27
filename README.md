@@ -9,25 +9,8 @@
 </div>
 
 <h2>
-    <p>Build Your Own SO-101 Robot!</p>
+    <p>Introduction</p>
 </h2>
-
-The SO‑101 is the next‑generation version of the SO‑100 robot arm, originally designed by the [RobotStudio](https://www.therobotstudio.com) in collaboration with [Hugging Face](https://huggingface.co/lerobot). It has improved wiring, is easier to assemble (no gear removal) and uses updated motors for the leader arm.
-
-These arms are designed to work seamlessly with the open‑source 🤗 LeRobot library. Join our community on [Discord](https://discord.gg/ggrqhPTsMe) to collaborate on both hardware and software, and help make end‑to‑end AI for robotics more accessible.
-
-</div>
-
-
-
-
-
-<div align="center">
-
-# PRISM 
-
-### Programmable Rotary Impedance Suite for Manipulation
-
 An open-source, low-cost task emulator engineered to replicate the dynamics of real-world valves, handles, knobs, etc. 
 
 PRISM can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior. 
