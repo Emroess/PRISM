@@ -6,6 +6,12 @@
       src="docs/CAD/images/PRISM LOGO Square.jpg"
       style="width: 40%;"
     />
+   <img
+      src="docs/CAD/images/PXL_20260112_203312414.PORTRAIT.jpg"
+      alt="PRISM"
+      title="Hand-Wheel"
+      style="width: 40%;"
+    />
 </div>
 
 <h2>
