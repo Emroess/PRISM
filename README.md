@@ -1,12 +1,12 @@
 <div align="center">
-  
-# STEVE
 
-### **Simulated Task Exploration | Valve Emulation**
+# PRISM 
+
+### Programmable Rotary Impedance Suite for Manipulation. to speed things up and cut costs.
 
 An open-source, low-cost task emulator engineered to replicate the dynamics of real-world valves, handles, knobs, etc. 
 
-STEVE can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior. 
+PRISM can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior. 
 </div>
 
 --- 
@@ -19,7 +19,7 @@ STEVE can be used for robotic policy training, as a benchmark tool, or to emulat
          width="70%">
   </div>
   <br>
-  <em>Handwheel attchement being used on STEVE </em>
+  <em>Handwheel attchement being used on PRISm </em>
 </div>
 
 ---
@@ -47,7 +47,7 @@ STEVE can be used for robotic policy training, as a benchmark tool, or to emulat
 </td>
 </tr></table>
 
-STEVE simulates common rotational tasks (valves, handles, fasteners) with configurable physical behavior and reproducible randomness. 
+PRISM simulates common rotational tasks (valves, handles, fasteners) with configurable physical behavior and reproducible randomness. 
 <div align="center">
   
 ### Key Features
