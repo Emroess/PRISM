@@ -21,7 +21,6 @@ An open-source, low-cost task emulator engineered to replicate the dynamics of r
 
 PRISM can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior. 
 </div>
----
 
 ## 🎯 Key Capabilities
 
