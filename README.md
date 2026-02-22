@@ -6,12 +6,7 @@
       src="docs/CAD/images/PRISM LOGO Square.jpg"
       style="width: 40%;"
     />
-   <img
-      src="image needed"
-      alt="PRISM"
-      title="Hand-Wheel"
-      style="width: 40%;"
-    />
+   
 </div>
 
 <h2>
@@ -21,6 +16,8 @@ An open-source, low-cost task emulator engineered to replicate the dynamics of r
 
 PRISM can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior. 
 </div>
+
+> ℹ️  NOTE: Project is currently going through a renaming. Documentation may have STEVE and not yet be changed to PRISM. 
 
 ## 🎯 Key Capabilities
 
@@ -54,7 +51,7 @@ PRISM simulates common rotational tasks (valves, handles, fasteners) with config
 - Configurable dynamics: Damping, friction, stiffness, and endstops
 - Controlled randomness: REPEATABLY emulate real-world rotational physics such as sticking or rusty rotation targets 
 - Real-time telemetry: position, torque/force and other signals for success detection
-- Velocity Maximums: Prevents dammage to robotic manipulators or STEVE
+- Velocity Maximums: Prevents dammage to robotic manipulators or PRISM
 - Self-resetting tasks and software presets for common sub-types (handwheel, quarter-turn, wrench, door handle)
 
 ---
@@ -66,19 +63,19 @@ PRISM simulates common rotational tasks (valves, handles, fasteners) with config
 </p>
 
 <p align="center">
-  <em>Demo: STEVE rotational benchmark in action</em>
+  <em>Demo: PRISM rotational benchmark in action</em>
 </p>
 
 ---
 
 ## System Architecture
 
-**STEVE Hardware** consists of:
+**PRISM Hardware** consists of:
 
-1. **STEVE DEVICE** — Physical STEVE unit including power supply, drive motor, controllers, etc.
+1. **PRISM DEVICE** — Physical PRISM unit including power supply, drive motor, controllers, etc.
 2. **Selectable Handle** — Handles, knobs, or other rotation interface 
 
-**STEVE Software** consists of:
+**PRISM Software** consists of:
 
 1. **Firmware** — STM32H753ZI bare-metal C with lwIP, CAN FD, Ethernet, REST API, CLI
 2. **Motor Control** — ODrive S1 brushless motor controller via CAN
