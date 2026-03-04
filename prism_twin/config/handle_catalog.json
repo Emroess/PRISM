@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "default_handle_id": "blue_handle",
+  "handles": [
+    {
+      "handle_id": "blue_handle",
+      "mesh_folder": "blue_handle",
+      "mesh_files": [
+        "gobuilda_rex_hub.stl",
+        "handle_inner_bare_metal.stl",
+        "handle_outer_blue.stl"
+      ],
+      "units": "inches",
+      "cad_axis_to_model_axis": "Y_to_Z",
+      "z_offset_mm": 105,
+      "rigid_with_shaft": true
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "source": "C:\\Users\\emmar\\Desktop\\PRISM_digital_twin\\prism_twin\\config\\generated_firmware_presets.json",
+  "all_ok": true,
+  "results": [
+    {
+      "preset": "LIGHT",
+      "ok": true,
+      "issues": []
+    },
+    {
+      "preset": "MEDIUM",
+      "ok": true,
+      "issues": []
+    },
+    {
+      "preset": "HEAVY",
+      "ok": true,
+      "issues": []
+    },
+    {
+      "preset": "INDUSTRIAL",
+      "ok": true,
+      "issues": []
+    }
+  ]
+}

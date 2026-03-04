@@ -1,1 +1,7 @@
 /firmware/build/
+
+# prism_twin local/runtime artifacts
+/prism_twin/.venv/
+/prism_twin/**/__pycache__/
+/prism_twin/**/*.pyc
+/prism_twin/reports/*.tmp

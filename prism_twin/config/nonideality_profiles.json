@@ -1,0 +1,35 @@
+{
+  "default_profile": "ideal",
+  "profiles": {
+    "ideal": {
+      "actuator": {
+        "enabled": false,
+        "first_order_lag_tau_s": 0.0,
+        "slew_rate_nm_per_s": 0.0,
+        "command_delay_s": 0.0,
+        "torque_limit_nm": null
+      },
+      "sensor": {
+        "enabled": false,
+        "position_quantization_deg": 0.0,
+        "velocity_quantization_rad_s": 0.0,
+        "delay_s": 0.0
+      }
+    },
+    "hardware_like": {
+      "actuator": {
+        "enabled": true,
+        "first_order_lag_tau_s": 0.005,
+        "slew_rate_nm_per_s": 500.0,
+        "command_delay_s": 0.001,
+        "torque_limit_nm": 8.0
+      },
+      "sensor": {
+        "enabled": true,
+        "position_quantization_deg": 0.05,
+        "velocity_quantization_rad_s": 0.01,
+        "delay_s": 0.001
+      }
+    }
+  }
+}

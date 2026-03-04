@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PRISM Twin Helper UI</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; margin: 16px; background: #f8f9fb; color: #111; }
+    .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .card { background: #fff; border: 1px solid #dfe3eb; border-radius: 8px; padding: 12px; max-width: 860px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-weight: 600; font-size: 12px; }
+    .sim { background: #e8f3ff; color: #1155cc; border: 1px solid #bfd9ff; }
+    label { font-size: 13px; color: #444; }
+    select, input, button { padding: 6px 8px; border: 1px solid #ccd2de; border-radius: 6px; }
+    .telem { font-family: Consolas, monospace; background: #0d1117; color: #c9d1d9; border-radius: 8px; padding: 10px; min-width: 420px; white-space: pre; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <span class="badge sim" id="simBadge">SIM TARGET: prism_01</span>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label>Instance</label>
+      <select id="instanceSelect"></select>
+      <button id="createInstance">Create prism_02</button>
+    </div>
+
+    <div class="row">
+      <label>Handle</label>
+      <select id="handleSelect"></select>
+      <button id="applyHandle">Apply Handle</button>
+    </div>
+
+    <div class="row">
+      <label>Preset</label>
+      <select id="presetSelect"></select>
+      <button id="applyPreset">Apply Preset</button>
+    </div>
+
+    <div class="row">
+      <label>Manual Position (deg)</label>
+      <input id="manualPos" type="range" min="-180" max="180" value="0" step="0.5" style="width: 320px;" />
+      <span id="manualPosValue">0.0</span>
+      <button id="applyPos">Apply</button>
+    </div>
+
+    <div class="row">
+      <button id="pauseBtn">Pause</button>
+      <button id="resumeBtn">Resume</button>
+      <button id="stepBtn">Step 10</button>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top: 12px;">
+    <div class="telem" id="telem">loading...</div>
+  </div>
+
+  <script>
+    const instanceSelect = document.getElementById('instanceSelect');
+    const handleSelect = document.getElementById('handleSelect');
+    const presetSelect = document.getElementById('presetSelect');
+    const simBadge = document.getElementById('simBadge');
+    const telem = document.getElementById('telem');
+    const manualPos = document.getElementById('manualPos');
+    const manualPosValue = document.getElementById('manualPosValue');
+    let dragActive = false;
+    let dragTimer = null;
+    let presetDirty = false;
+    let manualOverrideUntil = 0;
+
+    function activeInstance() {
+      return instanceSelect.value || 'prism_01';
+    }
+
+    async function api(path, options) {
+      const r = await fetch(path, options);
+      if (!r.ok) {
+        const text = await r.text();
+        throw new Error(`HTTP ${r.status}: ${text}`);
+      }
+      return await r.json();
+    }
+
+    async function refreshInstances() {
+      const data = await api('/api/v1/instances');
+      const prev = activeInstance();
+      instanceSelect.innerHTML = '';
+      for (const inst of data.instances || []) {
+        const opt = document.createElement('option');
+        opt.value = inst.instance_id;
+        opt.textContent = `${inst.instance_id} (${inst.handle_id})`;
+        instanceSelect.appendChild(opt);
+      }
+      if ([...instanceSelect.options].some(o => o.value === prev)) {
+        instanceSelect.value = prev;
+      }
+      simBadge.textContent = `SIM TARGET: ${activeInstance()}`;
+    }
+
+    async function refreshHandles() {
+      const data = await api('/api/v1/handles');
+      handleSelect.innerHTML = '';
+      for (const h of data.handles || []) {
+        const opt = document.createElement('option');
+        opt.value = h.handle_id;
+        opt.textContent = `${h.handle_id} [${h.units}]`;
+        handleSelect.appendChild(opt);
+      }
+    }
+
+    async function refreshPresets() {
+      const data = await api('/api/v1/presets');
+      presetSelect.innerHTML = '';
+      for (const p of data.presets || []) {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        presetSelect.appendChild(opt);
+      }
+    }
+
+    async function refreshTelemetry() {
+      const id = encodeURIComponent(activeInstance());
+      const data = await api(`/api/v1/status?instance_id=${id}`);
+      simBadge.textContent = `SIM TARGET: ${data.target_id || activeInstance()}`;
+      const canSyncPreset = !presetDirty && document.activeElement !== presetSelect;
+      if (canSyncPreset && data.active_preset && [...presetSelect.options].some(o => o.value === data.active_preset)) {
+        presetSelect.value = data.active_preset;
+      }
+      telem.textContent = JSON.stringify(data, null, 2);
+      const canSyncManualPos = !dragActive && document.activeElement !== manualPos && Date.now() > manualOverrideUntil;
+      if (canSyncManualPos) {
+        manualPosValue.textContent = Number(data.pos_deg || 0).toFixed(1);
+        manualPos.value = Number(data.pos_deg || 0);
+      }
+    }
+
+    document.getElementById('createInstance').onclick = async () => {
+      await api('/api/v1/instances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance_id: 'prism_02' })
+      });
+      await refreshInstances();
+    };
+
+    document.getElementById('applyHandle').onclick = async () => {
+      await api('/api/v1/handle/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance_id: activeInstance(), handle_id: handleSelect.value })
+      });
+      await refreshInstances();
+      await refreshTelemetry();
+    };
+
+    document.getElementById('applyPreset').onclick = async () => {
+      await api('/api/v1/preset/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance_id: activeInstance(), preset: presetSelect.value })
+      });
+      presetDirty = false;
+      await refreshInstances();
+      await refreshTelemetry();
+    };
+
+    presetSelect.onchange = () => {
+      presetDirty = true;
+    };
+
+    manualPos.oninput = () => { manualPosValue.textContent = Number(manualPos.value).toFixed(1); };
+
+    async function postDragPosition() {
+      if (!dragActive) return;
+      manualOverrideUntil = Date.now() + 1000;
+      await api('/api/v1/interaction/set_position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance_id: activeInstance(), position_deg: Number(manualPos.value) })
+      });
+    }
+
+    manualPos.addEventListener('pointerdown', () => {
+      dragActive = true;
+      manualOverrideUntil = Date.now() + 1000;
+      if (dragTimer) clearInterval(dragTimer);
+      dragTimer = setInterval(postDragPosition, 25);
+      postDragPosition();
+    });
+    manualPos.addEventListener('pointerup', () => {
+      dragActive = false;
+      if (dragTimer) clearInterval(dragTimer);
+      dragTimer = null;
+    });
+    manualPos.addEventListener('pointerleave', () => {
+      dragActive = false;
+      if (dragTimer) clearInterval(dragTimer);
+      dragTimer = null;
+    });
+    manualPos.addEventListener('pointercancel', () => {
+      dragActive = false;
+      if (dragTimer) clearInterval(dragTimer);
+      dragTimer = null;
+    });
+
+    document.getElementById('applyPos').onclick = async () => {
+      manualOverrideUntil = Date.now() + 1000;
+      await api('/api/v1/interaction/set_position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance_id: activeInstance(), position_deg: Number(manualPos.value) })
+      });
+      await refreshTelemetry();
+    };
+
+    document.getElementById('pauseBtn').onclick = async () => {
+      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'pause' }) });
+    };
+    document.getElementById('resumeBtn').onclick = async () => {
+      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resume' }) });
+    };
+    document.getElementById('stepBtn').onclick = async () => {
+      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'step', ticks: 10 }) });
+      await refreshTelemetry();
+    };
+
+    instanceSelect.onchange = () => refreshTelemetry();
+
+    (async () => {
+      await refreshHandles();
+      await refreshPresets();
+      await refreshInstances();
+      await refreshTelemetry();
+      setInterval(refreshTelemetry, 250);
+    })();
+  </script>
+</body>
+</html>

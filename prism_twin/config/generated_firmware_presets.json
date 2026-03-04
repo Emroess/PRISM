@@ -1,0 +1,96 @@
+{
+  "source": "PRISM_source/firmware/src/valve/valve_nvm.c",
+  "generated_at": "2026-03-04",
+  "presets": {
+    "LIGHT": {
+      "name": "Light",
+      "torque_limit_nm": 8.0,
+      "default_travel_deg": 90.0,
+      "hil_b_viscous_nm_s_per_rad": 0.02,
+      "hil_tau_c_coulomb_nm": 0.06,
+      "hil_k_w_wall_stiffness_nm_per_turn": 10.0,
+      "hil_c_w_wall_damping_nm_s_per_turn": 0.1,
+      "hil_eps_smoothing": 0.001
+    },
+    "MEDIUM": {
+      "name": "Medium",
+      "torque_limit_nm": 8.0,
+      "default_travel_deg": 90.0,
+      "hil_b_viscous_nm_s_per_rad": 0.04,
+      "hil_tau_c_coulomb_nm": 0.12,
+      "hil_k_w_wall_stiffness_nm_per_turn": 15.0,
+      "hil_c_w_wall_damping_nm_s_per_turn": 0.2,
+      "hil_eps_smoothing": 0.001
+    },
+    "HEAVY": {
+      "name": "Heavy",
+      "torque_limit_nm": 6.0,
+      "default_travel_deg": 360.0,
+      "hil_b_viscous_nm_s_per_rad": 0.08,
+      "hil_tau_c_coulomb_nm": 0.25,
+      "hil_k_w_wall_stiffness_nm_per_turn": 25.0,
+      "hil_c_w_wall_damping_nm_s_per_turn": 0.4,
+      "hil_eps_smoothing": 0.001
+    },
+    "INDUSTRIAL": {
+      "name": "Industrial",
+      "torque_limit_nm": 8.0,
+      "default_travel_deg": 360.0,
+      "hil_b_viscous_nm_s_per_rad": 0.12,
+      "hil_tau_c_coulomb_nm": 0.4,
+      "hil_k_w_wall_stiffness_nm_per_turn": 35.0,
+      "hil_c_w_wall_damping_nm_s_per_turn": 0.6,
+      "hil_eps_smoothing": 0.001
+    }
+  },
+  "twin_hil_config": {
+    "LIGHT": {
+      "closed_position_deg": 0.0,
+      "open_position_deg": 90.0,
+      "degrees_per_turn": 360.0,
+      "hil_b_viscous_nm_s_per_rad": 0.02,
+      "hil_tau_c_coulomb_nm": 0.06,
+      "hil_k_w_wall_stiffness_nm_per_turn": 10.0,
+      "hil_c_w_wall_damping_nm_s_per_turn": 0.1,
+      "hil_eps_smoothing": 0.001,
+      "hil_tau_max_limit_nm": 8.0,
+      "torque_limit_nm": 8.0
+    },
+    "MEDIUM": {
+      "closed_position_deg": 0.0,
+      "open_position_deg": 90.0,
+      "degrees_per_turn": 360.0,
+      "hil_b_viscous_nm_s_per_rad": 0.04,
+      "hil_tau_c_coulomb_nm": 0.12,
+      "hil_k_w_wall_stiffness_nm_per_turn": 15.0,
+      "hil_c_w_wall_damping_nm_s_per_turn": 0.2,
+      "hil_eps_smoothing": 0.001,
+      "hil_tau_max_limit_nm": 8.0,
+      "torque_limit_nm": 8.0
+    },
+    "HEAVY": {
+      "closed_position_deg": 0.0,
+      "open_position_deg": 360.0,
+      "degrees_per_turn": 360.0,
+      "hil_b_viscous_nm_s_per_rad": 0.08,
+      "hil_tau_c_coulomb_nm": 0.25,
+      "hil_k_w_wall_stiffness_nm_per_turn": 25.0,
+      "hil_c_w_wall_damping_nm_s_per_turn": 0.4,
+      "hil_eps_smoothing": 0.001,
+      "hil_tau_max_limit_nm": 6.0,
+      "torque_limit_nm": 6.0
+    },
+    "INDUSTRIAL": {
+      "closed_position_deg": 0.0,
+      "open_position_deg": 360.0,
+      "degrees_per_turn": 360.0,
+      "hil_b_viscous_nm_s_per_rad": 0.12,
+      "hil_tau_c_coulomb_nm": 0.4,
+      "hil_k_w_wall_stiffness_nm_per_turn": 35.0,
+      "hil_c_w_wall_damping_nm_s_per_turn": 0.6,
+      "hil_eps_smoothing": 0.001,
+      "hil_tau_max_limit_nm": 8.0,
+      "torque_limit_nm": 8.0
+    }
+  }
+}

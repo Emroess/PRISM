@@ -1,0 +1,16 @@
+{
+  "global": {
+    "torque_rmse_nm_max": 0.15,
+    "torque_peak_error_nm_max": 0.5,
+    "settling_time_s_max": 0.35,
+    "overshoot_nm_max": 0.8,
+    "chatter_count_max": 10,
+    "phase_lag_s_max": 0.08
+  },
+  "presets": {
+    "LIGHT": {},
+    "MEDIUM": {},
+    "HEAVY": {},
+    "INDUSTRIAL": {}
+  }
+}
