@@ -4,6 +4,7 @@ import argparse
 import json
 import threading
 import time
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -16,6 +17,10 @@ from instance_manager import PrismRuntimeManager
 
 class TwinApiHandler(BaseHTTPRequestHandler):
     manager: PrismRuntimeManager | None = None
+    runtime_started_at_s: float = 0.0
+    request_count: int = 0
+    session_bindings: dict[str, dict] = {}
+    session_lock = threading.RLock()
 
     def _send_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload).encode("utf-8")
@@ -37,7 +42,21 @@ class TwinApiHandler(BaseHTTPRequestHandler):
             return query["instance_id"][0]
         if "instance_id" in body:
             return str(body["instance_id"])
+        session_id = self._session_id(query, body)
+        if session_id:
+            with self.session_lock:
+                session = self.session_bindings.get(session_id)
+                if session is not None:
+                    session["last_seen_s"] = time.time()
+                    return str(session["instance_id"])
         return "prism_01"
+
+    def _session_id(self, query: dict, body: dict) -> str | None:
+        if "session_id" in query and len(query["session_id"]) > 0:
+            return str(query["session_id"][0])
+        if "session_id" in body and body["session_id"]:
+            return str(body["session_id"])
+        return None
 
     def _manager(self) -> PrismRuntimeManager:
         if self.manager is None:
@@ -52,7 +71,36 @@ class TwinApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _bump_request_count(self) -> int:
+        with self.session_lock:
+            self.request_count += 1
+            return self.request_count
+
+    def _runtime_payload(self, mgr: PrismRuntimeManager) -> dict:
+        summary = mgr.runtime_summary()
+        with self.session_lock:
+            sessions = [
+                {
+                    "session_id": sid,
+                    "instance_id": item["instance_id"],
+                    "client_id": item.get("client_id", ""),
+                    "created_at_s": float(item["created_at_s"]),
+                    "last_seen_s": float(item["last_seen_s"]),
+                }
+                for sid, item in self.session_bindings.items()
+            ]
+            req_count = int(self.request_count)
+        return {
+            "status": "ok",
+            "uptime_s": float(time.time() - self.runtime_started_at_s),
+            "requests": req_count,
+            "manager": summary,
+            "instances": mgr.list_instances(),
+            "sessions": sessions,
+        }
+
     def do_GET(self) -> None:
+        self._bump_request_count()
         mgr = self._manager()
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
@@ -87,11 +135,29 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 self._send_json(200, {"presets": mgr.available_presets()})
                 return
 
+            if parsed.path == "/api/v1/health":
+                runtime = mgr.runtime_summary()
+                self._send_json(
+                    200,
+                    {
+                        "status": "ok",
+                        "uptime_s": float(time.time() - self.runtime_started_at_s),
+                        "running": bool(runtime["running"]),
+                        "instance_count": int(runtime["instance_count"]),
+                    },
+                )
+                return
+
+            if parsed.path == "/api/v1/runtime":
+                self._send_json(200, self._runtime_payload(mgr))
+                return
+
             self._send_json(404, {"status": "error", "error": "not_found"})
         except Exception as exc:
             self._send_json(500, {"status": "error", "error": str(exc)})
 
     def do_POST(self) -> None:
+        self._bump_request_count()
         mgr = self._manager()
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
@@ -102,18 +168,59 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 instance_id = self._instance_id(query, body)
                 handle_id = body.get("handle_id")
                 preset = body.get("preset")
-                if instance_id in {item["instance_id"] for item in mgr.list_instances()}:
-                    self._send_json(200, {"status": "ok", "instance": mgr.get_config(instance_id)})
-                    return
-                instance = mgr.create_instance(instance_id=instance_id, handle_id=handle_id, preset=preset)
+                instance, created = mgr.create_or_get_instance(instance_id=instance_id, handle_id=handle_id, preset=preset)
                 self._send_json(
-                    201,
+                    201 if created else 200,
                     {
                         "status": "ok",
+                        "created": bool(created),
                         "instance": {
                             "instance_id": instance.instance_id,
                             "handle_id": instance.handle_id,
                             "preset": instance.preset,
+                            "target_kind": "sim",
+                            "target_id": instance.instance_id,
+                        },
+                    },
+                )
+                return
+
+            if parsed.path == "/api/v1/session/bind":
+                instance_id = self._instance_id(query, body)
+                create_if_missing = bool(body.get("create_if_missing", True))
+                if create_if_missing:
+                    instance, created = mgr.create_or_get_instance(instance_id=instance_id)
+                else:
+                    instance = mgr.get_instance(instance_id)
+                    created = False
+
+                session_id = self._session_id(query, body) or str(uuid.uuid4())
+                now_s = time.time()
+                client_id = str(body.get("client_id", ""))
+                with self.session_lock:
+                    existing = self.session_bindings.get(session_id)
+                    created_session = existing is None
+                    if existing is None:
+                        self.session_bindings[session_id] = {
+                            "instance_id": instance.instance_id,
+                            "client_id": client_id,
+                            "created_at_s": now_s,
+                            "last_seen_s": now_s,
+                        }
+                    else:
+                        existing["instance_id"] = instance.instance_id
+                        existing["client_id"] = client_id or existing.get("client_id", "")
+                        existing["last_seen_s"] = now_s
+
+                self._send_json(
+                    200,
+                    {
+                        "status": "ok",
+                        "created_instance": bool(created),
+                        "created_session": bool(created_session),
+                        "session": {
+                            "session_id": session_id,
+                            "instance_id": instance.instance_id,
                             "target_kind": "sim",
                             "target_id": instance.instance_id,
                         },
@@ -212,6 +319,9 @@ def main() -> int:
         mgr.start(realtime=True)
 
     TwinApiHandler.manager = mgr
+    TwinApiHandler.runtime_started_at_s = time.time()
+    TwinApiHandler.request_count = 0
+    TwinApiHandler.session_bindings = {}
     server = ThreadingHTTPServer((args.host, args.port), TwinApiHandler)
     print(f"Twin REST server listening on http://{args.host}:{args.port}")
     try:

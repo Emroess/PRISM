@@ -42,8 +42,29 @@ class PrismRuntimeManager:
         self._instances: dict[str, PrismInstance] = {}
         self._running = False
         self._loop_thread: threading.Thread | None = None
+        self._created_at_s = time.time()
 
         self.handle_catalog, self.default_handle_id = load_handle_catalog()
+
+    def create_or_get_instance(
+        self,
+        instance_id: str,
+        handle_id: str | None = None,
+        preset: str | None = None,
+        prism_mount_pos: tuple[float, float, float] | None = None,
+        prism_mount_quat: tuple[float, float, float, float] | None = None,
+    ) -> tuple[PrismInstance, bool]:
+        with self._lock:
+            if instance_id in self._instances:
+                return self._instances[instance_id], False
+            created = self.create_instance(
+                instance_id=instance_id,
+                handle_id=handle_id,
+                preset=preset,
+                prism_mount_pos=prism_mount_pos,
+                prism_mount_quat=prism_mount_quat,
+            )
+            return created, True
 
     def _model_path_for_instance(self, instance_id: str) -> Path:
         return self.generated_models_dir / f"prism_device_{instance_id}.xml"
@@ -291,3 +312,17 @@ class PrismRuntimeManager:
             self._loop_thread = None
         if thread is not None:
             thread.join(timeout=1.0)
+
+    def is_running(self) -> bool:
+        with self._lock:
+            return bool(self._running)
+
+    def runtime_summary(self) -> dict:
+        with self._lock:
+            return {
+                "running": bool(self._running),
+                "control_hz": float(self.control_hz),
+                "uptime_s": float(time.time() - self._created_at_s),
+                "instance_count": len(self._instances),
+                "instance_ids": sorted(self._instances.keys()),
+            }
