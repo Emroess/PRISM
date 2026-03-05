@@ -337,6 +337,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="PRISM twin REST server (instance-scoped simulation API)")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8081)
+    parser.add_argument(
+        "--composed-model",
+        default="",
+        help="Optional path to an existing composed MuJoCo model to attach PRISM runtime without model regeneration.",
+    )
     parser.add_argument("--start-loop", action="store_true", help="Start background realtime stepping loop")
     parser.add_argument(
         "--session-ttl-s",
@@ -369,7 +374,8 @@ def main() -> int:
     args = parser.parse_args()
 
     root_dir = Path(__file__).resolve().parents[1]
-    mgr = PrismRuntimeManager(root_dir=root_dir)
+    composed_model_path = Path(args.composed_model).resolve() if str(args.composed_model).strip() else None
+    mgr = PrismRuntimeManager(root_dir=root_dir, composed_model_path=composed_model_path)
     mgr.ensure_instance("prism_01")
     start_loop = args.start_loop or args.with_viewer
     if start_loop:
@@ -382,7 +388,8 @@ def main() -> int:
     TwinApiHandler.session_ttl_s = max(1.0, float(args.session_ttl_s))
     TwinApiHandler.session_max_count = max(1, int(args.session_max_count))
     server = ThreadingHTTPServer((args.host, args.port), TwinApiHandler)
-    print(f"Twin REST server listening on http://{args.host}:{args.port}")
+    mode = "composed" if composed_model_path else "standalone"
+    print(f"Twin REST server listening on http://{args.host}:{args.port} (mode={mode})")
     try:
         if args.with_viewer:
             server_thread = threading.Thread(target=server.serve_forever, daemon=True)

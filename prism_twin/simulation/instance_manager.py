@@ -32,9 +32,15 @@ class PrismRuntimeManager:
         "prism_02": ((0.0, 0.0, 0.3), (0.70710678, 0.70710678, 0.0, 0.0)),
     }
 
-    def __init__(self, root_dir: Path | None = None, control_hz: float = 1000.0):
+    def __init__(
+        self,
+        root_dir: Path | None = None,
+        control_hz: float = 1000.0,
+        composed_model_path: Path | None = None,
+    ):
         self.root_dir = root_dir or Path(__file__).resolve().parents[1]
         self.base_model_path = self.root_dir / "models" / "prism_device.xml"
+        self.composed_model_path = Path(composed_model_path).resolve() if composed_model_path else None
         self.generated_models_dir = self.root_dir / "models"
         self.control_hz = float(control_hz)
         self.default_preset = "HEAVY"
@@ -69,6 +75,9 @@ class PrismRuntimeManager:
     def _model_path_for_instance(self, instance_id: str) -> Path:
         return self.generated_models_dir / f"prism_device_{instance_id}.xml"
 
+    def is_composed_mode(self) -> bool:
+        return self.composed_model_path is not None
+
     def _create_sim(self, instance_id: str, model_path: Path, preset: str) -> PrismSim:
         return PrismSim(
             str(model_path),
@@ -93,13 +102,17 @@ class PrismRuntimeManager:
         with self._lock:
             if instance_id in self._instances:
                 raise ValueError(f"Instance already exists: {instance_id}")
-            if handle_id not in self.handle_catalog:
+            if self.is_composed_mode() and instance_id != "prism_01":
+                raise ValueError("Composed-scene mode currently supports only instance_id='prism_01'")
+
+            if not self.is_composed_mode() and handle_id not in self.handle_catalog:
                 raise ValueError(f"Unknown handle_id: {handle_id}")
 
-            handle = self.handle_catalog[handle_id]
-            errors = validate_handle_assets(handle)
-            if errors:
-                raise ValueError(";".join(errors))
+            if not self.is_composed_mode():
+                handle = self.handle_catalog[handle_id]
+                errors = validate_handle_assets(handle)
+                if errors:
+                    raise ValueError(";".join(errors))
 
             default_pos, default_quat = self.DEFAULT_INSTANCE_POSES.get(
                 instance_id,
@@ -108,14 +121,19 @@ class PrismRuntimeManager:
             prism_mount_pos = prism_mount_pos or default_pos
             prism_mount_quat = prism_mount_quat or default_quat
 
-            model_path = self._model_path_for_instance(instance_id)
-            build_model_for_handle(
-                self.base_model_path,
-                model_path,
-                handle,
-                prism_mount_pos=prism_mount_pos,
-                prism_mount_quat=prism_mount_quat,
-            )
+            if self.is_composed_mode():
+                model_path = self.composed_model_path
+                handle_id = "composed_scene"
+            else:
+                model_path = self._model_path_for_instance(instance_id)
+                build_model_for_handle(
+                    self.base_model_path,
+                    model_path,
+                    handle,
+                    prism_mount_pos=prism_mount_pos,
+                    prism_mount_quat=prism_mount_quat,
+                )
+
             sim = self._create_sim(instance_id, model_path, preset)
             instance = PrismInstance(
                 instance_id=instance_id,
@@ -191,6 +209,8 @@ class PrismRuntimeManager:
             }
 
     def swap_handle(self, instance_id: str, handle_id: str) -> dict:
+        if self.is_composed_mode():
+            raise ValueError("Handle swapping is disabled in composed-scene mode")
         with self._lock:
             if handle_id not in self.handle_catalog:
                 raise ValueError(f"Unknown handle_id: {handle_id}")
@@ -247,6 +267,8 @@ class PrismRuntimeManager:
             viewer.sync()
 
     def available_handles(self) -> list[dict]:
+        if self.is_composed_mode():
+            return []
         output = []
         for handle in self.handle_catalog.values():
             output.append(
@@ -323,6 +345,8 @@ class PrismRuntimeManager:
                 "running": bool(self._running),
                 "control_hz": float(self.control_hz),
                 "uptime_s": float(time.time() - self._created_at_s),
+                "composed_mode": self.is_composed_mode(),
+                "composed_model_path": str(self.composed_model_path) if self.composed_model_path else "",
                 "instance_count": len(self._instances),
                 "instance_ids": sorted(self._instances.keys()),
             }
