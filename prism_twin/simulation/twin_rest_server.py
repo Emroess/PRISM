@@ -21,6 +21,8 @@ class TwinApiHandler(BaseHTTPRequestHandler):
     request_count: int = 0
     session_bindings: dict[str, dict] = {}
     session_lock = threading.RLock()
+    session_ttl_s: float = 900.0
+    session_max_count: int = 64
 
     def _send_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload).encode("utf-8")
@@ -76,6 +78,37 @@ class TwinApiHandler(BaseHTTPRequestHandler):
             self.request_count += 1
             return self.request_count
 
+    def _prune_sessions(self) -> dict:
+        now_s = time.time()
+        with self.session_lock:
+            before = len(self.session_bindings)
+            expired_ids = [
+                sid
+                for sid, item in self.session_bindings.items()
+                if (now_s - float(item.get("last_seen_s", now_s))) > self.session_ttl_s
+            ]
+            for sid in expired_ids:
+                self.session_bindings.pop(sid, None)
+
+            evicted = 0
+            if len(self.session_bindings) > self.session_max_count:
+                ranked = sorted(
+                    self.session_bindings.items(),
+                    key=lambda kv: float(kv[1].get("last_seen_s", now_s)),
+                )
+                overflow = len(self.session_bindings) - self.session_max_count
+                for sid, _ in ranked[:overflow]:
+                    self.session_bindings.pop(sid, None)
+                    evicted += 1
+
+            after = len(self.session_bindings)
+        return {
+            "before": before,
+            "after": after,
+            "expired": len(expired_ids),
+            "evicted": evicted,
+        }
+
     def _runtime_payload(self, mgr: PrismRuntimeManager) -> dict:
         summary = mgr.runtime_summary()
         with self.session_lock:
@@ -94,6 +127,10 @@ class TwinApiHandler(BaseHTTPRequestHandler):
             "status": "ok",
             "uptime_s": float(time.time() - self.runtime_started_at_s),
             "requests": req_count,
+            "session_policy": {
+                "ttl_s": float(self.session_ttl_s),
+                "max_count": int(self.session_max_count),
+            },
             "manager": summary,
             "instances": mgr.list_instances(),
             "sessions": sessions,
@@ -101,6 +138,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         self._bump_request_count()
+        self._prune_sessions()
         mgr = self._manager()
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
@@ -137,6 +175,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
 
             if parsed.path == "/api/v1/health":
                 runtime = mgr.runtime_summary()
+                session_stats = self._prune_sessions()
                 self._send_json(
                     200,
                     {
@@ -144,6 +183,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                         "uptime_s": float(time.time() - self.runtime_started_at_s),
                         "running": bool(runtime["running"]),
                         "instance_count": int(runtime["instance_count"]),
+                        "session_count": int(session_stats["after"]),
                     },
                 )
                 return
@@ -158,6 +198,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         self._bump_request_count()
+        self._prune_sessions()
         mgr = self._manager()
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
@@ -218,6 +259,10 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                         "status": "ok",
                         "created_instance": bool(created),
                         "created_session": bool(created_session),
+                        "session_policy": {
+                            "ttl_s": float(self.session_ttl_s),
+                            "max_count": int(self.session_max_count),
+                        },
                         "session": {
                             "session_id": session_id,
                             "instance_id": instance.instance_id,
@@ -294,6 +339,18 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=8081)
     parser.add_argument("--start-loop", action="store_true", help="Start background realtime stepping loop")
     parser.add_argument(
+        "--session-ttl-s",
+        type=float,
+        default=900.0,
+        help="Session inactivity TTL in seconds before automatic expiration.",
+    )
+    parser.add_argument(
+        "--session-max-count",
+        type=int,
+        default=64,
+        help="Maximum number of active sessions before LRU-style eviction by last_seen.",
+    )
+    parser.add_argument(
         "--with-viewer",
         action="store_true",
         help="Run native MuJoCo viewer attached to the same runtime used by the helper UI/API.",
@@ -322,6 +379,8 @@ def main() -> int:
     TwinApiHandler.runtime_started_at_s = time.time()
     TwinApiHandler.request_count = 0
     TwinApiHandler.session_bindings = {}
+    TwinApiHandler.session_ttl_s = max(1.0, float(args.session_ttl_s))
+    TwinApiHandler.session_max_count = max(1, int(args.session_max_count))
     server = ThreadingHTTPServer((args.host, args.port), TwinApiHandler)
     print(f"Twin REST server listening on http://{args.host}:{args.port}")
     try:

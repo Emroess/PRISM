@@ -16,15 +16,15 @@ Goal: converge toward one API surface and one control-core contract with multipl
 
 ## C) Convergence Architecture Checklist
 - [ ] C1. Define `TargetAdapter` contract (`sim`, `real`).
-- [ ] C2. Define `TargetRouter` semantics (`target_kind`, `target_id`, session binding).
+- [x] C2. Define `TargetRouter` semantics (`target_kind`, `target_id`, session binding).
 - [ ] C3. Keep telemetry contract shape identical across targets.
-- [ ] C4. Add reconnect-safe, idempotent runtime/session semantics.
+- [x] C4. Add reconnect-safe, idempotent runtime/session semantics.
 
 ## D) Persistence Implementation Readiness
 - [x] D1. Branch selected: `feature/prism-twin-persistent-server`.
 - [x] D2. Branch synchronized with federated base.
-- [ ] D3. Runtime diagnostics endpoints planned (`/api/v1/health`, `/api/v1/runtime`).
-- [ ] D4. Persistence acceptance criteria documented.
+- [x] D3. Runtime diagnostics endpoints planned (`/api/v1/health`, `/api/v1/runtime`).
+- [x] D4. Persistence acceptance criteria documented.
 
 ## E) Execution Log
 - Date: 2026-03-05
