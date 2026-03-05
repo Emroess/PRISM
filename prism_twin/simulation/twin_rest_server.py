@@ -13,10 +13,12 @@ import mujoco
 import mujoco.viewer
 
 from instance_manager import PrismRuntimeManager
+from target_router import RealTargetAdapter, SimTargetAdapter, TargetRouter
 
 
 class TwinApiHandler(BaseHTTPRequestHandler):
     manager: PrismRuntimeManager | None = None
+    router: TargetRouter | None = None
     runtime_started_at_s: float = 0.0
     request_count: int = 0
     session_bindings: dict[str, dict] = {}
@@ -64,6 +66,18 @@ class TwinApiHandler(BaseHTTPRequestHandler):
         if self.manager is None:
             raise RuntimeError("Manager not initialized")
         return self.manager
+
+    def _router(self) -> TargetRouter:
+        if self.router is None:
+            raise RuntimeError("Target router not initialized")
+        return self.router
+
+    def _require_sim_target(self, query: dict, body: dict, default_instance_id: str = "prism_01") -> str:
+        router = self._router()
+        target = router.resolve_target(query, body, default_target_id=default_instance_id)
+        if target.target_kind != "sim":
+            raise ValueError("This endpoint is simulation-only. Use target_kind=sim.")
+        return target.target_id
 
     def _send_html(self, status: int, html_text: str) -> None:
         body = html_text.encode("utf-8")
@@ -150,15 +164,17 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/status":
-                instance_id = self._instance_id(query, {})
-                mgr.ensure_instance(instance_id)
-                self._send_json(200, mgr.get_status(instance_id))
+                default_instance_id = self._instance_id(query, {})
+                target = self._router().resolve_target(query, {}, default_target_id=default_instance_id)
+                adapter = self._router().get_adapter(target.target_kind)
+                self._send_json(200, adapter.get_status(target.target_id))
                 return
 
             if parsed.path == "/api/v1/config":
-                instance_id = self._instance_id(query, {})
-                mgr.ensure_instance(instance_id)
-                self._send_json(200, mgr.get_config(instance_id))
+                default_instance_id = self._instance_id(query, {})
+                target = self._router().resolve_target(query, {}, default_target_id=default_instance_id)
+                adapter = self._router().get_adapter(target.target_kind)
+                self._send_json(200, adapter.get_config(target.target_id))
                 return
 
             if parsed.path == "/api/v1/instances":
@@ -206,7 +222,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
 
         try:
             if parsed.path == "/api/v1/instances":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 handle_id = body.get("handle_id")
                 preset = body.get("preset")
                 instance, created = mgr.create_or_get_instance(instance_id=instance_id, handle_id=handle_id, preset=preset)
@@ -227,7 +243,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/session/bind":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 create_if_missing = bool(body.get("create_if_missing", True))
                 if create_if_missing:
                     instance, created = mgr.create_or_get_instance(instance_id=instance_id)
@@ -274,7 +290,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/control":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 mgr.ensure_instance(instance_id)
                 action = str(body.get("action", "step"))
                 ticks = int(body.get("ticks", 1))
@@ -296,7 +312,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/handle/select":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 handle_id = str(body.get("handle_id", ""))
                 if not handle_id:
                     self._send_json(400, {"status": "error", "error": "missing_handle_id"})
@@ -307,7 +323,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/preset/select":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 preset = str(body.get("preset", ""))
                 if not preset:
                     self._send_json(400, {"status": "error", "error": "missing_preset"})
@@ -318,7 +334,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/interaction/set_position":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 position_deg = float(body.get("position_deg", 0.0))
                 vel_rad_s = float(body.get("vel_rad_s", 0.0))
                 mgr.ensure_instance(instance_id)
@@ -382,6 +398,10 @@ def main() -> int:
         mgr.start(realtime=True)
 
     TwinApiHandler.manager = mgr
+    TwinApiHandler.router = TargetRouter(
+        sim_adapter=SimTargetAdapter(mgr),
+        real_adapter=RealTargetAdapter(),
+    )
     TwinApiHandler.runtime_started_at_s = time.time()
     TwinApiHandler.request_count = 0
     TwinApiHandler.session_bindings = {}
