@@ -315,21 +315,32 @@ Execution order per tick (mandatory):
 ## 16) Architecture Diagram (Mermaid)
 
 ```mermaid
-flowchart TD
-    UI[UI] --> API[REST API]
-    CLIENT[Client] --> API
-    API --> LOOP[Loop]
-    LOOP --> EST[State Estimator]
-    EST --> CTRL[Haptic Controller]
-    CTRL --> ESC[ESC Model]
-    ESC --> PLANT[MuJoCo Plant]
-    PLANT --> EST
-    LOOP --> TEL[Telemetry]
-    TEL --> API
-    PRESETS[Preset Source] --> CTRL
-    THRESH[Thresholds] --> VALID[Validation]
-    LOOP --> VALID
-    TEL --> VALID
+flowchart LR
+  OP[Operator / Client] --> API[Unified REST API]
+  SIMUI[Sim Helper UI] --> API
+  HWUI[STM32 Hardware HTML UI] --> HW[PRISM Hardware Controller]
+
+  API --> ROUTER[Target Router]
+  ROUTER --> SIMAD[Sim Target Adapter]
+  ROUTER --> REALAD[Real Target Adapter]
+
+  SIMAD --> LOOP[Sim Runtime Loop]
+  LOOP --> EST[State Estimator]
+  EST --> CTRL[Firmware-Faithful Controller]
+  CTRL --> ESC[Actuator/ESC Emulation]
+  ESC --> PLANT[MuJoCo Plant]
+  PLANT --> EST
+
+  REALAD --> HW
+
+  LOOP --> TELSIM[Telemetry Normalizer]
+  HW --> TELREAL[Telemetry Normalizer]
+  TELSIM --> API
+  TELREAL --> API
+
+  PRESETS[Preset Source] --> CTRL
+  THRESH[Validation Thresholds] --> VALID[Validation Harness]
+  LOOP --> VALID
 ```
 
 ## 17) Implementation Mapping (Current Workspace)
@@ -458,6 +469,44 @@ To realize the above strategy, the next milestone SHALL deliver:
 3. Handle catalog file and loader with defaults (inches, `Y_to_Z`, `z_offset_mm=105`).
 4. Sim helper UI widget for instance + handle selection.
 5. Viewer interaction mode for click-drag shaft rotation with telemetry.
+
+## 22) API + UI Deployment Decision (Sim vs Real)
+
+Decision:
+- The project SHALL use one logical REST API contract with target routing (`sim` / `real`).
+- UI deployment SHALL remain split by runtime environment:
+  - Real hardware UI remains the STM32-hosted HTML page for hardware operation.
+  - Simulation uses an independent helper UI hosted by the twin runtime.
+
+Rationale:
+- Simulation must run without STM32 dependency.
+- Sim-specific controls (instance spawn, manual position slider, scene/debug controls) are not applicable to real hardware.
+- This preserves a light-touch approach on real-hardware code and deployment while converging API semantics.
+
+Contract rules:
+- API responses always include `target_kind` and `target_id`.
+- Sim-only controls must be explicitly rejected or hidden for `target_kind=real`.
+- Shared controls (status/config/preset intent) use the same API schema across targets.
+
+## 23) Large-Scene MuJoCo Integration Model
+
+Goal:
+- Avoid painting the twin into a corner; PRISM must be embeddable in larger scenes (e.g., robot manipulator interacting with PRISM).
+
+Functional model:
+1. PRISM remains a reusable scene component rooted at `prism_mount`.
+2. Larger scene owns global `world` and additional bodies (robot arm, fixtures, tools).
+3. Integration places PRISM by setting `prism_mount` pose only; internal PRISM frames/joint semantics remain unchanged.
+4. Sim Target Adapter binds controller/runtime to the PRISM joint/actuator names in the composed MuJoCo model.
+5. Telemetry/control remain instance-scoped so multiple PRISM devices can coexist in one scene.
+
+Required capabilities for composed scenes:
+- Attach-to-existing-model mode (controller/runtime can operate on a named PRISM instance inside a preloaded scene).
+- Stable namespace convention for PRISM entities to avoid collisions.
+- No assumptions that PRISM is the only articulated object in simulation.
+
+Non-goal clarification:
+- PRISM twin does not own robot planning/control; it exposes a stable PRISM interaction interface that a robot/scene controller can consume.
 
 ## 21) Requirement Traceability Matrix
 
