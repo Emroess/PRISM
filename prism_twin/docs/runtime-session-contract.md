@@ -27,6 +27,11 @@ Returns expanded runtime diagnostics:
 - `instances`: current managed instances.
 - `sessions`: active sessions with `created_at_s` and `last_seen_s`.
 
+### `GET /api/v1/targets/capabilities`
+Returns target capability metadata for client/UI negotiation:
+- `targets.sim.configured` and supported shared/sim-only endpoint groups.
+- `targets.real.configured` status for real-target adapter readiness.
+
 ## Session Binding Endpoint
 
 ### `POST /api/v1/session/bind`
@@ -48,6 +53,8 @@ Response fields:
   2) bound `session_id` (query/body),
   3) fallback default `prism_01`.
 - This supports reconnect-safe clients that only retain a `session_id`.
+- If `target_kind=real` is requested before real adapter wiring is configured,
+  shared target endpoints return HTTP `501` with explicit `not configured` error.
 
 ## Session Lifecycle Policies
 - `--session-ttl-s` (default `900`): session expires after inactivity.

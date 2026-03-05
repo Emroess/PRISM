@@ -13,7 +13,7 @@ import mujoco
 import mujoco.viewer
 
 from instance_manager import PrismRuntimeManager
-from target_router import RealTargetAdapter, SimTargetAdapter, TargetRouter
+from target_router import RealTargetAdapter, SimTargetAdapter, TargetNotConfiguredError, TargetRouter
 
 
 class TwinApiHandler(BaseHTTPRequestHandler):
@@ -150,6 +150,32 @@ class TwinApiHandler(BaseHTTPRequestHandler):
             "sessions": sessions,
         }
 
+    def _capabilities_payload(self, mgr: PrismRuntimeManager) -> dict:
+        composed_mode = bool(mgr.runtime_summary().get("composed_mode", False))
+        return {
+            "status": "ok",
+            "targets": {
+                "sim": {
+                    "configured": True,
+                    "shared_endpoints": ["status", "config"],
+                    "sim_only_endpoints": [
+                        "instances",
+                        "session_bind",
+                        "control",
+                        "handle_select",
+                        "preset_select",
+                        "interaction_set_position",
+                    ],
+                    "composed_mode": composed_mode,
+                },
+                "real": {
+                    "configured": False,
+                    "shared_endpoints": ["status", "config"],
+                    "sim_only_endpoints": [],
+                },
+            },
+        }
+
     def do_GET(self) -> None:
         self._bump_request_count()
         self._prune_sessions()
@@ -208,7 +234,13 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 self._send_json(200, self._runtime_payload(mgr))
                 return
 
+            if parsed.path == "/api/v1/targets/capabilities":
+                self._send_json(200, self._capabilities_payload(mgr))
+                return
+
             self._send_json(404, {"status": "error", "error": "not_found"})
+        except TargetNotConfiguredError as exc:
+            self._send_json(501, {"status": "error", "error": str(exc)})
         except Exception as exc:
             self._send_json(500, {"status": "error", "error": str(exc)})
 

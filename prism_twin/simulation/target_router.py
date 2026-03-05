@@ -12,6 +12,10 @@ class TargetRef:
     target_id: str
 
 
+class TargetNotConfiguredError(RuntimeError):
+    pass
+
+
 class SimTargetAdapter:
     def __init__(self, manager: PrismRuntimeManager):
         self.manager = manager
@@ -27,10 +31,10 @@ class SimTargetAdapter:
 
 class RealTargetAdapter:
     def get_status(self, target_id: str) -> dict:
-        raise NotImplementedError(f"Real target adapter not configured for target_id={target_id}")
+        raise TargetNotConfiguredError(f"Real target adapter not configured for target_id={target_id}")
 
     def get_config(self, target_id: str) -> dict:
-        raise NotImplementedError(f"Real target adapter not configured for target_id={target_id}")
+        raise TargetNotConfiguredError(f"Real target adapter not configured for target_id={target_id}")
 
 
 class TargetRouter:
