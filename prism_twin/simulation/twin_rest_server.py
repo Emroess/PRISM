@@ -25,6 +25,9 @@ class TwinApiHandler(BaseHTTPRequestHandler):
     session_lock = threading.RLock()
     session_ttl_s: float = 900.0
     session_max_count: int = 64
+    viewer_enabled: bool = False
+    viewer_instance_id: str = "prism_01"
+    viewer_switch_requested: bool = False
 
     def _send_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload).encode("utf-8")
@@ -374,6 +377,19 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 self._send_json(200, {"status": "ok", "result": result})
                 return
 
+            if parsed.path == "/api/v1/viewer/select":
+                cls = type(self)
+                if not cls.viewer_enabled:
+                    self._send_json(409, {"status": "error", "error": "viewer_not_enabled"})
+                    return
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
+                mgr.ensure_instance(instance_id)
+                with self.session_lock:
+                    cls.viewer_instance_id = instance_id
+                    cls.viewer_switch_requested = True
+                self._send_json(200, {"status": "ok", "viewer_instance": instance_id})
+                return
+
             self._send_json(404, {"status": "error", "error": "not_found"})
         except ValueError as exc:
             self._send_json(400, {"status": "error", "error": str(exc)})
@@ -439,6 +455,9 @@ def main() -> int:
     TwinApiHandler.session_bindings = {}
     TwinApiHandler.session_ttl_s = max(1.0, float(args.session_ttl_s))
     TwinApiHandler.session_max_count = max(1, int(args.session_max_count))
+    TwinApiHandler.viewer_enabled = bool(args.with_viewer)
+    TwinApiHandler.viewer_instance_id = str(args.viewer_instance)
+    TwinApiHandler.viewer_switch_requested = False
     server = ThreadingHTTPServer((args.host, args.port), TwinApiHandler)
     mode = "composed" if composed_model_path else "standalone"
     print(f"Twin REST server listening on http://{args.host}:{args.port} (mode={mode})")
@@ -447,17 +466,31 @@ def main() -> int:
             server_thread = threading.Thread(target=server.serve_forever, daemon=True)
             server_thread.start()
 
-            mgr.ensure_instance(args.viewer_instance)
-            model, data = mgr.get_viewer_state(args.viewer_instance)
-            with mujoco.viewer.launch_passive(model, data) as viewer:
-                viewer.opt.geomgroup[4] = 1 if args.show_model_triad else 0
-                viewer.opt.sitegroup[4] = 1 if args.show_model_triad else 0
-                if args.show_world_frame:
-                    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+            while True:
+                with TwinApiHandler.session_lock:
+                    current_view_instance = TwinApiHandler.viewer_instance_id
+                    TwinApiHandler.viewer_switch_requested = False
 
-                while viewer.is_running():
-                    mgr.sync_viewer(viewer)
-                    time.sleep(0.01)
+                mgr.ensure_instance(current_view_instance)
+                model, data = mgr.get_viewer_state(current_view_instance)
+                with mujoco.viewer.launch_passive(model, data) as viewer:
+                    viewer.opt.geomgroup[4] = 1 if args.show_model_triad else 0
+                    viewer.opt.sitegroup[4] = 1 if args.show_model_triad else 0
+                    if args.show_world_frame:
+                        viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+
+                    while viewer.is_running():
+                        mgr.sync_viewer(viewer)
+                        with TwinApiHandler.session_lock:
+                            requested_switch = bool(TwinApiHandler.viewer_switch_requested)
+                        if requested_switch:
+                            break
+                        time.sleep(0.01)
+
+                with TwinApiHandler.session_lock:
+                    requested_switch = bool(TwinApiHandler.viewer_switch_requested)
+                if not requested_switch:
+                    break
         else:
             server.serve_forever()
     finally:

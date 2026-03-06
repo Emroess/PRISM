@@ -184,7 +184,9 @@ class PrismRuntimeManager:
     def get_status(self, instance_id: str) -> dict:
         with self._lock:
             inst = self.get_instance(instance_id)
-            return inst.sim.get_telemetry()
+            payload = inst.sim.get_telemetry()
+            payload["running"] = bool(self._running)
+            return payload
 
     def get_config(self, instance_id: str) -> dict:
         with self._lock:
@@ -249,6 +251,8 @@ class PrismRuntimeManager:
         with self._lock:
             inst = self.get_instance(instance_id)
             inst.sim.set_state(float(position_deg), float(vel_rad_s))
+            if not self._running:
+                inst.sim.step_control_tick()
             return {
                 "instance_id": instance_id,
                 "target_kind": "sim",
@@ -294,12 +298,7 @@ class PrismRuntimeManager:
 
         with self._lock:
             inst = self.get_instance(instance_id)
-            telem = inst.sim.get_telemetry()
-
-            sim = self._create_sim(instance_id, inst.model_path, preset_name)
-            sim.set_state(telem["pos_deg"], telem["vel_rad_s"])
-
-            inst.sim = sim
+            inst.sim.set_preset(preset_name)
             inst.preset = preset_name
 
             return {

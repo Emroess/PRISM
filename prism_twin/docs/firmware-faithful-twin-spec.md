@@ -508,6 +508,27 @@ Required capabilities for composed scenes:
 Non-goal clarification:
 - PRISM twin does not own robot planning/control; it exposes a stable PRISM interaction interface that a robot/scene controller can consume.
 
+### 23.1 Current Viewer Behavior and Blocker Assessment
+
+Current behavior (accepted for now):
+- In standalone multi-instance runtime mode, each PRISM instance currently owns its own MuJoCo `MjModel`/`MjData` pair.
+- Native `--with-viewer` mode renders one selected instance at a time.
+- Switching visible instance is implemented by relaunching the native viewer against the selected instance (via API/UI routing).
+
+Blocker assessment:
+- This is not a fundamental MuJoCo limitation.
+- The current constraint is architectural: instances are hosted as separate model/data worlds, so one passive viewer cannot display both simultaneously.
+
+Required architecture for true concurrent same-viewer instances (and robot + PRISM scenes):
+1. Use one composed MuJoCo world containing all PRISM mounts/instances and robot/environment bodies.
+2. Replace per-instance model ownership with per-instance index maps into the shared model (`qpos`, `qvel`, actuator IDs, joint IDs).
+3. Keep API/session semantics instance-scoped while execution runs on one shared simulation step.
+4. Preserve namespace guarantees for all PRISM entities to avoid collisions in composed scenes.
+
+Decision note:
+- Temporary single-viewer switching is acceptable for current milestone UX.
+- Long-term target remains concurrent visibility and interaction for multiple PRISMs in the same viewer and same world as the robot.
+
 ## 21) Requirement Traceability Matrix
 
 | Requirement | Primary Module(s) | Validation / Check |

@@ -32,6 +32,13 @@ Returns target capability metadata for client/UI negotiation:
 - `targets.sim.configured` and supported shared/sim-only endpoint groups.
 - `targets.real.configured` status for real-target adapter readiness.
 
+Helper UI behavior contract:
+- `simulation/sim_helper_ui.html` reads capabilities at startup before enabling controls.
+- Sim-only controls (`instances`, `control`, `handle_select`, `preset_select`, `interaction_set_position`) are hidden unless `target_kind=sim` and `targets.sim.configured=true`.
+- When opened with `?target_kind=real&target_id=<id>`, the helper UI enters telemetry-only mode.
+- If `targets.real.configured=false`, the helper UI skips real-target status polling and renders an explicit unavailable state instead of issuing invalid requests.
+- In `--with-viewer` mode, the native MuJoCo viewer renders the configured viewer instance only; additional created instances are active in API/runtime state but are not simultaneously shown in the same viewer window.
+
 ## Session Binding Endpoint
 
 ### `POST /api/v1/session/bind`
@@ -46,6 +53,13 @@ Response fields:
 - `created_session`: whether session record was newly created.
 - `session`: `{ session_id, instance_id, target_kind, target_id }`.
 - `session_policy`: current TTL/max settings.
+
+### `POST /api/v1/viewer/select`
+Optional viewer-instance routing endpoint (only when server started with `--with-viewer`):
+- Body fields: `instance_id` (or equivalent sim target selectors).
+- Behavior: requests native MuJoCo viewer to relaunch against the specified sim instance.
+- Success: `200` with `viewer_instance`.
+- If viewer mode is disabled: `409` with `viewer_not_enabled`.
 
 ## Routing Semantics
 - If `instance_id` is not provided on requests that need targeting, server resolves by:

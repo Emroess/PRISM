@@ -58,6 +58,22 @@ class PrismSim:
         self.joint_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, 'prism_joint')
         self.actuator_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, 'prism_motor')
 
+    def set_preset(self, preset_name: str) -> None:
+        preset_key = str(preset_name).upper()
+        if preset_key not in PRESETS:
+            raise ValueError(f"Unknown preset: {preset_key}")
+
+        self.physics = PrismPhysics(PRESETS[preset_key])
+        self.controller = FirmwareFaithfulTorqueController(
+            PRESETS[preset_key],
+            runtime=ControllerRuntimeConfig(control_hz=self.control_hz),
+        )
+        self.preset_name = preset_key
+        self._actuator_state_nm = 0.0
+        self._sensor_pos_delay = DelayLine(self.sensor_cfg.delay_s, self.control_dt)
+        self._sensor_vel_delay = DelayLine(self.sensor_cfg.delay_s, self.control_dt)
+        self._torque_command_delay = DelayLine(self.actuator_cfg.command_delay_s, self.control_dt)
+
     def get_telemetry(self):
         """
         Firmware-compatible status payload keys.

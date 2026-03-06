@@ -1,74 +1,148 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PRISM Twin Helper UI</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRISM Sim Controller (Hardware-Style)</title>
   <style>
-    body { font-family: Segoe UI, Arial, sans-serif; margin: 16px; background: #f8f9fb; color: #111; }
-    .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-    .card { background: #fff; border: 1px solid #dfe3eb; border-radius: 8px; padding: 12px; max-width: 860px; }
-    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-weight: 600; font-size: 12px; }
-    .sim { background: #e8f3ff; color: #1155cc; border: 1px solid #bfd9ff; }
-    label { font-size: 13px; color: #444; }
-    select, input, button { padding: 6px 8px; border: 1px solid #ccd2de; border-radius: 6px; }
-    .telem { font-family: Consolas, monospace; background: #0d1117; color: #c9d1d9; border-radius: 8px; padding: 10px; min-width: 420px; white-space: pre; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font:13px/1.4 -apple-system,sans-serif;background:#fff;color:#000;padding:20px}
+    .container{max-width:980px;margin:0 auto}
+    h1{font-size:18px;font-weight:600;margin-bottom:6px;letter-spacing:-0.02em}
+    .subtitle{font-size:12px;color:#666;margin-bottom:14px}
+    .badge{display:inline-block;padding:3px 8px;border:1px solid #000;font-size:11px;font-weight:600;margin-right:6px}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#d0d0d0;border:1px solid #d0d0d0;margin-bottom:20px}
+    .metric{background:#fff;padding:12px}
+    .metric-label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+    .metric-value{font:22px 'Courier New',monospace;font-weight:600;margin-bottom:2px;min-width:5.5ch;text-align:right}
+    .metric-spark{height:30px;width:100%;display:block}
+    .controls{border-top:1px solid #d0d0d0;padding-top:16px;margin-bottom:20px}
+    .btn-group{display:inline-block;margin-right:16px;margin-bottom:10px;vertical-align:top}
+    .btn-label{font-size:11px;color:#666;margin-bottom:4px;display:block}
+    button{font:12px -apple-system,sans-serif;padding:6px 12px;background:#000;color:#fff;border:none;cursor:pointer;margin-right:4px}
+    button:hover{background:#333}
+    button.stop{background:#c00}
+    button.stop:hover{background:#e00}
+    button:disabled{background:#999;cursor:not-allowed}
+    .select{font:12px -apple-system,sans-serif;padding:6px;background:#fff;border:1px solid #d0d0d0;margin-right:4px}
+    .config{border-top:1px solid #d0d0d0;padding-top:16px}
+    .config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px}
+    .config-label{font-size:11px;color:#666;margin-bottom:3px;display:block}
+    .config-input{font:13px 'Courier New',monospace;width:100%;padding:4px 6px;border:1px solid #d0d0d0;background:#fff}
+    .config-input:focus{outline:2px solid #000;outline-offset:-2px}
+    .sim-only{background:#f7f9ff;padding:10px;border:1px solid #dbe4ff;margin-bottom:16px}
+    .note{font-size:11px;color:#666;margin-top:6px}
+    .warn{color:#a35a00}
+    .mono{font-family:'Courier New',monospace}
   </style>
 </head>
 <body>
-  <div class="row">
-    <span class="badge sim" id="simBadge">SIM TARGET: prism_01</span>
-  </div>
-
-  <div class="card">
-    <div class="row">
-      <label>Instance</label>
-      <select id="instanceSelect"></select>
-      <button id="createInstance">Create prism_02</button>
+  <div class="container">
+    <h1>PRISM Sim Haptic Controller</h1>
+    <div class="subtitle">
+      <span class="badge" id="targetBadge">SIM TARGET: prism_01</span>
+      <span class="badge">HARDWARE-STYLE</span>
+      <span id="statusNote">Loading...</span>
     </div>
 
-    <div class="row">
-      <label>Handle</label>
-      <select id="handleSelect"></select>
-      <button id="applyHandle">Apply Handle</button>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Position (deg)</div><div class="metric-value" id="pos">--</div><canvas class="metric-spark" id="sp"></canvas></div>
+      <div class="metric"><div class="metric-label">Velocity (rad/s)</div><div class="metric-value" id="vel">--</div><canvas class="metric-spark" id="sv"></canvas></div>
+      <div class="metric"><div class="metric-label">Torque (Nm)</div><div class="metric-value" id="tor">--</div><canvas class="metric-spark" id="st"></canvas></div>
     </div>
 
-    <div class="row">
-      <label>Preset</label>
-      <select id="presetSelect"></select>
-      <button id="applyPreset">Apply Preset</button>
+    <div class="sim-only">
+      <div class="btn-group">
+        <span class="btn-label">Instance Selector (Sim-only)</span>
+        <select id="instanceSelect" class="select"></select>
+        <button id="createInstance">Create prism_02</button>
+      </div>
+      <div class="btn-group">
+        <span class="btn-label">Viewer Target Select / Switch (Sim-only)</span>
+        <button id="switchViewer">Switch Viewer to Selected</button>
+      </div>
+      <div class="btn-group">
+        <span class="btn-label">Handle Selector + Swap (Sim-only)</span>
+        <select id="handleSelect" class="select"></select>
+        <button id="applyHandle">Apply Handle</button>
+      </div>
+      <div class="btn-group">
+        <span class="btn-label">Manual Position Drag Slider (Sim-only)</span>
+        <input id="manualPos" type="range" min="-180" max="180" value="0" step="0.5" style="width:220px;vertical-align:middle">
+        <span class="mono" id="manualPosValue">0.0</span>
+        <button id="applyPos">Apply</button>
+      </div>
+      <div class="btn-group">
+        <span class="btn-label">Scene / Debug Controls (Sim-only)</span>
+        <button id="worldFrameBtn" disabled>World Frame (startup-only)</button>
+        <button id="modelTriadBtn" disabled>Model Triad (startup-only)</button>
+      </div>
+      <div class="note">Scene/debug toggles are currently startup args on the server; runtime API wiring is not implemented yet.</div>
     </div>
 
-    <div class="row">
-      <label>Manual Position (deg)</label>
-      <input id="manualPos" type="range" min="-180" max="180" value="0" step="0.5" style="width: 320px;" />
-      <span id="manualPosValue">0.0</span>
-      <button id="applyPos">Apply</button>
+    <div class="controls">
+      <div class="btn-group"><span class="btn-label">System (Shared)</span><button id="startBtn">Resume</button><button class="stop" id="stopBtn">Pause</button></div>
+      <div class="btn-group"><span class="btn-label">Load Preset Intent (Shared)</span><select id="presetLoad" class="select"></select><button id="applyPresetIntent">Apply Preset</button></div>
+      <div class="btn-group"><span class="btn-label">Runtime Step (Sim helper)</span><button id="stepBtn">Step 10</button></div>
     </div>
 
-    <div class="row">
-      <button id="pauseBtn">Pause</button>
-      <button id="resumeBtn">Resume</button>
-      <button id="stepBtn">Step 10</button>
+    <div class="config">
+      <div class="config-grid">
+        <div><label class="config-label">Viscous (Nm·s/rad)</label><input class="config-input" type="number" id="viscous" step="0.01"></div>
+        <div><label class="config-label">Coulomb (Nm)</label><input class="config-input" type="number" id="coulomb" step="0.01"></div>
+        <div><label class="config-label">Wall Stiff (Nm/turn)</label><input class="config-input" type="number" id="stiffness" step="0.1"></div>
+        <div><label class="config-label">Wall Damp (Nm·s/turn)</label><input class="config-input" type="number" id="damping" step="0.01"></div>
+        <div><label class="config-label">Travel (deg)</label><input class="config-input" type="number" id="travel" step="1"></div>
+        <div><label class="config-label">Torque Limit (Nm)</label><input class="config-input" type="number" id="torque_limit" step="0.1"></div>
+        <div><label class="config-label">Smoothing (ε)</label><input class="config-input" type="number" id="smoothing" step="0.0001"></div>
+      </div>
+      <button id="applyConfigBtn" disabled>Apply Current Config Fields (planned)</button>
+      <div class="note warn">Planned: POST config endpoint parity on sim API is not yet implemented, so this section is read-only for now.</div>
     </div>
-  </div>
 
-  <div class="row" style="margin-top: 12px;">
-    <div class="telem" id="telem">loading...</div>
+    <div class="config" style="margin-top:20px">
+      <h2 style="font-size:14px;margin-bottom:12px">Manage Presets (Shared)</h2>
+      <div style="margin-bottom:12px">
+        <label class="config-label">Select Preset to Edit</label>
+        <select class="config-input" id="presetSelect" style="max-width:220px"></select>
+      </div>
+      <div class="config-grid">
+        <div><label class="config-label">Name</label><input class="config-input" type="text" id="pname" maxlength="30"></div>
+        <div><label class="config-label">Viscous</label><input class="config-input" type="number" id="pviscous" step="0.01"></div>
+        <div><label class="config-label">Coulomb</label><input class="config-input" type="number" id="pcoulomb" step="0.01"></div>
+        <div><label class="config-label">Wall Stiff</label><input class="config-input" type="number" id="pstiffness" step="0.1"></div>
+        <div><label class="config-label">Wall Damp</label><input class="config-input" type="number" id="pdamping" step="0.01"></div>
+        <div><label class="config-label">Travel</label><input class="config-input" type="number" id="ptravel" step="1"></div>
+        <div><label class="config-label">Torque Limit</label><input class="config-input" type="number" id="ptorque" step="0.1"></div>
+        <div><label class="config-label">Smoothing</label><input class="config-input" type="number" id="psmoothing" step="0.0001"></div>
+      </div>
+      <div style="margin-top:12px">
+        <button id="savePresetBtn" disabled>Save Preset Changes (planned)</button>
+        <button id="saveCurrentPresetBtn" disabled style="margin-left:8px">Save Current Config to Preset (planned)</button>
+      </div>
+      <div class="note warn">Planned: preset editing endpoints are not yet implemented on sim API. Preset load intent is wired via Apply Preset.</div>
+    </div>
   </div>
 
   <script>
+    const statusEls = [document.getElementById('pos'), document.getElementById('vel'), document.getElementById('tor')];
+    const sparkEls = [document.getElementById('sp'), document.getElementById('sv'), document.getElementById('st')];
+    const sparkData = [[], [], []];
+    const sparkMax = 60;
+
     const instanceSelect = document.getElementById('instanceSelect');
     const handleSelect = document.getElementById('handleSelect');
+    const presetLoad = document.getElementById('presetLoad');
     const presetSelect = document.getElementById('presetSelect');
-    const simBadge = document.getElementById('simBadge');
-    const telem = document.getElementById('telem');
     const manualPos = document.getElementById('manualPos');
     const manualPosValue = document.getElementById('manualPosValue');
+    const targetBadge = document.getElementById('targetBadge');
+    const statusNote = document.getElementById('statusNote');
+
     let dragActive = false;
     let dragTimer = null;
-    let presetDirty = false;
-    let manualOverrideUntil = 0;
+    let dragLastPosDeg = 0.0;
+    let dragLastTsMs = 0.0;
 
     function activeInstance() {
       return instanceSelect.value || 'prism_01';
@@ -83,59 +157,175 @@
       return await r.json();
     }
 
+    function drawSpark(canvas, values) {
+      const width = canvas.width = canvas.offsetWidth * 2;
+      const height = canvas.height = canvas.offsetHeight * 2;
+      const context = canvas.getContext('2d');
+      context.clearRect(0, 0, width, height);
+      if (values.length < 2) return;
+      const low = Math.min(...values);
+      const high = Math.max(...values);
+      const range = (high - low) || 1;
+      context.strokeStyle = '#000';
+      context.lineWidth = 2;
+      context.beginPath();
+      values.forEach((value, idx) => {
+        const x = (idx / (values.length - 1)) * width;
+        const y = height - ((value - low) / range) * height;
+        if (idx === 0) context.moveTo(x, y); else context.lineTo(x, y);
+      });
+      context.stroke();
+    }
+
+    function setConfigFromStatus(status) {
+      const closedPos = Number(status.closed_pos || 0);
+      const openPos = Number(status.open_pos || 0);
+      document.getElementById('viscous').value = Number(status.viscous || 0).toFixed(3);
+      document.getElementById('coulomb').value = Number(status.coulomb || 0).toFixed(3);
+      document.getElementById('stiffness').value = Number(status.wall_stiffness || 0).toFixed(2);
+      document.getElementById('damping').value = Number(status.wall_damping || 0).toFixed(3);
+      document.getElementById('travel').value = (openPos - closedPos).toFixed(1);
+      document.getElementById('torque_limit').value = Number(status.torque_limit || 0).toFixed(2);
+      document.getElementById('smoothing').value = Number(status.smoothing || 0).toFixed(6);
+    }
+
+    function setPresetEditorFromPreset(name) {
+      document.getElementById('pname').value = name;
+      document.getElementById('pviscous').value = document.getElementById('viscous').value;
+      document.getElementById('pcoulomb').value = document.getElementById('coulomb').value;
+      document.getElementById('pstiffness').value = document.getElementById('stiffness').value;
+      document.getElementById('pdamping').value = document.getElementById('damping').value;
+      document.getElementById('ptravel').value = document.getElementById('travel').value;
+      document.getElementById('ptorque').value = document.getElementById('torque_limit').value;
+      document.getElementById('psmoothing').value = document.getElementById('smoothing').value;
+    }
+
     async function refreshInstances() {
       const data = await api('/api/v1/instances');
       const prev = activeInstance();
       instanceSelect.innerHTML = '';
       for (const inst of data.instances || []) {
-        const opt = document.createElement('option');
-        opt.value = inst.instance_id;
-        opt.textContent = `${inst.instance_id} (${inst.handle_id})`;
-        instanceSelect.appendChild(opt);
+        const option = document.createElement('option');
+        option.value = inst.instance_id;
+        option.textContent = `${inst.instance_id} (${inst.handle_id})`;
+        instanceSelect.appendChild(option);
       }
       if ([...instanceSelect.options].some(o => o.value === prev)) {
         instanceSelect.value = prev;
       }
-      simBadge.textContent = `SIM TARGET: ${activeInstance()}`;
+      targetBadge.textContent = `SIM TARGET: ${activeInstance()}`;
     }
 
     async function refreshHandles() {
       const data = await api('/api/v1/handles');
       handleSelect.innerHTML = '';
       for (const h of data.handles || []) {
-        const opt = document.createElement('option');
-        opt.value = h.handle_id;
-        opt.textContent = `${h.handle_id} [${h.units}]`;
-        handleSelect.appendChild(opt);
+        const option = document.createElement('option');
+        option.value = h.handle_id;
+        option.textContent = `${h.handle_id} [${h.units}]`;
+        handleSelect.appendChild(option);
       }
     }
 
     async function refreshPresets() {
       const data = await api('/api/v1/presets');
+      presetLoad.innerHTML = '';
       presetSelect.innerHTML = '';
-      for (const p of data.presets || []) {
-        const opt = document.createElement('option');
-        opt.value = p;
-        opt.textContent = p;
-        presetSelect.appendChild(opt);
+      for (const name of data.presets || []) {
+        const a = document.createElement('option');
+        a.value = name;
+        a.textContent = name;
+        presetLoad.appendChild(a);
+        presetSelect.appendChild(a.cloneNode(true));
       }
+      setPresetEditorFromPreset(presetSelect.value || 'UNKNOWN');
+    }
+
+    async function refreshConfig() {
+      const data = await api(`/api/v1/config?instance_id=${encodeURIComponent(activeInstance())}`);
+      setConfigFromStatus(data);
+      setPresetEditorFromPreset(presetSelect.value || data.preset || 'UNKNOWN');
     }
 
     async function refreshTelemetry() {
-      const id = encodeURIComponent(activeInstance());
-      const data = await api(`/api/v1/status?instance_id=${id}`);
-      simBadge.textContent = `SIM TARGET: ${data.target_id || activeInstance()}`;
-      const canSyncPreset = !presetDirty && document.activeElement !== presetSelect;
-      if (canSyncPreset && data.active_preset && [...presetSelect.options].some(o => o.value === data.active_preset)) {
-        presetSelect.value = data.active_preset;
+      const data = await api(`/api/v1/status?instance_id=${encodeURIComponent(activeInstance())}`);
+      const values = [Number(data.pos_deg || 0), Number(data.vel_rad_s || 0), Number(data.torque_nm || 0)];
+      values.forEach((value, idx) => {
+        statusEls[idx].textContent = idx === 2 ? value.toFixed(3) : value.toFixed(2);
+        sparkData[idx].push(value);
+        if (sparkData[idx].length > sparkMax) sparkData[idx].shift();
+        drawSpark(sparkEls[idx], sparkData[idx]);
+      });
+
+      if (!dragActive) {
+        manualPos.value = values[0];
+        manualPosValue.textContent = values[0].toFixed(1);
       }
-      telem.textContent = JSON.stringify(data, null, 2);
-      const canSyncManualPos = !dragActive && document.activeElement !== manualPos && Date.now() > manualOverrideUntil;
-      if (canSyncManualPos) {
-        manualPosValue.textContent = Number(data.pos_deg || 0).toFixed(1);
-        manualPos.value = Number(data.pos_deg || 0);
+      const runState = (typeof data.running === 'boolean') ? (data.running ? 'running' : 'paused') : 'unknown';
+      statusNote.textContent = `status=${data.status} ${runState} preset=${data.active_preset}`;
+      targetBadge.textContent = `SIM TARGET: ${data.target_id || activeInstance()}`;
+    }
+
+    async function trySwitchViewer(instanceId) {
+      try {
+        await api('/api/v1/viewer/select', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instance_id: instanceId, target_kind: 'sim', target_id: instanceId })
+        });
+        return true;
+      } catch {
+        return false;
       }
     }
+
+    function estimateDragVelRadS() {
+      const nowMs = performance.now();
+      const currentDeg = Number(manualPos.value);
+      if (dragLastTsMs <= 0) {
+        dragLastTsMs = nowMs;
+        dragLastPosDeg = currentDeg;
+        return 0.0;
+      }
+      const dtS = (nowMs - dragLastTsMs) / 1000.0;
+      if (dtS <= 1e-4) {
+        return 0.0;
+      }
+      const degPerS = (currentDeg - dragLastPosDeg) / dtS;
+      dragLastTsMs = nowMs;
+      dragLastPosDeg = currentDeg;
+      const radPerS = degPerS * (Math.PI / 180.0);
+      return Math.max(-20.0, Math.min(20.0, radPerS));
+    }
+
+    async function sendPosition(velRadS = 0.0) {
+      await api('/api/v1/interaction/set_position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance_id: activeInstance(), position_deg: Number(manualPos.value), vel_rad_s: Number(velRadS) })
+      });
+    }
+
+    document.getElementById('startBtn').onclick = async () => {
+      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resume' }) });
+    };
+    document.getElementById('stopBtn').onclick = async () => {
+      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'pause' }) });
+    };
+    document.getElementById('stepBtn').onclick = async () => {
+      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'step', ticks: 10 }) });
+      await refreshTelemetry();
+    };
+
+    document.getElementById('applyPresetIntent').onclick = async () => {
+      await api('/api/v1/preset/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance_id: activeInstance(), preset: presetLoad.value })
+      });
+      await refreshConfig();
+      await refreshTelemetry();
+    };
 
     document.getElementById('createInstance').onclick = async () => {
       await api('/api/v1/instances', {
@@ -144,6 +334,17 @@
         body: JSON.stringify({ instance_id: 'prism_02' })
       });
       await refreshInstances();
+      if ([...instanceSelect.options].some(o => o.value === 'prism_02')) {
+        instanceSelect.value = 'prism_02';
+      }
+      await trySwitchViewer(activeInstance());
+      await refreshConfig();
+      await refreshTelemetry();
+    };
+
+    document.getElementById('switchViewer').onclick = async () => {
+      const ok = await trySwitchViewer(activeInstance());
+      statusNote.textContent = ok ? `viewer switched to ${activeInstance()}` : 'viewer switch unavailable (server not in --with-viewer mode)';
     };
 
     document.getElementById('applyHandle').onclick = async () => {
@@ -156,85 +357,54 @@
       await refreshTelemetry();
     };
 
-    document.getElementById('applyPreset').onclick = async () => {
-      await api('/api/v1/preset/select', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instance_id: activeInstance(), preset: presetSelect.value })
-      });
-      presetDirty = false;
-      await refreshInstances();
-      await refreshTelemetry();
+    manualPos.oninput = () => {
+      manualPosValue.textContent = Number(manualPos.value).toFixed(1);
     };
-
-    presetSelect.onchange = () => {
-      presetDirty = true;
-    };
-
-    manualPos.oninput = () => { manualPosValue.textContent = Number(manualPos.value).toFixed(1); };
-
-    async function postDragPosition() {
-      if (!dragActive) return;
-      manualOverrideUntil = Date.now() + 1000;
-      await api('/api/v1/interaction/set_position', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instance_id: activeInstance(), position_deg: Number(manualPos.value) })
-      });
-    }
 
     manualPos.addEventListener('pointerdown', () => {
       dragActive = true;
-      manualOverrideUntil = Date.now() + 1000;
+      dragLastPosDeg = Number(manualPos.value);
+      dragLastTsMs = performance.now();
       if (dragTimer) clearInterval(dragTimer);
-      dragTimer = setInterval(postDragPosition, 25);
-      postDragPosition();
-    });
-    manualPos.addEventListener('pointerup', () => {
-      dragActive = false;
-      if (dragTimer) clearInterval(dragTimer);
-      dragTimer = null;
-    });
-    manualPos.addEventListener('pointerleave', () => {
-      dragActive = false;
-      if (dragTimer) clearInterval(dragTimer);
-      dragTimer = null;
-    });
-    manualPos.addEventListener('pointercancel', () => {
-      dragActive = false;
-      if (dragTimer) clearInterval(dragTimer);
-      dragTimer = null;
+      dragTimer = setInterval(async () => {
+        try { await sendPosition(estimateDragVelRadS()); } catch {}
+      }, 30);
+      sendPosition(0.0);
     });
 
-    document.getElementById('applyPos').onclick = async () => {
-      manualOverrideUntil = Date.now() + 1000;
-      await api('/api/v1/interaction/set_position', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instance_id: activeInstance(), position_deg: Number(manualPos.value) })
-      });
+    const stopDrag = () => {
+      dragActive = false;
+      if (dragTimer) clearInterval(dragTimer);
+      dragTimer = null;
+      dragLastTsMs = 0.0;
+    };
+    manualPos.addEventListener('pointerup', stopDrag);
+    manualPos.addEventListener('pointercancel', stopDrag);
+    manualPos.addEventListener('pointerleave', stopDrag);
+    document.getElementById('applyPos').onclick = async () => { await sendPosition(0.0); await refreshTelemetry(); };
+
+    instanceSelect.onchange = async () => {
+      await trySwitchViewer(activeInstance());
+      await refreshConfig();
       await refreshTelemetry();
     };
 
-    document.getElementById('pauseBtn').onclick = async () => {
-      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'pause' }) });
-    };
-    document.getElementById('resumeBtn').onclick = async () => {
-      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resume' }) });
-    };
-    document.getElementById('stepBtn').onclick = async () => {
-      await api('/api/v1/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'step', ticks: 10 }) });
-      await refreshTelemetry();
-    };
-
-    instanceSelect.onchange = () => refreshTelemetry();
+    presetSelect.onchange = () => setPresetEditorFromPreset(presetSelect.value || 'UNKNOWN');
+    presetLoad.onchange = () => setPresetEditorFromPreset(presetLoad.value || 'UNKNOWN');
 
     (async () => {
-      await refreshHandles();
-      await refreshPresets();
-      await refreshInstances();
-      await refreshTelemetry();
-      setInterval(refreshTelemetry, 250);
+      try {
+        await refreshInstances();
+        await refreshHandles();
+        await refreshPresets();
+        await refreshConfig();
+        await refreshTelemetry();
+        setInterval(async () => {
+          try { await refreshTelemetry(); } catch {}
+        }, 150);
+      } catch (err) {
+        statusNote.textContent = String(err);
+      }
     })();
   </script>
 </body>
