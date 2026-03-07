@@ -5,9 +5,9 @@ from pathlib import Path
 import threading
 import time
 
-from run_sim import PrismSim
-from run_sim import PRESETS
-from handle_catalog import (
+from simulation.run_sim import PrismSim
+from simulation.run_sim import PRESETS
+from simulation.handle_catalog import (
     HandleDefinition,
     build_model_for_handle,
     load_handle_catalog,
@@ -177,7 +177,12 @@ class PrismRuntimeManager:
     def step_all(self, ticks: int = 1) -> None:
         ticks = max(1, int(ticks))
         with self._lock:
-            for _ in range(ticks):
+            import contextlib
+            v_lock = self._viewer.lock() if getattr(self, '_viewer', None) else contextlib.nullcontext()
+            with v_lock:
+                for _ in range(ticks):
+                    for instance in self._instances.values():
+                        instance.sim.step_control_tick()
                 for instance in self._instances.values():
                     instance.sim.step_control_tick()
 
@@ -265,6 +270,10 @@ class PrismRuntimeManager:
         with self._lock:
             inst = self.get_instance(instance_id)
             return inst.sim.model, inst.sim.data
+
+    def register_viewer(self, viewer) -> None:
+        with self._lock:
+            self._viewer = viewer
 
     def sync_viewer(self, viewer) -> None:
         with self._lock:

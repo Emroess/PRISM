@@ -4,11 +4,7 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-SIM_DIR = ROOT / "simulation"
-if str(SIM_DIR) not in sys.path:
-    sys.path.insert(0, str(SIM_DIR))
-
-from handle_catalog import load_handle_catalog, validate_handle_assets
+from simulation.handle_catalog import load_handle_catalog, validate_handle_assets
 
 
 def main() -> int:

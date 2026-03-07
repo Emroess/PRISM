@@ -3,19 +3,13 @@ import mujoco.viewer
 import numpy as np
 import time
 from pathlib import Path
-import sys
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-SCRIPTS_DIR = SCRIPT_DIR.parent / "scripts"
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
-
-from prism_physics import PrismPhysics, PRESETS
-from firmware_faithful_controller import (
+from scripts.prism_physics import PrismPhysics, PRESETS
+from scripts.firmware_faithful_controller import (
     FirmwareFaithfulTorqueController,
     ControllerRuntimeConfig,
 )
-from nonidealities import (
+from simulation.nonidealities import (
     ActuatorNonidealityConfig,
     SensorNonidealityConfig,
     DelayLine,
@@ -183,6 +177,6 @@ class PrismSim:
                     time.sleep(time_until_next_step)
 
 if __name__ == "__main__":
-    model_path = str(SCRIPT_DIR.parent / "models" / "prism_device.xml")
+    model_path = str(Path(__file__).resolve().parents[1] / "models" / "prism_device.xml")
     sim = PrismSim(model_path, preset_name='HEAVY', control_hz=1000.0)
     sim.run()

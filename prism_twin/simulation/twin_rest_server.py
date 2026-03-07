@@ -12,8 +12,8 @@ from urllib.parse import parse_qs, urlparse
 import mujoco
 import mujoco.viewer
 
-from instance_manager import PrismRuntimeManager
-from target_router import RealTargetAdapter, SimTargetAdapter, TargetNotConfiguredError, TargetRouter
+from simulation.instance_manager import PrismRuntimeManager
+from simulation.target_router import RealTargetAdapter, SimTargetAdapter, TargetNotConfiguredError, TargetRouter
 
 
 class TwinApiHandler(BaseHTTPRequestHandler):
@@ -473,7 +473,12 @@ def main() -> int:
 
                 mgr.ensure_instance(current_view_instance)
                 model, data = mgr.get_viewer_state(current_view_instance)
-                with mujoco.viewer.launch_passive(model, data) as viewer:
+                
+                with mgr._lock:
+                    viewer = mujoco.viewer.launch_passive(model, data)
+                    mgr.register_viewer(viewer)
+
+                try:
                     viewer.opt.geomgroup[4] = 1 if args.show_model_triad else 0
                     viewer.opt.sitegroup[4] = 1 if args.show_model_triad else 0
                     if args.show_world_frame:
@@ -486,6 +491,10 @@ def main() -> int:
                         if requested_switch:
                             break
                         time.sleep(0.01)
+                finally:
+                    with mgr._lock:
+                        mgr.register_viewer(None)
+                    viewer.close()
 
                 with TwinApiHandler.session_lock:
                     requested_switch = bool(TwinApiHandler.viewer_switch_requested)

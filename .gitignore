@@ -1,7 +1,27 @@
 /firmware/build/
 
+# Python caching & environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.env
+.venv
+env/
+venv/
+
+# IDEs & static analysis
+.pyre/
+.vscode/
+.idea/
+.mypy_cache/
+
 # prism_twin local/runtime artifacts
 /prism_twin/.venv/
 /prism_twin/**/__pycache__/
 /prism_twin/**/*.pyc
 /prism_twin/reports/*.tmp
+/prism_twin/models/generated/*
+
+testing_scripts

@@ -11,14 +11,9 @@ import numpy as np
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT_DIR = SCRIPT_DIR.parent
 
-import sys
-
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
-
-from run_sim import PrismSim
-from nonidealities import ActuatorNonidealityConfig, SensorNonidealityConfig
-from firmware_faithful_controller import FirmwareFaithfulTorqueController, ControllerRuntimeConfig
+from simulation.run_sim import PrismSim
+from simulation.nonidealities import ActuatorNonidealityConfig, SensorNonidealityConfig
+from scripts.firmware_faithful_controller import FirmwareFaithfulTorqueController, ControllerRuntimeConfig
 
 
 @dataclass
@@ -106,7 +101,7 @@ def _compute_torque_metrics(samples: list[ValidationSample]) -> dict[str, float]
     rmse = float(np.sqrt(np.mean(error * error)))
     peak_err = float(np.max(np.abs(error)))
 
-    command_peak = float(np.max(np.abs(command))) if command.size else 0.0
+    command_peak = float(np.max(np.abs(ref_torque))) if ref_torque.size else 0.0
     ref_peak = float(np.max(np.abs(ref_torque))) if ref_torque.size else 0.0
     if ref_peak < 1e-9:
         overshoot = 0.0

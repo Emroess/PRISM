@@ -4,11 +4,8 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-SIM_DIR = ROOT / "simulation"
-if str(SIM_DIR) not in sys.path:
-    sys.path.insert(0, str(SIM_DIR))
 
-from instance_manager import PrismRuntimeManager
+from simulation.instance_manager import PrismRuntimeManager
 
 
 def main() -> int:

@@ -4,11 +4,7 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-SIM_DIR = ROOT / "simulation"
-if str(SIM_DIR) not in sys.path:
-    sys.path.insert(0, str(SIM_DIR))
-
-from run_sim import PrismSim
+from simulation.run_sim import PrismSim
 
 
 REQUIRED_TOP_LEVEL = {
