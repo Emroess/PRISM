@@ -57,14 +57,32 @@
 - [ ] J2. Verify API and telemetry isolation by `instance_id`.
 - [ ] J3. Add regression tests for handle swap correctness and persistence.
 
+## Phase K — Unified API / Multi-Target Routing
+- [x] K1. Add explicit `target_kind`/`target_id` metadata in status/config responses.
+- [ ] K2. Introduce formal Target Router abstraction (`sim` and `real` adapters behind one API surface).
+- [ ] K3. Enforce sim-only endpoint gating (reject or no-op on `target_kind=real`).
+- [ ] K4. Add cross-target contract tests to confirm schema parity for shared endpoints.
+
+## Phase L — UI Strategy and Deployment Split
+- [x] L1. Decide deployment split: STM32-hosted hardware UI remains real-only; independent sim helper UI for simulation.
+- [ ] L2. Define shared control surface vs sim-only control surface.
+- [ ] L3. Update helper UI to clearly label sim-only controls and target context.
+- [ ] L4. Document operator workflow for choosing real vs sim UI paths.
+
+## Phase M — Composed MuJoCo Scene Integration
+- [ ] M1. Define attach-to-existing-scene mode (operate on PRISM instance inside larger MuJoCo model).
+- [ ] M2. Add namespace contract for PRISM entities in multi-articulation scenes.
+- [ ] M3. Validate PRISM + robot-arm co-simulation baseline without changing PRISM controller semantics.
+- [ ] M4. Add regression scenario for PRISM interaction in a composed scene.
+
 ## Immediate Work Started (Now)
 1. Implement Phase B (preset extraction + loader parity). ✅
 2. Implement Phase E baseline telemetry parity. ✅
 3. Scaffold deterministic runner hook (Phase C5). ✅
 
 ## Next Actions (Priority Order)
-1. Build `instance_id` runtime/API routing (Phase G1-G4).
-2. Add handle catalog + loader + swap path (Phase H1-H3).
-3. Implement minimal sim helper UI for target and handle selection (Phase I1-I2).
-4. Add click-drag interaction with live telemetry (Phase I3-I4).
-5. Extend validation to multi-instance isolation checks (Phase J1-J2).
+1. Land persistence hardening and runtime diagnostics acceptance for reconnect safety.
+2. Implement Phase K2-K4 (formal target router + target-gating + contract tests).
+3. Execute Phase L2-L4 (clear split between shared vs sim-only UI controls).
+4. Begin Phase M1-M2 to guarantee compatibility with larger composed MuJoCo scenes.
+5. Defer containerization for viewer path; containerize headless runtime only after K/L contracts stabilize.

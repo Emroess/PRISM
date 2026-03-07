@@ -4,6 +4,7 @@ import argparse
 import json
 import threading
 import time
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -12,10 +13,21 @@ import mujoco
 import mujoco.viewer
 
 from instance_manager import PrismRuntimeManager
+from target_router import RealTargetAdapter, SimTargetAdapter, TargetNotConfiguredError, TargetRouter
 
 
 class TwinApiHandler(BaseHTTPRequestHandler):
     manager: PrismRuntimeManager | None = None
+    router: TargetRouter | None = None
+    runtime_started_at_s: float = 0.0
+    request_count: int = 0
+    session_bindings: dict[str, dict] = {}
+    session_lock = threading.RLock()
+    session_ttl_s: float = 900.0
+    session_max_count: int = 64
+    viewer_enabled: bool = False
+    viewer_instance_id: str = "prism_01"
+    viewer_switch_requested: bool = False
 
     def _send_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload).encode("utf-8")
@@ -37,12 +49,38 @@ class TwinApiHandler(BaseHTTPRequestHandler):
             return query["instance_id"][0]
         if "instance_id" in body:
             return str(body["instance_id"])
+        session_id = self._session_id(query, body)
+        if session_id:
+            with self.session_lock:
+                session = self.session_bindings.get(session_id)
+                if session is not None:
+                    session["last_seen_s"] = time.time()
+                    return str(session["instance_id"])
         return "prism_01"
+
+    def _session_id(self, query: dict, body: dict) -> str | None:
+        if "session_id" in query and len(query["session_id"]) > 0:
+            return str(query["session_id"][0])
+        if "session_id" in body and body["session_id"]:
+            return str(body["session_id"])
+        return None
 
     def _manager(self) -> PrismRuntimeManager:
         if self.manager is None:
             raise RuntimeError("Manager not initialized")
         return self.manager
+
+    def _router(self) -> TargetRouter:
+        if self.router is None:
+            raise RuntimeError("Target router not initialized")
+        return self.router
+
+    def _require_sim_target(self, query: dict, body: dict, default_instance_id: str = "prism_01") -> str:
+        router = self._router()
+        target = router.resolve_target(query, body, default_target_id=default_instance_id)
+        if target.target_kind != "sim":
+            raise ValueError("This endpoint is simulation-only. Use target_kind=sim.")
+        return target.target_id
 
     def _send_html(self, status: int, html_text: str) -> None:
         body = html_text.encode("utf-8")
@@ -52,7 +90,98 @@ class TwinApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _bump_request_count(self) -> int:
+        with self.session_lock:
+            self.request_count += 1
+            return self.request_count
+
+    def _prune_sessions(self) -> dict:
+        now_s = time.time()
+        with self.session_lock:
+            before = len(self.session_bindings)
+            expired_ids = [
+                sid
+                for sid, item in self.session_bindings.items()
+                if (now_s - float(item.get("last_seen_s", now_s))) > self.session_ttl_s
+            ]
+            for sid in expired_ids:
+                self.session_bindings.pop(sid, None)
+
+            evicted = 0
+            if len(self.session_bindings) > self.session_max_count:
+                ranked = sorted(
+                    self.session_bindings.items(),
+                    key=lambda kv: float(kv[1].get("last_seen_s", now_s)),
+                )
+                overflow = len(self.session_bindings) - self.session_max_count
+                for sid, _ in ranked[:overflow]:
+                    self.session_bindings.pop(sid, None)
+                    evicted += 1
+
+            after = len(self.session_bindings)
+        return {
+            "before": before,
+            "after": after,
+            "expired": len(expired_ids),
+            "evicted": evicted,
+        }
+
+    def _runtime_payload(self, mgr: PrismRuntimeManager) -> dict:
+        summary = mgr.runtime_summary()
+        with self.session_lock:
+            sessions = [
+                {
+                    "session_id": sid,
+                    "instance_id": item["instance_id"],
+                    "client_id": item.get("client_id", ""),
+                    "created_at_s": float(item["created_at_s"]),
+                    "last_seen_s": float(item["last_seen_s"]),
+                }
+                for sid, item in self.session_bindings.items()
+            ]
+            req_count = int(self.request_count)
+        return {
+            "status": "ok",
+            "uptime_s": float(time.time() - self.runtime_started_at_s),
+            "requests": req_count,
+            "session_policy": {
+                "ttl_s": float(self.session_ttl_s),
+                "max_count": int(self.session_max_count),
+            },
+            "manager": summary,
+            "instances": mgr.list_instances(),
+            "sessions": sessions,
+        }
+
+    def _capabilities_payload(self, mgr: PrismRuntimeManager) -> dict:
+        composed_mode = bool(mgr.runtime_summary().get("composed_mode", False))
+        return {
+            "status": "ok",
+            "targets": {
+                "sim": {
+                    "configured": True,
+                    "shared_endpoints": ["status", "config"],
+                    "sim_only_endpoints": [
+                        "instances",
+                        "session_bind",
+                        "control",
+                        "handle_select",
+                        "preset_select",
+                        "interaction_set_position",
+                    ],
+                    "composed_mode": composed_mode,
+                },
+                "real": {
+                    "configured": False,
+                    "shared_endpoints": ["status", "config"],
+                    "sim_only_endpoints": [],
+                },
+            },
+        }
+
     def do_GET(self) -> None:
+        self._bump_request_count()
+        self._prune_sessions()
         mgr = self._manager()
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
@@ -64,15 +193,17 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/status":
-                instance_id = self._instance_id(query, {})
-                mgr.ensure_instance(instance_id)
-                self._send_json(200, mgr.get_status(instance_id))
+                default_instance_id = self._instance_id(query, {})
+                target = self._router().resolve_target(query, {}, default_target_id=default_instance_id)
+                adapter = self._router().get_adapter(target.target_kind)
+                self._send_json(200, adapter.get_status(target.target_id))
                 return
 
             if parsed.path == "/api/v1/config":
-                instance_id = self._instance_id(query, {})
-                mgr.ensure_instance(instance_id)
-                self._send_json(200, mgr.get_config(instance_id))
+                default_instance_id = self._instance_id(query, {})
+                target = self._router().resolve_target(query, {}, default_target_id=default_instance_id)
+                adapter = self._router().get_adapter(target.target_kind)
+                self._send_json(200, adapter.get_config(target.target_id))
                 return
 
             if parsed.path == "/api/v1/instances":
@@ -87,11 +218,38 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 self._send_json(200, {"presets": mgr.available_presets()})
                 return
 
+            if parsed.path == "/api/v1/health":
+                runtime = mgr.runtime_summary()
+                session_stats = self._prune_sessions()
+                self._send_json(
+                    200,
+                    {
+                        "status": "ok",
+                        "uptime_s": float(time.time() - self.runtime_started_at_s),
+                        "running": bool(runtime["running"]),
+                        "instance_count": int(runtime["instance_count"]),
+                        "session_count": int(session_stats["after"]),
+                    },
+                )
+                return
+
+            if parsed.path == "/api/v1/runtime":
+                self._send_json(200, self._runtime_payload(mgr))
+                return
+
+            if parsed.path == "/api/v1/targets/capabilities":
+                self._send_json(200, self._capabilities_payload(mgr))
+                return
+
             self._send_json(404, {"status": "error", "error": "not_found"})
+        except TargetNotConfiguredError as exc:
+            self._send_json(501, {"status": "error", "error": str(exc)})
         except Exception as exc:
             self._send_json(500, {"status": "error", "error": str(exc)})
 
     def do_POST(self) -> None:
+        self._bump_request_count()
+        self._prune_sessions()
         mgr = self._manager()
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
@@ -99,17 +257,15 @@ class TwinApiHandler(BaseHTTPRequestHandler):
 
         try:
             if parsed.path == "/api/v1/instances":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 handle_id = body.get("handle_id")
                 preset = body.get("preset")
-                if instance_id in {item["instance_id"] for item in mgr.list_instances()}:
-                    self._send_json(200, {"status": "ok", "instance": mgr.get_config(instance_id)})
-                    return
-                instance = mgr.create_instance(instance_id=instance_id, handle_id=handle_id, preset=preset)
+                instance, created = mgr.create_or_get_instance(instance_id=instance_id, handle_id=handle_id, preset=preset)
                 self._send_json(
-                    201,
+                    201 if created else 200,
                     {
                         "status": "ok",
+                        "created": bool(created),
                         "instance": {
                             "instance_id": instance.instance_id,
                             "handle_id": instance.handle_id,
@@ -121,8 +277,55 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 )
                 return
 
+            if parsed.path == "/api/v1/session/bind":
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
+                create_if_missing = bool(body.get("create_if_missing", True))
+                if create_if_missing:
+                    instance, created = mgr.create_or_get_instance(instance_id=instance_id)
+                else:
+                    instance = mgr.get_instance(instance_id)
+                    created = False
+
+                session_id = self._session_id(query, body) or str(uuid.uuid4())
+                now_s = time.time()
+                client_id = str(body.get("client_id", ""))
+                with self.session_lock:
+                    existing = self.session_bindings.get(session_id)
+                    created_session = existing is None
+                    if existing is None:
+                        self.session_bindings[session_id] = {
+                            "instance_id": instance.instance_id,
+                            "client_id": client_id,
+                            "created_at_s": now_s,
+                            "last_seen_s": now_s,
+                        }
+                    else:
+                        existing["instance_id"] = instance.instance_id
+                        existing["client_id"] = client_id or existing.get("client_id", "")
+                        existing["last_seen_s"] = now_s
+
+                self._send_json(
+                    200,
+                    {
+                        "status": "ok",
+                        "created_instance": bool(created),
+                        "created_session": bool(created_session),
+                        "session_policy": {
+                            "ttl_s": float(self.session_ttl_s),
+                            "max_count": int(self.session_max_count),
+                        },
+                        "session": {
+                            "session_id": session_id,
+                            "instance_id": instance.instance_id,
+                            "target_kind": "sim",
+                            "target_id": instance.instance_id,
+                        },
+                    },
+                )
+                return
+
             if parsed.path == "/api/v1/control":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 mgr.ensure_instance(instance_id)
                 action = str(body.get("action", "step"))
                 ticks = int(body.get("ticks", 1))
@@ -144,7 +347,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/handle/select":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 handle_id = str(body.get("handle_id", ""))
                 if not handle_id:
                     self._send_json(400, {"status": "error", "error": "missing_handle_id"})
@@ -155,7 +358,7 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/preset/select":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 preset = str(body.get("preset", ""))
                 if not preset:
                     self._send_json(400, {"status": "error", "error": "missing_preset"})
@@ -166,12 +369,25 @@ class TwinApiHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/v1/interaction/set_position":
-                instance_id = self._instance_id(query, body)
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
                 position_deg = float(body.get("position_deg", 0.0))
                 vel_rad_s = float(body.get("vel_rad_s", 0.0))
                 mgr.ensure_instance(instance_id)
                 result = mgr.set_joint_position(instance_id, position_deg, vel_rad_s)
                 self._send_json(200, {"status": "ok", "result": result})
+                return
+
+            if parsed.path == "/api/v1/viewer/select":
+                cls = type(self)
+                if not cls.viewer_enabled:
+                    self._send_json(409, {"status": "error", "error": "viewer_not_enabled"})
+                    return
+                instance_id = self._require_sim_target(query, body, default_instance_id=self._instance_id(query, body))
+                mgr.ensure_instance(instance_id)
+                with self.session_lock:
+                    cls.viewer_instance_id = instance_id
+                    cls.viewer_switch_requested = True
+                self._send_json(200, {"status": "ok", "viewer_instance": instance_id})
                 return
 
             self._send_json(404, {"status": "error", "error": "not_found"})
@@ -185,7 +401,24 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="PRISM twin REST server (instance-scoped simulation API)")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8081)
+    parser.add_argument(
+        "--composed-model",
+        default="",
+        help="Optional path to an existing composed MuJoCo model to attach PRISM runtime without model regeneration.",
+    )
     parser.add_argument("--start-loop", action="store_true", help="Start background realtime stepping loop")
+    parser.add_argument(
+        "--session-ttl-s",
+        type=float,
+        default=900.0,
+        help="Session inactivity TTL in seconds before automatic expiration.",
+    )
+    parser.add_argument(
+        "--session-max-count",
+        type=int,
+        default=64,
+        help="Maximum number of active sessions before LRU-style eviction by last_seen.",
+    )
     parser.add_argument(
         "--with-viewer",
         action="store_true",
@@ -205,31 +438,59 @@ def main() -> int:
     args = parser.parse_args()
 
     root_dir = Path(__file__).resolve().parents[1]
-    mgr = PrismRuntimeManager(root_dir=root_dir)
+    composed_model_path = Path(args.composed_model).resolve() if str(args.composed_model).strip() else None
+    mgr = PrismRuntimeManager(root_dir=root_dir, composed_model_path=composed_model_path)
     mgr.ensure_instance("prism_01")
     start_loop = args.start_loop or args.with_viewer
     if start_loop:
         mgr.start(realtime=True)
 
     TwinApiHandler.manager = mgr
+    TwinApiHandler.router = TargetRouter(
+        sim_adapter=SimTargetAdapter(mgr),
+        real_adapter=RealTargetAdapter(),
+    )
+    TwinApiHandler.runtime_started_at_s = time.time()
+    TwinApiHandler.request_count = 0
+    TwinApiHandler.session_bindings = {}
+    TwinApiHandler.session_ttl_s = max(1.0, float(args.session_ttl_s))
+    TwinApiHandler.session_max_count = max(1, int(args.session_max_count))
+    TwinApiHandler.viewer_enabled = bool(args.with_viewer)
+    TwinApiHandler.viewer_instance_id = str(args.viewer_instance)
+    TwinApiHandler.viewer_switch_requested = False
     server = ThreadingHTTPServer((args.host, args.port), TwinApiHandler)
-    print(f"Twin REST server listening on http://{args.host}:{args.port}")
+    mode = "composed" if composed_model_path else "standalone"
+    print(f"Twin REST server listening on http://{args.host}:{args.port} (mode={mode})")
     try:
         if args.with_viewer:
             server_thread = threading.Thread(target=server.serve_forever, daemon=True)
             server_thread.start()
 
-            mgr.ensure_instance(args.viewer_instance)
-            model, data = mgr.get_viewer_state(args.viewer_instance)
-            with mujoco.viewer.launch_passive(model, data) as viewer:
-                viewer.opt.geomgroup[4] = 1 if args.show_model_triad else 0
-                viewer.opt.sitegroup[4] = 1 if args.show_model_triad else 0
-                if args.show_world_frame:
-                    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+            while True:
+                with TwinApiHandler.session_lock:
+                    current_view_instance = TwinApiHandler.viewer_instance_id
+                    TwinApiHandler.viewer_switch_requested = False
 
-                while viewer.is_running():
-                    mgr.sync_viewer(viewer)
-                    time.sleep(0.01)
+                mgr.ensure_instance(current_view_instance)
+                model, data = mgr.get_viewer_state(current_view_instance)
+                with mujoco.viewer.launch_passive(model, data) as viewer:
+                    viewer.opt.geomgroup[4] = 1 if args.show_model_triad else 0
+                    viewer.opt.sitegroup[4] = 1 if args.show_model_triad else 0
+                    if args.show_world_frame:
+                        viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+
+                    while viewer.is_running():
+                        mgr.sync_viewer(viewer)
+                        with TwinApiHandler.session_lock:
+                            requested_switch = bool(TwinApiHandler.viewer_switch_requested)
+                        if requested_switch:
+                            break
+                        time.sleep(0.01)
+
+                with TwinApiHandler.session_lock:
+                    requested_switch = bool(TwinApiHandler.viewer_switch_requested)
+                if not requested_switch:
+                    break
         else:
             server.serve_forever()
     finally:

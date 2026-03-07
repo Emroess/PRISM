@@ -315,21 +315,32 @@ Execution order per tick (mandatory):
 ## 16) Architecture Diagram (Mermaid)
 
 ```mermaid
-flowchart TD
-    UI[UI] --> API[REST API]
-    CLIENT[Client] --> API
-    API --> LOOP[Loop]
-    LOOP --> EST[State Estimator]
-    EST --> CTRL[Haptic Controller]
-    CTRL --> ESC[ESC Model]
-    ESC --> PLANT[MuJoCo Plant]
-    PLANT --> EST
-    LOOP --> TEL[Telemetry]
-    TEL --> API
-    PRESETS[Preset Source] --> CTRL
-    THRESH[Thresholds] --> VALID[Validation]
-    LOOP --> VALID
-    TEL --> VALID
+flowchart LR
+  OP[Operator / Client] --> API[Unified REST API]
+  SIMUI[Sim Helper UI] --> API
+  HWUI[STM32 Hardware HTML UI] --> HW[PRISM Hardware Controller]
+
+  API --> ROUTER[Target Router]
+  ROUTER --> SIMAD[Sim Target Adapter]
+  ROUTER --> REALAD[Real Target Adapter]
+
+  SIMAD --> LOOP[Sim Runtime Loop]
+  LOOP --> EST[State Estimator]
+  EST --> CTRL[Firmware-Faithful Controller]
+  CTRL --> ESC[Actuator/ESC Emulation]
+  ESC --> PLANT[MuJoCo Plant]
+  PLANT --> EST
+
+  REALAD --> HW
+
+  LOOP --> TELSIM[Telemetry Normalizer]
+  HW --> TELREAL[Telemetry Normalizer]
+  TELSIM --> API
+  TELREAL --> API
+
+  PRESETS[Preset Source] --> CTRL
+  THRESH[Validation Thresholds] --> VALID[Validation Harness]
+  LOOP --> VALID
 ```
 
 ## 17) Implementation Mapping (Current Workspace)
@@ -458,6 +469,65 @@ To realize the above strategy, the next milestone SHALL deliver:
 3. Handle catalog file and loader with defaults (inches, `Y_to_Z`, `z_offset_mm=105`).
 4. Sim helper UI widget for instance + handle selection.
 5. Viewer interaction mode for click-drag shaft rotation with telemetry.
+
+## 22) API + UI Deployment Decision (Sim vs Real)
+
+Decision:
+- The project SHALL use one logical REST API contract with target routing (`sim` / `real`).
+- UI deployment SHALL remain split by runtime environment:
+  - Real hardware UI remains the STM32-hosted HTML page for hardware operation.
+  - Simulation uses an independent helper UI hosted by the twin runtime.
+
+Rationale:
+- Simulation must run without STM32 dependency.
+- Sim-specific controls (instance spawn, manual position slider, scene/debug controls) are not applicable to real hardware.
+- This preserves a light-touch approach on real-hardware code and deployment while converging API semantics.
+
+Contract rules:
+- API responses always include `target_kind` and `target_id`.
+- Sim-only controls must be explicitly rejected or hidden for `target_kind=real`.
+- Shared controls (status/config/preset intent) use the same API schema across targets.
+
+## 23) Large-Scene MuJoCo Integration Model
+
+Goal:
+- Avoid painting the twin into a corner; PRISM must be embeddable in larger scenes (e.g., robot manipulator interacting with PRISM).
+
+Functional model:
+1. PRISM remains a reusable scene component rooted at `prism_mount`.
+2. Larger scene owns global `world` and additional bodies (robot arm, fixtures, tools).
+3. Integration places PRISM by setting `prism_mount` pose only; internal PRISM frames/joint semantics remain unchanged.
+4. Sim Target Adapter binds controller/runtime to the PRISM joint/actuator names in the composed MuJoCo model.
+5. Telemetry/control remain instance-scoped so multiple PRISM devices can coexist in one scene.
+
+Required capabilities for composed scenes:
+- Attach-to-existing-model mode (controller/runtime can operate on a named PRISM instance inside a preloaded scene).
+- Stable namespace convention for PRISM entities to avoid collisions.
+- No assumptions that PRISM is the only articulated object in simulation.
+
+Non-goal clarification:
+- PRISM twin does not own robot planning/control; it exposes a stable PRISM interaction interface that a robot/scene controller can consume.
+
+### 23.1 Current Viewer Behavior and Blocker Assessment
+
+Current behavior (accepted for now):
+- In standalone multi-instance runtime mode, each PRISM instance currently owns its own MuJoCo `MjModel`/`MjData` pair.
+- Native `--with-viewer` mode renders one selected instance at a time.
+- Switching visible instance is implemented by relaunching the native viewer against the selected instance (via API/UI routing).
+
+Blocker assessment:
+- This is not a fundamental MuJoCo limitation.
+- The current constraint is architectural: instances are hosted as separate model/data worlds, so one passive viewer cannot display both simultaneously.
+
+Required architecture for true concurrent same-viewer instances (and robot + PRISM scenes):
+1. Use one composed MuJoCo world containing all PRISM mounts/instances and robot/environment bodies.
+2. Replace per-instance model ownership with per-instance index maps into the shared model (`qpos`, `qvel`, actuator IDs, joint IDs).
+3. Keep API/session semantics instance-scoped while execution runs on one shared simulation step.
+4. Preserve namespace guarantees for all PRISM entities to avoid collisions in composed scenes.
+
+Decision note:
+- Temporary single-viewer switching is acceptable for current milestone UX.
+- Long-term target remains concurrent visibility and interaction for multiple PRISMs in the same viewer and same world as the robot.
 
 ## 21) Requirement Traceability Matrix
 
