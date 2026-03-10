@@ -207,6 +207,10 @@ def build_model_for_handle(
     tree = ET.parse(base_model_path)
     root = tree.getroot()
 
+    compiler = root.find("compiler")
+    if compiler is not None:
+        compiler.set("meshdir", str((_root_dir() / "assets").resolve()))
+
     mesh_names = _replace_handle_assets(root, handle)
     _replace_handle_body(root, handle, mesh_names)
 

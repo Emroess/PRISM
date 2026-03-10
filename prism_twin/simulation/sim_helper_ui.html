@@ -55,7 +55,7 @@
       <div class="btn-group">
         <span class="btn-label">Instance Selector (Sim-only)</span>
         <select id="instanceSelect" class="select"></select>
-        <button id="createInstance">Create prism_02</button>
+        <button id="createInstance">Create New Instance</button>
       </div>
       <div class="btn-group">
         <span class="btn-label">Viewer Target Select / Switch (Sim-only)</span>
@@ -328,14 +328,21 @@
     };
 
     document.getElementById('createInstance').onclick = async () => {
+      const existingIds = [...instanceSelect.options].map(o => {
+        const match = o.value.match(/prism_(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+      });
+      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+      const nextId = `prism_${String(maxId + 1).padStart(2, '0')}`;
+
       await api('/api/v1/instances', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instance_id: 'prism_02' })
+        body: JSON.stringify({ instance_id: nextId })
       });
       await refreshInstances();
-      if ([...instanceSelect.options].some(o => o.value === 'prism_02')) {
-        instanceSelect.value = 'prism_02';
+      if ([...instanceSelect.options].some(o => o.value === nextId)) {
+        instanceSelect.value = nextId;
       }
       await trySwitchViewer(activeInstance());
       await refreshConfig();

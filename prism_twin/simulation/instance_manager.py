@@ -29,7 +29,6 @@ class PrismInstance:
 class PrismRuntimeManager:
     DEFAULT_INSTANCE_POSES = {
         "prism_01": ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0)),
-        "prism_02": ((0.0, 0.0, 0.3), (0.70710678, 0.70710678, 0.0, 0.0)),
     }
 
     def __init__(
@@ -41,7 +40,8 @@ class PrismRuntimeManager:
         self.root_dir = root_dir or Path(__file__).resolve().parents[1]
         self.base_model_path = self.root_dir / "models" / "prism_device.xml"
         self.composed_model_path = Path(composed_model_path).resolve() if composed_model_path else None
-        self.generated_models_dir = self.root_dir / "models"
+        self.generated_models_dir = self.root_dir / "models" / "generated"
+        self.generated_models_dir.mkdir(parents=True, exist_ok=True)
         self.control_hz = float(control_hz)
         self.default_preset = "HEAVY"
         self._lock = threading.RLock()
@@ -114,9 +114,14 @@ class PrismRuntimeManager:
                 if errors:
                     raise ValueError(";".join(errors))
 
+            # All standalone instances generate their own separate physics arenas, 
+            # so they can safely share the local world origin coordinate (0, 0, 0).
+            fallback_pos = (0.0, 0.0, 0.0)
+            fallback_quat = (1.0, 0.0, 0.0, 0.0)
+
             default_pos, default_quat = self.DEFAULT_INSTANCE_POSES.get(
                 instance_id,
-                ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0)),
+                (fallback_pos, fallback_quat),
             )
             prism_mount_pos = prism_mount_pos or default_pos
             prism_mount_quat = prism_mount_quat or default_quat
