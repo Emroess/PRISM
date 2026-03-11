@@ -23,6 +23,7 @@
 #include "config/all.h"
 #include "drivers/uart.h"
 #include "ethernetif.h"
+#include "network/hitl_server.h"
 #include "network/http.h"
 #include "network/manager.h"
 #include "network/net_init.h"
@@ -31,6 +32,7 @@
 #include "network/stream.h"
 #include "odrive_manager.h"
 #include "protocols/can_simple.h"
+#include "valve_haptic.h"
 #include "valve_manager.h"
 #include "valve_nvm.h"
 #include "valve_presets.h"
@@ -1085,6 +1087,70 @@ cli_cmd_valve_preset_show(struct cli_context *ctx, int argc, char *argv[])
 }
 
 
+/*
+ * cli_cmd_hitl - Isaac Sim Hardware-In-The-Loop mode control
+ *
+ * Usage:
+ *   hitl enable    - Switch torque routing to Isaac Sim; disarm ODrive
+ *   hitl disable   - Return to ODrive CAN mode; re-arm ODrive
+ *   hitl status    - Show HITL server state and packet counters
+ */
+static int
+cli_cmd_hitl(struct cli_context *ctx, int argc, char *argv[])
+{
+	if (argc < 2) {
+		uart_write_string(ctx->uart, "\r\nUsage: hitl enable | disable | status\r\n", 100);
+		return 0;
+	}
+
+	struct valve_context *vctx = ctx->valve_ctx;
+
+	if (strcmp(argv[1], "enable") == 0) {
+		status_t s = valve_haptic_set_output_mode(vctx, VALVE_OUTPUT_MODE_HITL);
+		if (s == STATUS_OK) {
+			uart_write_string(ctx->uart, "\r\nHITL mode enabled\r\n", 100);
+			uart_write_string(ctx->uart, "  ODrive disarmed (AXIS_STATE_IDLE)\r\n", 100);
+			uart_write_string(ctx->uart, "  Passivity tank disabled\r\n", 100);
+			uart_write_string(ctx->uart, "  Connect Isaac Sim client to port 8889\r\n", 100);
+		} else {
+			uart_write_string(ctx->uart, "\r\nFailed to enable HITL mode\r\n", 100);
+		}
+	} else if (strcmp(argv[1], "disable") == 0) {
+		status_t s = valve_haptic_set_output_mode(vctx, VALVE_OUTPUT_MODE_ODRIVE);
+		if (s == STATUS_OK) {
+			uart_write_string(ctx->uart, "\r\nHITL mode disabled\r\n", 100);
+			uart_write_string(ctx->uart, "  ODrive re-armed (AXIS_STATE_CLOSED_LOOP_CONTROL)\r\n", 100);
+			uart_write_string(ctx->uart, "  Passivity tank re-enabled\r\n", 100);
+		} else {
+			uart_write_string(ctx->uart, "\r\nFailed to disable HITL mode\r\n", 100);
+		}
+	} else if (strcmp(argv[1], "status") == 0) {
+		struct hitl_stats stats;
+		hitl_server_get_stats(&stats);
+		uint8_t mode = valve_haptic_get_output_mode(vctx);
+
+		uart_write_string(ctx->uart, "\r\nHITL Status:\r\n", 100);
+		uart_printf(ctx->uart, "  Mode:           %s\r\n",
+		    mode == VALVE_OUTPUT_MODE_HITL ? "HITL (Isaac Sim)" : "ODrive (normal)");
+		uart_printf(ctx->uart, "  Server:         %s\r\n",
+		    stats.active ? "listening (port 8889)" : "stopped");
+		uart_printf(ctx->uart, "  Client:         %s\r\n",
+		    stats.client_connected ? "CONNECTED (Isaac Sim)" : "disconnected");
+		uart_printf(ctx->uart, "  Torque sent:    %lu frames\r\n",
+		    (unsigned long)stats.torque_frames_sent);
+		uart_printf(ctx->uart, "  Encoder recv:   %lu frames\r\n",
+		    (unsigned long)stats.encoder_frames_recv);
+		uart_printf(ctx->uart, "  Enc timeouts:   %lu\r\n",
+		    (unsigned long)stats.encoder_timeouts);
+		uart_printf(ctx->uart, "  Errors:         %lu\r\n",
+		    (unsigned long)(stats.send_errors + stats.parse_errors));
+	} else {
+		uart_write_string(ctx->uart, "\r\nUsage: hitl enable | disable | status\r\n", 100);
+	}
+
+	return 0;
+}
+
 
 /*
  * CLI command table - sorted alphabetically for binary search
@@ -1097,6 +1163,7 @@ const struct cli_command cli_commands[] = {
 	{"ethstatus", cli_cmd_ethstatus, "Show Ethernet status and configuration"},
 	{"fault_last", cli_cmd_fault_last, "Show last captured hard fault registers"},
 	{"help", cli_cmd_help, "Show this help"},
+	{"hitl", cli_cmd_hitl, "Isaac Sim HITL mode (enable/disable/status)"},
 	{"http", cli_cmd_http, "HTTP server control (start/stop/status/log)"},
 	{"nvm_status", cli_cmd_nvm_status, "Show NVM network config status"},
 	{"odrive_calibrate", cli_cmd_odrive_calibrate, "Calibrate ODrive motor and encoder"},
@@ -1239,6 +1306,13 @@ cli_init(struct cli_context *ctx, struct uart_handle *uart, struct fdcan_handle 
 		return status;
 	}
 
+	/* Start the HITL TCP server (port 8889).
+	 * Always started so the port is ready; HITL mode is OFF by default.
+	 * Isaac Sim can connect at any time; it won't affect ODrive operation
+	 * until the user explicitly enables HITL via REST or CLI.
+	 */
+	(void)hitl_server_init();
+
 	cli_print_prompt(ctx);
 	return STATUS_OK;
 }
@@ -1278,5 +1352,7 @@ cli_run(struct cli_context *ctx)
 		ethernet_process();
 		ethernet_stream_process();
 		ethernet_http_process();
+		/* Flush pending HITL torque frame to Isaac Sim (if connected) */
+		hitl_server_process();
 	}
 }

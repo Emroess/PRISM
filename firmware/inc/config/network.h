@@ -36,6 +36,23 @@
 
 /*
  * ===========================================================================
+ * HITL (Hardware-In-The-Loop) Server Configuration
+ *
+ * Port 8889: bidirectional TCP channel for Isaac Sim integration.
+ * Firmware pushes torque commands; Isaac Sim pushes back simulated
+ * encoder (position, velocity) so the haptic control loop can close
+ * over a virtual motor instead of the physical ODrive.
+ *
+ * HITL_ENCODER_TIMEOUT_MS: if no encoder packet arrives within this
+ * window the firmware treats it the same as a CAN encoder timeout and
+ * transitions to VALVE_STATE_ERROR.
+ * ===========================================================================
+ */
+#define HITL_PORT                     8889U
+#define HITL_ENCODER_TIMEOUT_MS       50U    /* ms before declaring encoder stale */
+
+/*
+ * ===========================================================================
  * Buffer Sizes (shared across HTTP/REST modules)
  * ===========================================================================
  */
@@ -83,5 +100,9 @@ _Static_assert(ETHERNET_STREAM_MIN_INTERVAL_MS <= ETHERNET_STREAM_DEFAULT_INTERV
                "Default interval must be >= minimum");
 _Static_assert(ETHERNET_STREAM_DEFAULT_INTERVAL_MS <= ETHERNET_STREAM_MAX_INTERVAL_MS,
                "Default interval must be <= maximum");
+_Static_assert(HITL_PORT > 0U && HITL_PORT <= 65535U,
+               "HITL_PORT must be a valid port number");
+_Static_assert(HITL_PORT != HTTP_PORT && HITL_PORT != STREAM_PORT,
+               "HITL_PORT must be different from HTTP and STREAM ports");
 
 #endif /* CONFIG_NETWORK_H */

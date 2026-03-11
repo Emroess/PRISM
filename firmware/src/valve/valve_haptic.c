@@ -14,6 +14,7 @@
 #include "board.h"
 #include "config/board.h"
 #include "drivers/fdcan.h"
+#include "network/hitl_server.h"
 #include "protocols/can_simple.h"
 #include "valve_filters.h"
 #include "valve_haptic.h"
@@ -466,116 +467,117 @@ status_t valve_haptic_start(struct valve_context *ctx)
 	state->diag.last_can_status = STATUS_OK;
 	state->diag.can_retry_count = 0;
 
-	/* Clear any existing errors first */
-	can_simple_clear_errors(state->odrive);
-    
-	/* Configure torque control with passthrough BEFORE enabling closed loop */
-	if (can_simple_set_controller_mode(state->odrive,
-	        CONTROL_MODE_TORQUE_CONTROL,
-	        INPUT_MODE_PASSTHROUGH) != 0) {
-        state->status = VALVE_STATE_IDLE;
-		return STATUS_ERROR_HARDWARE_FAULT;  /* Error code 7: Failed to set controller mode */
-    }
+	if (ctx->output_mode == VALVE_OUTPUT_MODE_ODRIVE) {
+		/* ---- Physical ODrive path ------------------------------------ */
 
-	/* Confirm controller/input modes actually changed via heartbeat.
-	 * We treat this as a soft safety check: if the heartbeat never reports
-	 * the desired modes within the timeout, we log the condition but still
-	 * continue startup so that behavior can be evaluated on hardware. */
-	if (!valve_wait_for_controller_mode(state,
-	        CONTROL_MODE_TORQUE_CONTROL,
-	        INPUT_MODE_PASSTHROUGH)) {
-		/* Record that mode verification failed but do not abort. */
-		state->diag.last_can_status = STATUS_ERROR_TIMEOUT;
-	}
-    
-    /* Set limits based on loaded preset configuration */
-    if (ctx->config.torque_limit_nm > 0.0f) {
-        /* Convert torque limit to current using motor torque constant */
-        float current_limit = (ctx->config.torque_limit_nm / ODRIVE_TORQUE_CONSTANT_NM_PER_A) + ODRIVE_CURRENT_HEADROOM_A;
-        if (current_limit > VALVE_ODRIVE_CURRENT_LIMIT_A) {
-            current_limit = VALVE_ODRIVE_CURRENT_LIMIT_A;
-        }
-        
-        if (can_simple_set_limits(state->odrive, VALVE_ODRIVE_VEL_LIMIT_TURNS_PER_S, current_limit) != STATUS_OK) {
-            state->status = VALVE_STATE_IDLE;
-            return STATUS_ERROR_BUSY;  /* Error code 3: Failed to set limits */
-        }
-    }
-    
-    /* Set Odrive to CLOSED_LOOP_CONTROL */
-    if (can_simple_set_axis_state(state->odrive, AXIS_STATE_CLOSED_LOOP_CONTROL) != 0) {
-        state->status = VALVE_STATE_IDLE;
-        return STATUS_ERROR_NOT_SUPPORTED;  /* Error code 11: Failed to enable closed loop */
-    }
-    
-	/* Poll heartbeat for up to 500ms waiting for closed loop state (S1 broadcasts at 100ms intervals) */
-	struct can_simple_heartbeat hb;
-	uint32_t hb_age_ms = 0U;
-	uint32_t wait_start_ms = board_get_systick_ms();
-	uint8_t state_achieved = 0U;
-	
-	while ((board_get_systick_ms() - wait_start_ms) < 500U) {
-		if (can_simple_get_cached_heartbeat(state->odrive, &hb, &hb_age_ms) == STATUS_OK &&
-		    hb_age_ms < VALVE_HEARTBEAT_TIMEOUT_MS) {
-			
-			/* Check for errors */
-			if (hb.axis_error != 0) {
-				can_simple_set_axis_state(state->odrive, AXIS_STATE_IDLE);
-				state->status = VALVE_STATE_IDLE;
-				return STATUS_ERROR_BUFFER_FULL;  /* Error code 9: Odrive has axis error */
+		/* Clear any existing errors first */
+		can_simple_clear_errors(state->odrive);
+
+		/* Configure torque control with passthrough BEFORE enabling closed loop */
+		if (can_simple_set_controller_mode(state->odrive,
+		        CONTROL_MODE_TORQUE_CONTROL,
+		        INPUT_MODE_PASSTHROUGH) != 0) {
+			state->status = VALVE_STATE_IDLE;
+			return STATUS_ERROR_HARDWARE_FAULT;  /* Error code 7: Failed to set controller mode */
+		}
+
+		/* Confirm controller/input modes actually changed via heartbeat. */
+		if (!valve_wait_for_controller_mode(state,
+		        CONTROL_MODE_TORQUE_CONTROL,
+		        INPUT_MODE_PASSTHROUGH)) {
+			state->diag.last_can_status = STATUS_ERROR_TIMEOUT;
+		}
+
+		/* Set limits based on loaded preset configuration */
+		if (ctx->config.torque_limit_nm > 0.0f) {
+			float current_limit = (ctx->config.torque_limit_nm / ODRIVE_TORQUE_CONSTANT_NM_PER_A) + ODRIVE_CURRENT_HEADROOM_A;
+			if (current_limit > VALVE_ODRIVE_CURRENT_LIMIT_A) {
+				current_limit = VALVE_ODRIVE_CURRENT_LIMIT_A;
 			}
-			
-			/* Check if we've reached closed loop state */
-			if (hb.axis_state == AXIS_STATE_CLOSED_LOOP_CONTROL) {
-				state_achieved = 1U;
-				state->diag.heartbeat_age_ms = hb_age_ms;
+			if (can_simple_set_limits(state->odrive, VALVE_ODRIVE_VEL_LIMIT_TURNS_PER_S, current_limit) != STATUS_OK) {
+				state->status = VALVE_STATE_IDLE;
+				return STATUS_ERROR_BUSY;
+			}
+		}
+
+		/* Set Odrive to CLOSED_LOOP_CONTROL */
+		if (can_simple_set_axis_state(state->odrive, AXIS_STATE_CLOSED_LOOP_CONTROL) != 0) {
+			state->status = VALVE_STATE_IDLE;
+			return STATUS_ERROR_NOT_SUPPORTED;
+		}
+
+		/* Poll heartbeat for up to 500ms waiting for closed loop state */
+		struct can_simple_heartbeat hb;
+		uint32_t hb_age_ms = 0U;
+		uint32_t wait_start_ms = board_get_systick_ms();
+		uint8_t state_achieved = 0U;
+
+		while ((board_get_systick_ms() - wait_start_ms) < 500U) {
+			if (can_simple_get_cached_heartbeat(state->odrive, &hb, &hb_age_ms) == STATUS_OK &&
+			    hb_age_ms < VALVE_HEARTBEAT_TIMEOUT_MS) {
+				if (hb.axis_error != 0) {
+					can_simple_set_axis_state(state->odrive, AXIS_STATE_IDLE);
+					state->status = VALVE_STATE_IDLE;
+					return STATUS_ERROR_BUFFER_FULL;
+				}
+				if (hb.axis_state == AXIS_STATE_CLOSED_LOOP_CONTROL) {
+					state_achieved = 1U;
+					state->diag.heartbeat_age_ms = hb_age_ms;
+					break;
+				}
+			}
+			board_delay_ms(10);
+		}
+
+		if (!state_achieved) {
+			can_simple_set_axis_state(state->odrive, AXIS_STATE_IDLE);
+			state->status = VALVE_STATE_IDLE;
+			return STATUS_ERROR_BUFFER_EMPTY;
+		}
+
+		/* Get initial encoder position from cached data */
+		struct can_simple_encoder_estimates est;
+		uint32_t encoder_age_ms = 0;
+		status_t enc_status;
+		uint32_t enc_wait_start_ms = board_get_systick_ms();
+		const uint32_t enc_wait_timeout_ms = 200U;
+
+		do {
+			enc_status = can_simple_get_cached_encoder(state->odrive, &est, &encoder_age_ms, NULL);
+			if (enc_status == STATUS_OK) {
 				break;
 			}
-		}
-		board_delay_ms(10);  /* Poll every 10ms */
-	}
-	
-	/* Verify we achieved the target state */
-	if (!state_achieved) {
-		can_simple_set_axis_state(state->odrive, AXIS_STATE_IDLE);
-		state->status = VALVE_STATE_IDLE;
-		return STATUS_ERROR_BUFFER_EMPTY;  /* Error code 10: Timeout waiting for closed loop state */
-	}
-    
-	/* Get initial encoder position from cached data (S1 broadcasts at 1kHz) */
-	struct can_simple_encoder_estimates est;
-	uint32_t encoder_age_ms = 0;
-	status_t enc_status;
-	uint32_t enc_wait_start_ms = board_get_systick_ms();
-	const uint32_t enc_wait_timeout_ms = 200U; /* Wait up to 200 ms for first cached sample */
+			board_delay_ms(5);
+		} while ((board_get_systick_ms() - enc_wait_start_ms) < enc_wait_timeout_ms);
 
-	do {
-		enc_status = can_simple_get_cached_encoder(state->odrive, &est, &encoder_age_ms, NULL);
-		if (enc_status == STATUS_OK) {
-			break;
+		if (enc_status != STATUS_OK) {
+			can_simple_set_axis_state(state->odrive, AXIS_STATE_IDLE);
+			state->status = VALVE_STATE_IDLE;
+			return enc_status;
 		}
-		/* Give the broadcaster a moment to publish encoder data */
-		board_delay_ms(5);
-	} while ((board_get_systick_ms() - enc_wait_start_ms) < enc_wait_timeout_ms);
 
-	if (enc_status != STATUS_OK) {
-		can_simple_set_axis_state(state->odrive, AXIS_STATE_IDLE);
-		state->status = VALVE_STATE_IDLE;
-		return enc_status;  /* Propagate specific encoder error (e.g., buffer empty) */
-	}
-	
-	/* Establish zero reference but track absolute shaft angle for commands.
-	 * We seed command_position_deg to the actual measured angle so the
-	 * ODrive holds wherever the user left the shaft when we enter RUNNING.
-	 */
-	state->encoder_zero_turns = est.position;
-	state->raw_position_turns = est.position;
-	state->position_deg = est.position * state->degrees_per_turn;
-	state->command_position_deg = state->position_deg;
-	float turn_to_rad = state->degrees_per_turn * VALVE_DEG_TO_RAD;
-	state->omega_rad_s = est.velocity * turn_to_rad;
-	if (state->omega_rad_s < (0.1f * VALVE_DEG_TO_RAD) && state->omega_rad_s > -(0.1f * VALVE_DEG_TO_RAD)) {
-		state->omega_rad_s = 0.0f;
+		/* Seed position/velocity state from physical encoder */
+		state->encoder_zero_turns = est.position;
+		state->raw_position_turns = est.position;
+		state->position_deg       = est.position * state->degrees_per_turn;
+		state->command_position_deg = state->position_deg;
+		float turn_to_rad = state->degrees_per_turn * VALVE_DEG_TO_RAD;
+		state->omega_rad_s = est.velocity * turn_to_rad;
+		if (state->omega_rad_s < (0.1f * VALVE_DEG_TO_RAD) &&
+		    state->omega_rad_s > -(0.1f * VALVE_DEG_TO_RAD)) {
+			state->omega_rad_s = 0.0f;
+		}
+
+	} else {
+		/* ---- HITL path (Isaac Sim) ----------------------------------- *
+		 * No CAN bus, no ODrive. Seed state from zero; the first encoder *
+		 * packet from Isaac Sim will update position_deg / omega_rad_s   *
+		 * before the physics model does anything meaningful.             */
+		state->encoder_zero_turns   = 0.0f;
+		state->raw_position_turns   = 0.0f;
+		state->position_deg         = 0.0f;
+		state->command_position_deg = 0.0f;
+		state->omega_rad_s          = 0.0f;
 	}
 	valve_velocity_filters_seed(state->omega_rad_s);
 	state->prev_omega_rad_s = state->omega_rad_s;
@@ -870,28 +872,32 @@ valve_haptic_process(struct valve_context *ctx)
 
 	t_start = dwt_get_cycles();
 
-	/* Process encoder data and check for fresh samples */
-	status_t encoder_status = valve_process_encoder_data(state);
-	if (encoder_status != STATUS_OK) {
-		return;
-	}
-
-	/* Check ODrive status periodically (every 100ms)
-	 * Read from cached heartbeat (S1 broadcasts at 100ms intervals) */
-	uint32_t now_ms = board_get_systick_ms();
-	if (now_ms - last_heartbeat_check_ms > 100) {
-		struct can_simple_heartbeat hb;
-		uint32_t hb_age_ms;
-		if (can_simple_get_cached_heartbeat(state->odrive, &hb, &hb_age_ms) == STATUS_OK) {
-			state->diag.heartbeat_age_ms = hb_age_ms;
-			if (hb.axis_error != 0) {
-				/* ODrive has an error - emergency stop valve */
-				valve_haptic_emergency_stop(ctx);
-				return;
-			}
+	/* Process encoder data and check for fresh samples.
+	 * HITL mode: skip CAN encoder read entirely — encoder data comes from
+	 * Isaac Sim via hitl_server_get_encoder() later in the dispatch block. */
+	if (ctx->output_mode == VALVE_OUTPUT_MODE_ODRIVE) {
+		status_t encoder_status = valve_process_encoder_data(state);
+		if (encoder_status != STATUS_OK) {
+			return;
 		}
-		last_heartbeat_check_ms = now_ms;
-	}
+
+		/* Check ODrive status periodically (every 100ms)
+		 * Read from cached heartbeat (S1 broadcasts at 100ms intervals) */
+		uint32_t now_ms = board_get_systick_ms();
+		if (now_ms - last_heartbeat_check_ms > 100) {
+			struct can_simple_heartbeat hb;
+			uint32_t hb_age_ms;
+			if (can_simple_get_cached_heartbeat(state->odrive, &hb, &hb_age_ms) == STATUS_OK) {
+				state->diag.heartbeat_age_ms = hb_age_ms;
+				if (hb.axis_error != 0) {
+					/* ODrive has an error - emergency stop valve */
+					valve_haptic_emergency_stop(ctx);
+					return;
+				}
+			}
+			last_heartbeat_check_ms = now_ms;
+		}
+	} /* end ODRIVE-only encoder/heartbeat block */
 
 	/* Mirror measured angle for tooling that still inspects command_position */
 	state->command_position_deg = state->position_deg;
@@ -925,46 +931,79 @@ valve_haptic_process(struct valve_context *ctx)
 	    VALVE_TORQUE_FILTER_SAMPLE_RATE_HZ);
 	torque_nm = filtered_torque;
 
-	/* Enhanced passivity energy tank with persistent storage */
-	const float dt_s = VALVE_LOOP_DT_S;
-	float power_w = torque_nm * state->omega_rad_s;
-	float delta_energy = power_w * dt_s;
-	
-	if (power_w <= 0.0f) {
-		/* Store dissipative energy */
-		state->passivity_energy_j += delta_energy;
-		if (state->passivity_energy_j < -VALVE_PASSIVITY_ENERGY_CAP_J) {
-			state->passivity_energy_j = -VALVE_PASSIVITY_ENERGY_CAP_J;
-		}
-	} else {
-		/* Use stored energy for active torque */
-		float available_energy = -state->passivity_energy_j;
-		float max_allowed_power = available_energy / dt_s;
+	/* Enhanced passivity energy tank with persistent storage.
+	 * SKIPPED in HITL mode: Isaac Sim conserves energy in the simulation;
+	 * running the tank here on simulated encoder data would cause spurious
+	 * torque clamping and destabilise the HITL loop.
+	 */
+	if (ctx->output_mode == VALVE_OUTPUT_MODE_ODRIVE) {
+		const float dt_s = VALVE_LOOP_DT_S;
+		float power_w = torque_nm * state->omega_rad_s;
+		float delta_energy = power_w * dt_s;
 		
-		if (max_allowed_power <= 0.0f) {
-			torque_nm = 0.0f;
-		} else if (power_w > max_allowed_power) {
-			torque_nm = max_allowed_power / state->omega_rad_s;
+		if (power_w <= 0.0f) {
+			/* Store dissipative energy */
+			state->passivity_energy_j += delta_energy;
+			if (state->passivity_energy_j < -VALVE_PASSIVITY_ENERGY_CAP_J) {
+				state->passivity_energy_j = -VALVE_PASSIVITY_ENERGY_CAP_J;
+			}
+		} else {
+			/* Use stored energy for active torque */
+			float available_energy = -state->passivity_energy_j;
+			float max_allowed_power = available_energy / dt_s;
+			
+			if (max_allowed_power <= 0.0f) {
+				torque_nm = 0.0f;
+			} else if (power_w > max_allowed_power) {
+				torque_nm = max_allowed_power / state->omega_rad_s;
+			}
+			
+			/* Update energy tank with actual power used */
+			delta_energy = torque_nm * state->omega_rad_s * dt_s;
+			state->passivity_energy_j += delta_energy;
 		}
 		
-		/* Update energy tank with actual power used */
-		delta_energy = torque_nm * state->omega_rad_s * dt_s;
-		state->passivity_energy_j += delta_energy;
-	}
-	
-	/* Maintain negative energy storage (never reset to zero) */
-	if (state->passivity_energy_j > 0.0f) {
-		state->passivity_energy_j = 0.0f;
-	}
-	
+		/* Maintain negative energy storage (never reset to zero) */
+		if (state->passivity_energy_j > 0.0f) {
+			state->passivity_energy_j = 0.0f;
+		}
+	} /* end passivity block (ODRIVE mode only) */
+
 	state->filtered_torque_nm = torque_nm;
 	state->previous_torque_nm = torque_nm;
 
+	/* Compute signed drive torque before dispatch */
 	float drive_torque_nm = torque_nm * VALVE_TORQUE_SIGN;
-	status_t torque_status = can_simple_set_input_torque_nb(state->odrive, drive_torque_nm);
-	if (torque_status != STATUS_OK) {
-		valve_handle_can_failure(ctx, torque_status);
-		return;
+
+	/* === TORQUE DISPATCH ===
+	 *
+	 * ODRIVE mode (default): send torque to physical motor via CAN.
+	 * HITL mode:  queue torque for Isaac Sim (flushed in main-loop
+	 *             hitl_server_process()), then read back simulated
+	 *             encoder data produced by the Isaac Sim integrator.
+	 */
+	if (ctx->output_mode == VALVE_OUTPUT_MODE_HITL) {
+		/* Queue torque for Isaac Sim – ISR-safe volatile write */
+		hitl_server_set_torque(drive_torque_nm, state->diag.sample_seq,
+		    state->diag.t_us_accum);
+
+		/* Read back simulated encoder from Isaac Sim.
+		 * If data is stale or missing, fault the same way as a CAN timeout. */
+		struct hitl_encoder_data enc;
+		if (!hitl_server_get_encoder(&enc)) {
+			valve_handle_can_failure(ctx, STATUS_ERROR_TIMEOUT);
+			return;
+		}
+		/* Inject simulated encoder into control-loop state */
+		state->position_deg = enc.pos_deg;
+		state->omega_rad_s  = enc.vel_rad_s;
+	} else {
+		/* Normal ODrive path */
+		status_t torque_status = can_simple_set_input_torque_nb(state->odrive, drive_torque_nm);
+		if (torque_status != STATUS_OK) {
+			valve_handle_can_failure(ctx, torque_status);
+			return;
+		}
 	}
 	state->diag.last_can_status = STATUS_OK;
 
@@ -1065,4 +1104,72 @@ float
 valve_haptic_calc_settling_time_ms(void)
 {
 	return 0.0f;
+}
+
+/*
+ * valve_haptic_set_output_mode - Switch torque routing at runtime.
+ *
+ * VALVE_OUTPUT_MODE_ODRIVE -> VALVE_OUTPUT_MODE_HITL:
+ *   Disarms the physical ODrive (AXIS_STATE_IDLE) so it is safe to touch
+ *   the hardware while Isaac Sim is in control.  Passivity tank is disabled.
+ *
+ * VALVE_OUTPUT_MODE_HITL -> VALVE_OUTPUT_MODE_ODRIVE:
+ *   Re-arms the ODrive (AXIS_STATE_CLOSED_LOOP_CONTROL).  Passivity tank
+ *   resumes.  The encoder zero reference is re-seeded from the last
+ *   known HITL position so torque is continuous across the switch.
+ *
+ *   NOTE: Switching while running is intentional; the valve stays in
+ *   VALVE_STATE_RUNNING throughout.
+ */
+status_t
+valve_haptic_set_output_mode(struct valve_context *ctx, uint8_t mode)
+{
+	if (ctx == NULL) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
+	if (mode != VALVE_OUTPUT_MODE_ODRIVE && mode != VALVE_OUTPUT_MODE_HITL) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
+	if (ctx->output_mode == mode) {
+		return STATUS_OK; /* Already in requested mode */
+	}
+
+	if (mode == VALVE_OUTPUT_MODE_HITL) {
+		/*
+		 * Transition to HITL:
+		 * Disarm the ODrive for safety (someone may touch the physical
+		 * hardware while the simulation is running).
+		 * TODO (future): keep ODrive armed to allow hot-switch back if
+		 * real-time comparison is desired – change AXIS_STATE_IDLE to
+		 * AXIS_STATE_CLOSED_LOOP_CONTROL and command 0 N·m continuously.
+		 */
+		if (ctx->state.odrive != NULL) {
+			(void)can_simple_set_input_torque_nb(ctx->state.odrive, 0.0f);
+			(void)can_simple_set_axis_state_nb(ctx->state.odrive, AXIS_STATE_IDLE);
+		}
+		/* Reset passivity tank – it will be disabled in the control loop */
+		ctx->state.passivity_energy_j = 0.0f;
+	} else {
+		/* Transition back to ODRIVE: re-arm for closed-loop torque control */
+		if (ctx->state.odrive != NULL) {
+			(void)can_simple_set_controller_mode(ctx->state.odrive,
+			    CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH);
+			(void)can_simple_set_axis_state(ctx->state.odrive,
+			    AXIS_STATE_CLOSED_LOOP_CONTROL);
+		}
+		/* Re-seed passivity tank at zero so first ticks are passive */
+		ctx->state.passivity_energy_j = 0.0f;
+	}
+
+	ctx->output_mode = mode;
+	return STATUS_OK;
+}
+
+uint8_t
+valve_haptic_get_output_mode(const struct valve_context *ctx)
+{
+	if (ctx == NULL) {
+		return VALVE_OUTPUT_MODE_ODRIVE;
+	}
+	return ctx->output_mode;
 }

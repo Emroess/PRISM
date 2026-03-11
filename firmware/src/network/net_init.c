@@ -94,7 +94,7 @@ ethernet_link_thread(void const *argument)
 
 	if (!loaded) {
 		/* Fallback to hardcoded defaults */
-		IP4_ADDR(&ipaddr, 10, 0, 1, 17);
+		IP4_ADDR(&ipaddr, 10, 0, 1, 15);
 		IP4_ADDR(&netmask, 255, 255, 255, 0);
 		IP4_ADDR(&gw, 10, 0, 1, 1);
 		uart = uart_get_handle();

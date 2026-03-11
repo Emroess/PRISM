@@ -47,6 +47,7 @@ src/stm32h7xx_it.c \
 src/syscalls.c \
 src/network/net_init.c \
 src/network/stream_server.c \
+src/network/hitl_server.c \
 src/network/http_server.c \
 src/network/rest_api.c \
 src/network/ping.c \

@@ -20,6 +20,7 @@
 #include "config/network.h"
 #include "config/valve.h"
 #include "drivers/uart.h"
+#include "network/hitl_server.h"
 #include "network/http.h"
 #include "network/rest.h"
 #include "valve_haptic.h"
@@ -758,6 +759,8 @@ handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
       rest_api_handle_get_can(tpcb);
     } else if (strcmp(hs->uri, "/api/v1/stream") == 0) {
       rest_api_handle_get_stream(tpcb);
+    } else if (strcmp(hs->uri, "/api/v1/hitl") == 0) {
+      rest_api_handle_get_hitl(tpcb);
     } else if (strcmp(hs->uri, "/") == 0) {
       rest_api_handle_get_index(tpcb);
     } else {
@@ -786,6 +789,9 @@ handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
       return true;
     } else if (strcmp(hs->uri, "/api/v1/stream") == 0) {
       rest_api_handle_post_stream(tpcb, body, body_len);
+      return true;
+    } else if (strcmp(hs->uri, "/api/v1/hitl") == 0) {
+      rest_api_handle_post_hitl(tpcb, body, body_len);
       return true;
     } else {
       http_send_json_error(tpcb, 404, "not_found");

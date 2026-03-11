@@ -24,13 +24,21 @@
 #include "config/network.h"
 #include "config/valve.h"
 #include "drivers/uart.h"
+#include "network/hitl_server.h"
 #include "network/http.h"
 #include "network/manager.h"
 #include "network/rest.h"
 #include "network/stream.h"
 #include "odrive_manager.h"
+#include "valve_haptic.h"
 #include "valve_manager.h"
 #include "valve_presets.h"
+
+/* String-ify port number for use in snprintf format strings */
+#define HITL_PORT_STR_INNER(x) #x
+#define HITL_PORT_STR(x)       HITL_PORT_STR_INNER(x)
+#undef  HITL_PORT_STR
+#define HITL_PORT_STR          "8889"
 
 static struct uart_handle *rest_uart;
 
@@ -1211,4 +1219,139 @@ void rest_api_handle_post_stream(struct tcp_pcb *tpcb, char *body, int len) {
   }
 
   rest_send_response(tpcb, 200, "application/json", "{\"status\":\"ok\"}");
+}
+
+/*
+ * rest_api_handle_get_hitl - GET /api/v1/hitl
+ *
+ * Returns current HITL mode status and statistics:
+ *   {"enabled":<bool>,"connected":<bool>,"port":8889,
+ *    "torque_sent":<u32>,"encoder_recv":<u32>,
+ *    "timeouts":<u32>,"errors":<u32>}
+ */
+void rest_api_handle_get_hitl(struct tcp_pcb *tpcb)
+{
+  struct valve_context *ctx = valve_get_context();
+  if (ctx == NULL) {
+    rest_send_json_error(tpcb, 503, "valve_uninitialized");
+    return;
+  }
+
+  struct hitl_stats stats;
+  hitl_server_get_stats(&stats);
+
+  uint8_t enabled   = (ctx->output_mode == VALVE_OUTPUT_MODE_HITL) ? 1U : 0U;
+  uint8_t connected = stats.client_connected;
+
+  char resp[256];
+  int len = snprintf(resp, sizeof(resp),
+    "{"
+    "\"enabled\":%s,"
+    "\"connected\":%s,"
+    "\"port\":" HITL_PORT_STR ","
+    "\"torque_sent\":%lu,"
+    "\"encoder_recv\":%lu,"
+    "\"timeouts\":%lu,"
+    "\"errors\":%lu"
+    "}",
+    enabled   ? "true" : "false",
+    connected ? "true" : "false",
+    (unsigned long)stats.torque_frames_sent,
+    (unsigned long)stats.encoder_frames_recv,
+    (unsigned long)stats.encoder_timeouts,
+    (unsigned long)(stats.send_errors + stats.parse_errors));
+
+  if (len <= 0 || (size_t)len >= sizeof(resp)) {
+    rest_send_json_error(tpcb, 500, "response_overflow");
+    return;
+  }
+
+  rest_send_response(tpcb, 200, "application/json", resp);
+}
+
+/*
+ * rest_api_handle_post_hitl - POST /api/v1/hitl
+ *
+ * Body: {"enabled": true} or {"enabled": false}
+ *
+ * Switches valve output mode between ODrive (normal) and Isaac Sim (HITL).
+ * When enabling HITL:
+ *   - ODrive is disarmed (AXIS_STATE_IDLE) for hardware safety.
+ *   - Passivity tank is disabled.
+ * When disabling HITL:
+ *   - ODrive is re-armed for closed-loop torque control.
+ *   - Passivity tank resumes.
+ */
+void rest_api_handle_post_hitl(struct tcp_pcb *tpcb, char *body, int len)
+{
+  if (body == NULL || len <= 0) {
+    rest_send_json_error(tpcb, 400, "invalid_request");
+    return;
+  }
+
+  jsmn_parser p;
+  jsmntok_t t[MAX_JSON_TOKENS];
+
+  jsmn_init(&p);
+  int r = jsmn_parse(&p, body, len, t, MAX_JSON_TOKENS);
+  if (r < 0) {
+    rest_send_json_error(tpcb, 400, "json_parse_error");
+    return;
+  }
+
+  struct valve_context *ctx = valve_get_context();
+  if (ctx == NULL) {
+    rest_send_json_error(tpcb, 503, "valve_uninitialized");
+    return;
+  }
+
+  bool has_enabled = false;
+  bool enabled_val = false;
+  char tok_buf[16];
+
+  for (int i = 1; i < r; i++) {
+    if (t[i].type != JSMN_STRING) {
+      continue;
+    }
+    if ((i + 1) >= r) {
+      rest_send_json_error(tpcb, 400, "malformed_json");
+      return;
+    }
+
+    jsmntok_t *val_tok = &t[i + 1];
+
+    if (jsoneq(body, &t[i], "enabled") == 0) {
+      if (!rest_token_string(body, val_tok, tok_buf, sizeof(tok_buf))) {
+        rest_send_json_error(tpcb, 400, "invalid_enabled");
+        return;
+      }
+      if (strcmp(tok_buf, "true") == 0 || strcmp(tok_buf, "1") == 0) {
+        enabled_val = true;
+      } else if (strcmp(tok_buf, "false") == 0 || strcmp(tok_buf, "0") == 0) {
+        enabled_val = false;
+      } else {
+        rest_send_json_error(tpcb, 400, "invalid_enabled_value");
+        return;
+      }
+      has_enabled = true;
+      i++;
+    }
+  }
+
+  if (!has_enabled) {
+    rest_send_json_error(tpcb, 400, "missing_enabled");
+    return;
+  }
+
+  uint8_t target_mode = enabled_val ? VALVE_OUTPUT_MODE_HITL : VALVE_OUTPUT_MODE_ODRIVE;
+  status_t st = valve_haptic_set_output_mode(ctx, target_mode);
+  if (st != STATUS_OK) {
+    rest_send_json_error(tpcb, rest_map_status_to_http(st), "mode_switch_failed");
+    return;
+  }
+
+  const char *mode_str = enabled_val ? "hitl" : "odrive";
+  char resp[64];
+  snprintf(resp, sizeof(resp), "{\"status\":\"ok\",\"mode\":\"%s\"}", mode_str);
+  rest_send_response(tpcb, 200, "application/json", resp);
 }

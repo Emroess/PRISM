@@ -97,4 +97,17 @@ void rest_api_handle_get_stream(struct tcp_pcb *tpcb);
  */
 void rest_api_handle_post_stream(struct tcp_pcb *tpcb, char *body, int len);
 
+/**
+ * @brief Handle GET /api/v1/hitl - HITL server status
+ * Returns {"enabled":<bool>,"connected":<bool>,"port":8889,...stats...}
+ */
+void rest_api_handle_get_hitl(struct tcp_pcb *tpcb);
+
+/**
+ * @brief Handle POST /api/v1/hitl - Enable or disable HITL mode
+ * Body: {"enabled":true|false}
+ * Switches valve_context output_mode between ODrive and Isaac Sim.
+ */
+void rest_api_handle_post_hitl(struct tcp_pcb *tpcb, char *body, int len);
+
 #endif /* NETWORK_REST_H */

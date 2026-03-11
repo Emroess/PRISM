@@ -45,6 +45,24 @@ struct can_simple_handle;
 #define VALVE_ERROR_ODRIVE		2	/* ODrive reported error */
 #define VALVE_ERROR_LIMIT		3	/* Torque or position limit */
 
+/*
+ * Output mode selects where computed torque commands are sent.
+ *
+ * VALVE_OUTPUT_MODE_ODRIVE (default) - commands go to the physical ODrive
+ *   motor controller via CAN bus.  Encoder feedback comes from the ODrive.
+ *
+ * VALVE_OUTPUT_MODE_HITL - commands are forwarded to an Isaac Sim client
+ *   over Ethernet (port 8889) and the ODrive is disarmed (AXIS_STATE_IDLE).
+ *   Encoder feedback comes from the Isaac Sim integrator model.
+ *   NOTE: the passivity energy tank is DISABLED in HITL mode.
+ *
+ * TODO (future): add VALVE_OUTPUT_MODE_BOTH to send commands to both
+ *   the physical ODrive AND Isaac Sim simultaneously for side-by-side
+ *   comparison / validation.
+ */
+#define VALVE_OUTPUT_MODE_ODRIVE	0U  /* Physical ODrive (default) */
+#define VALVE_OUTPUT_MODE_HITL		1U  /* Isaac Sim HITL via Ethernet */
+
 /* Valve configuration (loaded from preset) */
 struct valve_config {
     /* Position limits */
@@ -133,6 +151,8 @@ struct valve_context {
     struct valve_config staged_config;
     uint32_t staged_field_mask;
     volatile uint8_t staged_pending;
+    /* HITL routing mode: VALVE_OUTPUT_MODE_ODRIVE or VALVE_OUTPUT_MODE_HITL */
+    uint8_t output_mode;
 };
 
 /* Public API */
@@ -151,6 +171,27 @@ status_t valve_haptic_stage_config(struct valve_context *, const struct valve_co
 float	valve_haptic_calc_settling_time_ms(void);
 status_t valve_haptic_get_loop_timing(struct valve_context *, uint32_t *, uint32_t *,
 	    uint32_t *);
+
+/*
+ * HITL mode control
+ *
+ * valve_haptic_set_output_mode() switches torque routing at runtime.
+ *
+ * Switching to HITL (VALVE_OUTPUT_MODE_HITL):
+ *   - Disarms the physical ODrive (AXIS_STATE_IDLE) for safety.
+ *   - Disables the passivity energy tank.
+ *   - Torque commands are forwarded to Isaac Sim via hitl_server.
+ *   - Encoder feedback is read from hitl_server (Isaac Sim integrator).
+ *
+ * Switching back to ODRIVE mode:
+ *   - Re-arms the ODrive (AXIS_STATE_CLOSED_LOOP_CONTROL).
+ *   - Re-enables the passivity energy tank.
+ *   - Returns to CAN-based encoder feedback.
+ *
+ * Both switches are safe to call while the valve is RUNNING.
+ */
+status_t valve_haptic_set_output_mode(struct valve_context *, uint8_t mode);
+uint8_t  valve_haptic_get_output_mode(const struct valve_context *);
 
 #ifdef __cplusplus
 }
