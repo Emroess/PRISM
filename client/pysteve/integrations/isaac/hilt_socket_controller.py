@@ -1,163 +1,170 @@
 import socket
-import threading
 import json
 import time
 import math
-from typing import Dict, Any
-
-# ===================== ISAAC SIM SETUP =====================
-from omni.isaac.kit import SimulationApp
-simulation_app = SimulationApp({"headless": False})  # Set True for no GUI / server mode
-
-from omni.isaac.core import World
 from omni.isaac.core.articulations import Articulation
-from omni.isaac.core.utils.prims import get_prim_at_path
 
-# ===================== CONFIG (EDIT THESE) =====================
-ARTICULATION_PRIM_PATH = "/World/PRISM_Articulation"   # ← YOUR SCENE'S ARTICULATION PATH
-JOINT_INDEX = 0                                        # ← Which rotational DOF (0-based)
-STM32_IP = "10.0.1.15"                                 # ← Firmware IP address
-TCP_PORT = 8889                                        # ← Firmware HITL port
-# ============================================================
+class PrismHitlController:
+    """
+    Hardware-In-The-Loop (HITL) controller for integrating PRISM STM32 
+    firmware into an existing Isaac Sim environment.
 
-world = World(stage_units_in_meters=1.0)
-world.reset()
+    This version runs entirely on the main Isaac Sim physics thread
+    using non-blocking sockets. No background threads are spawned.
 
-# Load your articulation
-print(f"🔧 Loading articulation at {ARTICULATION_PRIM_PATH}")
-articulation_prim = get_prim_at_path(ARTICULATION_PRIM_PATH)
-if not articulation_prim:
-    raise RuntimeError(f"❌ Articulation prim NOT FOUND at {ARTICULATION_PRIM_PATH}")
+    ---------------------------------------------------------------------------
+    ISAAC SIM SETUP INSTRUCTIONS:
+    ---------------------------------------------------------------------------
+    To control a rotational DOF via STM32 torque, your scene MUST be configured
+    with an Articulation Root and a force-driven Revolute Joint:
 
-articulation = Articulation(prim_path=ARTICULATION_PRIM_PATH)
-world.scene.add(articulation)
-articulation.initialize()
+    1. CREATE THE JOINT:
+       - Select your Stator Mesh, then Shift-select your Rotor Mesh.
+       - Go to Create > Physics > Joints > Revolute Joint.
+       - Move the new joint to the exact center axis of rotation.
 
-print(f"✅ Articulation loaded — controlling joint index {JOINT_INDEX}")
+    2. TURN ON TORQUE CONTROL:
+       - Select the Revolute Joint.
+       - Go to Property window > Add > Physics > Angular Drive.
+       - In the new Angular Drive component:
+         * Set "Type" to "Force" (this means Torque control).
+         * Set "Damping" to 0.0 (The PRISM STM32 handles damping).
+         * Set "Stiffness" to 0.0.
 
-# Thread-safe state arrays 
-latest_command: Dict[str, Any] = {"torque_nm": 0.0, "seq": 0, "t_us": 0}
-telemetry_to_send: Dict[str, Any] = {"pos": 0.0, "vel": 0.0, "fresh": False}
-state_lock = threading.Lock()
+    3. CREATE THE ARTICULATION ROOT:
+       - Create an Xform (Create > Xform) named "Robot_Root_Xform".
+       - Drag your Stator and Rotor meshes INSIDE this Xform.
+       - Right-click the Xform > Add > Physics > Articulation Root.
 
-def tcp_client_thread():
-    """Background thread that securely talks to the STM32"""
-    while simulation_app.is_running():
+    ---------------------------------------------------------------------------
+    SCRIPT USAGE IN YOUR MAIN ISAAC LOOP:
+    ---------------------------------------------------------------------------
+        # 1. Pass the Articulation Root Xform path
+        my_robot = Articulation(prim_path="/World/Robot_Root_Xform")
+        
+        # 2. Attach the HITL controller
+        hitl = PrismHitlController(my_robot, joint_index=0, stm32_ip="10.0.1.15")
+
+        # 3. Inside your physics tick loop:
+        while simulation_app.is_running():
+            world.step(render=True)
+            
+            # This handles receiving STM32 torque, applying it to Joint 0,
+            # and sending the new rad/sec velocities back to the STM32.
+            hitl.step()  
+    """
+    def __init__(self, articulation: Articulation, joint_index: int, stm32_ip: str, tcp_port: int = 8889):
+        self.articulation = articulation
+        self.joint_index = joint_index
+        self.stm32_ip = stm32_ip
+        self.tcp_port = tcp_port
+        
+        self.client = None
+        self._buf = b""
+        
+        # State
+        self.torque_nm = 0.0
+        self.seq = 0
+        self.t_us = 0
+        
+        # Logging throttle
+        self._last_print = time.time()
+        self._tick = 0
+
+    def _connect(self):
+        """Attempts a non-blocking connection to the STM32."""
         try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.settimeout(5.0)  # Connect timeout
-            try:
-                print(f"🔄 Connecting to STM32 at {STM32_IP}:{TCP_PORT}...")
-                client.connect((STM32_IP, TCP_PORT))
-                client.settimeout(0.1)  # Fast polling timeout after connect
-                print("✅ Connected to STM32 HITL server")
-            except Exception as e:
-                print(f"⚠️ Connection failed: {e}. Retrying in 2s...")
-                time.sleep(2.0)
-                continue
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5)  # Brief timeout for the initial connection attempt
+            sock.connect((self.stm32_ip, self.tcp_port))
             
-            buf = b""
-            while simulation_app.is_running():
-                # 1. READ torque frames (handled in stream chunks)
-                try:
-                    chunk = client.recv(4096)
-                    if not chunk:
-                        print("❌ STM32 disconnected (empty socket read)")
-                        break
-                    buf += chunk
-                except socket.timeout:
-                    pass  # normal - no new data
-                except Exception as e:
-                    print(f"❌ Read error: {e}")
-                    break
-                
-                time.sleep(0.001)  # Add a tiny sleep to reduce CPU usage
-                
-                # Parse complete newline-deliminated JSON lines
-                while b"\n" in buf:
-                    line, buf = buf.split(b"\n", 1)
-                    line_str = line.strip().decode('utf-8', errors='ignore')
-                    if not line_str or 'hitl' in line_str:
-                        continue  # Skip handshake frame
-                    
-                    try:
-                        cmd = json.loads(line_str)
-                        with state_lock:
-                            latest_command["torque_nm"] = float(cmd.get("torque_nm", 0.0))
-                            latest_command["seq"] = int(cmd.get("seq", 0))
-                            latest_command["t_us"] = int(cmd.get("t_us", 0))
-                    except json.JSONDecodeError:
-                        pass # Ignore corrupted chunk
-                
-                # 2. SEND telemetry frames (if main thread updated them)
-                with state_lock:
-                    if telemetry_to_send["fresh"]:
-                        pos = telemetry_to_send["pos"]
-                        vel = telemetry_to_send["vel"]
-                        telemetry_to_send["fresh"] = False
-                        
-                        reply = {"pos": pos, "vel": vel}
-                        reply_str = json.dumps(reply) + "\n"
-                        try:
-                            client.settimeout(0.2)  # temporary send timeout
-                            client.sendall(reply_str.encode('utf-8'))
-                            client.settimeout(0.1)  # reset back
-                        except socket.timeout:
-                            print("⚠️ Send timeout - STM32 not reading?")
-                        except Exception as e:
-                            print(f"❌ Send error: {e}")
-                            break
-                            
+            # Switch to pure non-blocking mode for the main loop
+            sock.setblocking(False)
+            self.client = sock
+            self._buf = b""
+            print(f"✅ Connected to STM32 HITL server at {self.stm32_ip}:{self.tcp_port}")
         except Exception as e:
-            print(f"⚠️ Socket loop failed: {e}")
-            time.sleep(2.0)
+            # Silently fail and retry later so we don't spam the GUI console
+            pass
+
+    def step(self):
+        """
+        MUST be called inside the main Isaac Sim physics loop after world.step().
+        """
+        # 1. Manage connection
+        if self.client is None:
+            now = time.time()
+            if now - self._last_print > 2.0:
+                print(f"🔄 Looking for STM32 at {self.stm32_ip}:{self.tcp_port}...")
+                self._last_print = now
+            self._connect()
+            return
+
+        # 2. READ torque from STM32 (Non-blocking)
+        try:
+            chunk = self.client.recv(4096)
+            if not chunk:
+                # Empty read on a connected socket means the remote closed it
+                print("❌ STM32 disconnected")
+                self.client.close()
+                self.client = None
+                return
+            self._buf += chunk
+        except BlockingIOError:
+            # Normal: no data available right now
+            pass
+        except Exception as e:
+            print(f"❌ Socket read error: {e}")
+            self.client.close()
+            self.client = None
+            return
+
+        # Parse complete lines
+        while b"\n" in self._buf:
+            line, self._buf = self._buf.split(b"\n", 1)
+            line_str = line.strip().decode('utf-8', errors='ignore')
             
-        finally:
+            if not line_str or 'hitl' in line_str:
+                continue
             try:
-                client.close()
-            except:
+                cmd = json.loads(line_str)
+                self.torque_nm = float(cmd.get("torque_nm", 0.0))
+                self.seq = int(cmd.get("seq", 0))
+                self.t_us = int(cmd.get("t_us", 0))
+            except json.JSONDecodeError:
                 pass
 
-# ===================== START TCP CLIENT =====================
-threading.Thread(target=tcp_client_thread, daemon=True).start()
+        # 3. APPLY Torque to the Isaac Joint
+        efforts = [0.0] * self.articulation.num_joints
+        efforts[self.joint_index] = self.torque_nm
+        self.articulation.set_joint_efforts(efforts)
 
-# ===================== MAIN PHYSICS LOOP =====================
-print("Isaac Sim + PRISM HITL running — torque control + telemetry loop active")
-print("   Make sure firmware is running with: hitl enable")
+        # 4. READ Telemetry & SEND to STM32
+        # Isaac Sim uses radians, Firmware uses degrees
+        pos_rad = float(self.articulation.get_joint_positions()[self.joint_index])
+        vel_rads = float(self.articulation.get_joint_velocities()[self.joint_index])
+        pos_deg = math.degrees(pos_rad)
 
-last_print = time.time()
-tick = 0
+        reply = {"pos": pos_deg, "vel": vel_rads}
+        reply_str = json.dumps(reply) + "\n"
+        
+        try:
+            self.client.sendall(reply_str.encode('utf-8'))
+        except BlockingIOError:
+            pass # Socket buffer full, drop this frame
+        except Exception:
+            self.client.close()
+            self.client = None
 
-while simulation_app.is_running():
-    # Advance Physics
-    world.step(render=True)
+        # 5. Console heartbeat (1Hz)
+        self._tick += 1
+        now = time.time()
+        if now - self._last_print > 1.0:
+            print(f"↻ seq={self.seq:<8} τ={self.torque_nm:>7.3f} Nm  |  θ={pos_deg:>7.2f}°  ω={vel_rads:>7.3f} rad/s")
+            self._last_print = now
 
-    # 1. APPLY Torque to the Isaac Joint
-    with state_lock:
-        torque_nm = latest_command["torque_nm"]
-        seq = latest_command["seq"]
-
-    efforts = [0.0] * articulation.num_joints
-    efforts[JOINT_INDEX] = torque_nm
-    articulation.set_joint_efforts(efforts)
-
-    # 2. READ Telemetry (MUST be on main thread for Omniverse safety)
-    # Isaac Sim joint positions are in radians. Firmware expects degrees.
-    pos_rad = float(articulation.get_joint_positions()[JOINT_INDEX])
-    vel_rads = float(articulation.get_joint_velocities()[JOINT_INDEX])
-    pos_deg = math.degrees(pos_rad)
-    
-    with state_lock:
-        telemetry_to_send["pos"] = pos_deg
-        telemetry_to_send["vel"] = vel_rads
-        telemetry_to_send["fresh"] = True
-
-    # 3. CONSOLE LOGGING (throttle to 1Hz)
-    tick += 1
-    now = time.time()
-    if now - last_print > 1.0:
-        print(f"↻ seq={seq:<8} τ={torque_nm:>7.3f} Nm  |  θ={pos_deg:>7.2f}°  ω={vel_rads:>7.3f} rad/s")
-        last_print = now
-
-simulation_app.close()
-print("Isaac Sim HITL shutdown")
+    def close(self):
+        """Cleanly close the socket"""
+        if self.client:
+            self.client.close()
+            self.client = None
