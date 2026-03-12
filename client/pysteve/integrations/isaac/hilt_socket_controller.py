@@ -3,7 +3,7 @@ import json
 import math
 import asyncio
 import omni.kit.app
-from isaacsim.core.api.articulations import Articulation
+from isaacsim.core.prims import SingleArticulation
 
 """
 ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ async def hitl_background_loop():
     print(f"🚀 Starting PRISM HITL Controller for {ARTICULATION_PATH}")
     
     # Grab the robot from the GUI scene
-    robot = Articulation(prim_path=ARTICULATION_PATH)
+    robot = SingleArticulation(prim_paths_expr=ARTICULATION_PATH)
     robot.initialize()
     
     sock = None
