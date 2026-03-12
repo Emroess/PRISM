@@ -1,170 +1,138 @@
 import socket
 import json
-import time
 import math
-from omni.isaac.core.articulations import Articulation
+import asyncio
+import omni.kit.app
+from isaacsim.core.api.articulations import Articulation
 
-class PrismHitlController:
-    """
-    Hardware-In-The-Loop (HITL) controller for integrating PRISM STM32 
-    firmware into an existing Isaac Sim environment.
+"""
+---------------------------------------------------------------------------
+PRISM Hardware-In-The-Loop (HITL) Controller for Isaac Sim GUI
+---------------------------------------------------------------------------
+Copy and paste this script directly into the Isaac Sim Script Editor 
+(Window > Script Editor) and click "Run". It uses an async loop to hook 
+directly into the Isaac Sim physics renderer without freezing the GUI.
 
-    This version runs entirely on the main Isaac Sim physics thread
-    using non-blocking sockets. No background threads are spawned.
+ISAAC SIM SCENE SETUP INSTRUCTIONS:
+---------------------------------------------------------------------------
+To control a rotational DOF via STM32 torque, your scene MUST be configured
+with an Articulation Root and a force-driven Revolute Joint:
 
-    ---------------------------------------------------------------------------
-    ISAAC SIM SETUP INSTRUCTIONS:
-    ---------------------------------------------------------------------------
-    To control a rotational DOF via STM32 torque, your scene MUST be configured
-    with an Articulation Root and a force-driven Revolute Joint:
+1. CREATE THE JOINT:
+   - Select your Stator Mesh, then Shift-select your Rotor Mesh.
+   - Go to Create > Physics > Joints > Revolute Joint.
+   - Move the new joint to the exact center axis of rotation.
 
-    1. CREATE THE JOINT:
-       - Select your Stator Mesh, then Shift-select your Rotor Mesh.
-       - Go to Create > Physics > Joints > Revolute Joint.
-       - Move the new joint to the exact center axis of rotation.
+2. TURN ON TORQUE CONTROL:
+   - Select the Revolute Joint.
+   - Go to Property window > Add > Physics > Angular Drive.
+   - In the new Angular Drive component:
+     * Set "Type" to "Force" (this means Torque control).
+     * Set "Damping" to 0.0 (The PRISM STM32 handles damping).
+     * Set "Stiffness" to 0.0.
 
-    2. TURN ON TORQUE CONTROL:
-       - Select the Revolute Joint.
-       - Go to Property window > Add > Physics > Angular Drive.
-       - In the new Angular Drive component:
-         * Set "Type" to "Force" (this means Torque control).
-         * Set "Damping" to 0.0 (The PRISM STM32 handles damping).
-         * Set "Stiffness" to 0.0.
+3. CREATE THE ARTICULATION ROOT:
+   - Create an Xform (Create > Xform) named e.g. "Robot_Root_Xform".
+   - Drag your Stator and Rotor meshes INSIDE this Xform.
+   - Right-click the Xform > Add > Physics > Articulation Root.
+   - Put that Xform path into ARTICULATION_PATH below.
+---------------------------------------------------------------------------
+"""
 
-    3. CREATE THE ARTICULATION ROOT:
-       - Create an Xform (Create > Xform) named "Robot_Root_Xform".
-       - Drag your Stator and Rotor meshes INSIDE this Xform.
-       - Right-click the Xform > Add > Physics > Articulation Root.
+# ===================== CONFIG (EDIT THESE) =====================
+STM32_IP = "10.0.1.15"
+TCP_PORT = 8889
+ARTICULATION_PATH = "/World/Robot_Root_Xform"  # Match your Articulation Root
+JOINT_INDEX = 0                                # The rotating DOF index
+# ===============================================================
 
-    ---------------------------------------------------------------------------
-    SCRIPT USAGE IN YOUR MAIN ISAAC LOOP:
-    ---------------------------------------------------------------------------
-        # 1. Pass the Articulation Root Xform path
-        my_robot = Articulation(prim_path="/World/Robot_Root_Xform")
-        
-        # 2. Attach the HITL controller
-        hitl = PrismHitlController(my_robot, joint_index=0, stm32_ip="10.0.1.15")
+async def hitl_background_loop():
+    print(f"🚀 Starting PRISM HITL Controller for {ARTICULATION_PATH}")
+    
+    # Grab the robot from the GUI scene
+    robot = Articulation(prim_path=ARTICULATION_PATH)
+    robot.initialize()
+    
+    sock = None
+    buf = b""
+    torque_nm = 0.0
 
-        # 3. Inside your physics tick loop:
-        while simulation_app.is_running():
-            world.step(render=True)
-            
-            # This handles receiving STM32 torque, applying it to Joint 0,
-            # and sending the new rad/sec velocities back to the STM32.
-            hitl.step()  
-    """
-    def __init__(self, articulation: Articulation, joint_index: int, stm32_ip: str, tcp_port: int = 8889):
-        self.articulation = articulation
-        self.joint_index = joint_index
-        self.stm32_ip = stm32_ip
-        self.tcp_port = tcp_port
-        
-        self.client = None
-        self._buf = b""
-        
-        # State
-        self.torque_nm = 0.0
-        self.seq = 0
-        self.t_us = 0
-        
-        # Logging throttle
-        self._last_print = time.time()
-        self._tick = 0
+    print(f"🔄 Waiting for STM32 connection at {STM32_IP}:{TCP_PORT}...")
+    
+    try:
+        # Loop forever inside the Isaac Sim GUI
+        while True:
+            # Yield to Isaac Sim's physics/rendering engine (prevent freezing)
+            await omni.kit.app.get_app().next_update_async()
 
-    def _connect(self):
-        """Attempts a non-blocking connection to the STM32."""
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(0.5)  # Brief timeout for the initial connection attempt
-            sock.connect((self.stm32_ip, self.tcp_port))
-            
-            # Switch to pure non-blocking mode for the main loop
-            sock.setblocking(False)
-            self.client = sock
-            self._buf = b""
-            print(f"✅ Connected to STM32 HITL server at {self.stm32_ip}:{self.tcp_port}")
-        except Exception as e:
-            # Silently fail and retry later so we don't spam the GUI console
-            pass
+            # 1. Handle Connection
+            if sock is None:
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(0.5)  # Short timeout so GUI doesn't hard-freeze
+                    sock.connect((STM32_IP, TCP_PORT))
+                    sock.settimeout(0.0)  # Switch to pure non-blocking for I/O
+                    print("✅ Connected to STM32 HITL server")
+                    buf = b""
+                except Exception:
+                    sock = None
+                    continue
 
-    def step(self):
-        """
-        MUST be called inside the main Isaac Sim physics loop after world.step().
-        """
-        # 1. Manage connection
-        if self.client is None:
-            now = time.time()
-            if now - self._last_print > 2.0:
-                print(f"🔄 Looking for STM32 at {self.stm32_ip}:{self.tcp_port}...")
-                self._last_print = now
-            self._connect()
-            return
-
-        # 2. READ torque from STM32 (Non-blocking)
-        try:
-            chunk = self.client.recv(4096)
-            if not chunk:
-                # Empty read on a connected socket means the remote closed it
-                print("❌ STM32 disconnected")
-                self.client.close()
-                self.client = None
-                return
-            self._buf += chunk
-        except BlockingIOError:
-            # Normal: no data available right now
-            pass
-        except Exception as e:
-            print(f"❌ Socket read error: {e}")
-            self.client.close()
-            self.client = None
-            return
-
-        # Parse complete lines
-        while b"\n" in self._buf:
-            line, self._buf = self._buf.split(b"\n", 1)
-            line_str = line.strip().decode('utf-8', errors='ignore')
-            
-            if not line_str or 'hitl' in line_str:
-                continue
+            # 2. Read Torque from STM32
             try:
-                cmd = json.loads(line_str)
-                self.torque_nm = float(cmd.get("torque_nm", 0.0))
-                self.seq = int(cmd.get("seq", 0))
-                self.t_us = int(cmd.get("t_us", 0))
-            except json.JSONDecodeError:
-                pass
+                chunk = sock.recv(4096)
+                if not chunk:
+                    print("❌ STM32 disconnected")
+                    sock.close()
+                    sock = None
+                    continue
+                buf += chunk
+            except BlockingIOError:
+                pass  # Normal: no new data yet
+            except Exception:
+                sock.close()
+                sock = None
+                continue
 
-        # 3. APPLY Torque to the Isaac Joint
-        efforts = [0.0] * self.articulation.num_joints
-        efforts[self.joint_index] = self.torque_nm
-        self.articulation.set_joint_efforts(efforts)
+            # Parse JSON stream
+            while b"\n" in buf:
+                line, buf = buf.split(b"\n", 1)
+                try:
+                    cmd = json.loads(line.decode('utf-8'))
+                    if "torque_nm" in cmd:
+                        torque_nm = float(cmd["torque_nm"])
+                except Exception:
+                    pass
 
-        # 4. READ Telemetry & SEND to STM32
-        # Isaac Sim uses radians, Firmware uses degrees
-        pos_rad = float(self.articulation.get_joint_positions()[self.joint_index])
-        vel_rads = float(self.articulation.get_joint_velocities()[self.joint_index])
-        pos_deg = math.degrees(pos_rad)
+            # 3. Apply Torque to Joint
+            efforts = [0.0] * robot.num_joints
+            efforts[JOINT_INDEX] = torque_nm
+            robot.set_joint_efforts(efforts)
 
-        reply = {"pos": pos_deg, "vel": vel_rads}
-        reply_str = json.dumps(reply) + "\n"
-        
-        try:
-            self.client.sendall(reply_str.encode('utf-8'))
-        except BlockingIOError:
-            pass # Socket buffer full, drop this frame
-        except Exception:
-            self.client.close()
-            self.client = None
+            # 4. Stream Telemetry back to STM32
+            pos_rad = float(robot.get_joint_positions()[JOINT_INDEX])
+            vel_rad_s = float(robot.get_joint_velocities()[JOINT_INDEX])
+            
+            # Firmware expects degrees
+            reply = {"pos": math.degrees(pos_rad), "vel": vel_rad_s}
+            
+            try:
+                msg = json.dumps(reply) + "\n"
+                sock.sendall(msg.encode('utf-8'))
+            except BlockingIOError:
+                pass  # Buffer full, drop frame
+            except Exception:
+                sock.close()
+                sock = None
 
-        # 5. Console heartbeat (1Hz)
-        self._tick += 1
-        now = time.time()
-        if now - self._last_print > 1.0:
-            print(f"↻ seq={self.seq:<8} τ={self.torque_nm:>7.3f} Nm  |  θ={pos_deg:>7.2f}°  ω={vel_rads:>7.3f} rad/s")
-            self._last_print = now
+    except asyncio.CancelledError:
+        print("🛑 HITL script stopped by user")
+        if sock:
+            sock.close()
 
-    def close(self):
-        """Cleanly close the socket"""
-        if self.client:
-            self.client.close()
-            self.client = None
+# If you click "Run" twice, cancel the old loop before starting a new one
+if "prism_hitl_task" in globals() and not prism_hitl_task.done():
+    prism_hitl_task.cancel()
+
+# Start the async loop inside the GUI
+prism_hitl_task = asyncio.ensure_future(hitl_background_loop())
