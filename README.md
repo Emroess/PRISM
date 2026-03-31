@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/PRISMlogo.png" width="280" alt="PRISM Logo">
+  <img src="docs/images/PRISMlogo.png" width="600" alt="PRISM Logo">
 </div>
 
 # PRISM
