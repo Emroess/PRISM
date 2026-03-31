@@ -74,7 +74,7 @@ MyHandle/
 
 ### 3. Add Images
 
-Place images in `docs/CAD/images/`:
+Place images in `docs/images/`:
 
 - `myhandle_front.jpg` (or `.png`)
 - `myhandle_installed.jpg` (product photo)
@@ -96,7 +96,7 @@ Create `MyHandle/assembly/README.md` with:
 Before submitting:
 
 - ✓ All paths in handles.json are relative to `docs/CAD/Handles/`
-- ✓ All images referenced exist in `docs/CAD/images/`
+- ✓ All images referenced exist in `docs/images/`
 - ✓ All files (CAD, mesh, sim) referenced exist or are marked `null`
 - ✓ External links (BOM, etc.) are valid URLs
 - ✓ JSON is valid (use an online validator or a linter)
@@ -133,7 +133,7 @@ Each handle object in `handles.json` contains:
 - **id** (string, required): Unique identifier (lowercase, hyphens)
 - **name** (string, required): Display name
 - **description** (string, required): Brief description of use case
-- **images** (array): Filenames from `docs/CAD/images/` (relative path)
+- **images** (array): Filenames from `docs/images/` (relative path)
 - **purchasedBom** (array of objects):
   - **name**: Part description
   - **link**: URL to vendor/product

@@ -12,6 +12,6 @@ Last updated: (regenerate to update this)
 
 ## Notes
 
-- Images are located in `docs/CAD/images/`
+- Images are located in `docs/images/`
 - File paths are relative to `docs/CAD/Handles/`
 - Regenerate this catalog by running: `python3 generate_catalog.py`

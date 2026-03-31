@@ -1,7 +1,7 @@
 <table>
 <tr>
 <td width="160" valign="top">
-  <img src="docs/CAD/images/PRISM LOGO Square.jpg" width="140" alt="PRISM Logo">
+  <img src="docs/images/PRISM_logo.png" width="140" alt="PRISM Logo">
 </td>
 <td valign="middle">
 
