@@ -1,11 +1,21 @@
-<div align="center">
-  <h1>PRISM</h1>
-  <p>An open-source, programmable rotary impedance suite for emulating realistic task haptics.</p>
-  
-  <a href="https://github.com/Emroess/STE-VE"><img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
-  <a href="https://github.com/Emroess/STE-VE"><img alt="C/C++" src="https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white"></a>
-  <a href="https://github.com/Emroess/STE-VE"><img alt="Python" src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white"></a>
-</div>
+<table>
+<tr>
+<td width="160" valign="top">
+  <img src="docs/CAD/images/PRISM LOGO Square.jpg" width="140" alt="PRISM Logo">
+</td>
+<td valign="middle">
+
+# PRISM
+
+An open-source, programmable rotary impedance suite for emulating realistic task haptics.
+
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/STE-VE)
+[![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/STE-VE)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/STE-VE)
+
+</td>
+</tr>
+</table>
 
 ## Table of Contents
 - [Getting Started](#getting-started)
