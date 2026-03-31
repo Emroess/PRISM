@@ -1,5 +1,5 @@
-﻿<div align="center">
-  <img src="docs/images/PRISMlogo.png" width="600" alt="PRISM Logo">
+<div align="center">
+  <img src="docs/assets/images/PRISMlogo.png" width="600" alt="PRISM Logo">
 </div>
 
 # PRISM
@@ -30,8 +30,8 @@ Additionally, PRISM's fully programmatic API allows the motor to **reset to its 
 ## build it yourself
 All CAD files, assembly guides, and firmware are entirely open-source. Anyone can assemble a working PRISM device without any prior experience.
 
-- [bill of materials](docs/CAD%20&%20Print%20Files/README.md)
-- [CAD files & assembly guide](docs/CAD%20&%20Print%20Files/README.md)
+- [bill of materials](docs/Build%20Guide/Build%20Guide.md)
+- [CAD files & assembly guide](docs/Rotation%20Library/Rotation%20Library.md)
 - [software stack (GitHub)](https://github.com/Emroess/PRISM)
 
 To start using the PRISM tool, follow these sequential steps:
@@ -41,7 +41,7 @@ To start using the PRISM tool, follow these sequential steps:
 4. **Flash the Firmware:** Load the PRISM software onto the STM32 microcontroller.
 5. **Test the System:** Connect via USB and verify the haptic response.
 
-For detailed instructions on flashing the firmware and testing the assembled system, refer to the [**getting started docs**](docs/getting-started/getting-started.md).
+For detailed instructions on flashing the firmware and testing the assembled system, refer to the [**getting started docs**](docs/User%20Guides/getting-started.md).
 
 ### Prerequisites
 - [STM32 Nucleo-H753ZI](https://www.st.com/en/evaluation-tools/nucleo-h753zi.html)
@@ -57,7 +57,7 @@ make && make flash
 ```
 
 ## Usage
-Control PRISM via the Command Line, REST API, Web Interface, or Python Client. See the [**Usage Docs**](docs/usage.md) for full references.
+Control PRISM via the Command Line, REST API, Web Interface, or Python Client. See the [**Usage Docs**](docs/User%20Guides/usage.md) for full references.
 
 To start using the Python client:
 ```bash
@@ -71,7 +71,7 @@ steve.valve_start(preset="smooth")
 ```
 
 ## Emulation Library
-PRISM's modular handle system allows for custom haptic emulations. See the [**Emulation Library Docs**](docs/emulation-library.md) for 3D printable designs and parameter configurations.
+PRISM's modular handle system allows for custom haptic emulations. See the [**Rotation Library Docs**](docs/Rotation%20Library/Rotation%20Library.md) for 3D printable designs and parameter configurations.
 
 Included Handles:
 - Hydrant Handwheel (4-turn)

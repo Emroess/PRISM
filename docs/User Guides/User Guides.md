@@ -15,7 +15,7 @@ Welcome to the PRISM User Guides. This directory provides resources on how to in
 - [Firmware API](./firmware/)
 - [Getting Started Folder](./getting-started/)
 - [HTML/Web Interface](./html/)
-- [Image Processing](./images/)
+- [Image Processing](../assets/images/)
 - [ODrive Configuration](./odrive/)
 - [REST API](./rest/)
 - [Streaming Telemetry](./stream/)
