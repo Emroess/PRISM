@@ -1,5 +1,9 @@
-<div align="center">
-  <img src="docs/images/PRISM_logo.png" width="220" alt="PRISM Logo">
+<table>
+<tr>
+<td width="280" valign="middle">
+  <img src="docs/images/PRISM_logo.png" width="260" alt="PRISM Logo">
+</td>
+<td valign="middle">
 
 # PRISM
 
@@ -9,7 +13,9 @@ An open-source, programmable rotary impedance suite for emulating realistic task
 [![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/PRISM)
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/PRISM)
 
-</div>
+</td>
+</tr>
+</table>
 
 ## Table of Contents
 - [Getting Started](#getting-started)
