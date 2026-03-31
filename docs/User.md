@@ -96,6 +96,8 @@ model = PPO("MlpPolicy", env, verbose=1)
 model.learn(total_timesteps=100000)
 ```
 
+A full tutorial can be found in [docs/tutorials/gymnasium-rl.md](tutorials/gymnasium-rl.md)
+
 ### Hardware-in-the-Loop: MuJoCo & Isaac Sim
 PRISM pairs physically accurate torque data with simulation software.
 
