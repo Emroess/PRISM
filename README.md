@@ -1,18 +1,15 @@
-<img align="left" width="240" src="docs/images/PRISM_logo.png" alt="PRISM Logo" style="margin-right: 25px; margin-bottom: 15px;">
+<div align="center">
+  <img src="docs/images/PRISM_logo.png" width="220" alt="PRISM Logo">
 
 # PRISM
 
 An open-source, programmable rotary impedance suite for emulating realistic task haptics.
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/STE-VE)
-[![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/STE-VE)
-[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/STE-VE)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/PRISM)
+[![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/PRISM)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/PRISM)
 
-<br clear="left">
-
----
-
-## Table of Contents
+</div>
 
 ## Table of Contents
 - [Getting Started](#getting-started)
@@ -38,7 +35,7 @@ Set up and build your PRISM hardware and firmware. For detailed instructions, re
 
 ### Installation
 ```bash
-git clone https://github.com/Emroess/STE-VE.git
+git clone https://github.com/Emroess/PRISM.git
 cd STE-VE/firmware
 make && make flash
 ```
