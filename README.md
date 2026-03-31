@@ -1,4 +1,4 @@
-<img align="left" width="220" src="docs/images/PRISM_logo.png" alt="PRISM Logo">
+<img align="left" width="240" src="docs/images/PRISM_logo.png" alt="PRISM Logo" style="margin-right: 25px; margin-bottom: 15px;">
 
 # PRISM
 
@@ -9,6 +9,10 @@ An open-source, programmable rotary impedance suite for emulating realistic task
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/STE-VE)
 
 <br clear="left">
+
+---
+
+## Table of Contents
 
 ## Table of Contents
 - [Getting Started](#getting-started)
