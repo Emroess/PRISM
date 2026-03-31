@@ -1,6 +1,6 @@
-# Firmware Installation Guide
+﻿# Firmware Installation Guide
 
-This guide walks you through installing the STEVE firmware onto a Nucleo-H753ZI development board using the onboard ST-LINK debugger/programmer.
+This guide walks you through installing the PRISM firmware onto a Nucleo-H753ZI development board using the onboard ST-LINK debugger/programmer.
 
 ## Table of Contents
 
@@ -184,7 +184,7 @@ sudo apt-get install putty
 ### 1. Navigate to Firmware Directory
 
 ```bash
-cd /path/to/STEVE/firmware
+cd /path/to/PRISM/firmware
 ```
 
 ### 2. Clean Previous Builds (Optional)
@@ -340,26 +340,26 @@ screen /dev/ttyACM0 115200
 
 Press Enter - you should see the CLI prompt:
 ```
-STEVE> 
+PRISM> 
 ```
 
 Type `help` to see available commands:
 ```
-STEVE> help
+PRISM> help
 ```
 
 ### 3. Check Firmware Version
 
 Query the firmware version:
 ```
-STEVE> version
+PRISM> version
 ```
 
 ### 4. Check System Status
 
 View system status:
 ```
-STEVE> status
+PRISM> status
 ```
 
 This should display:
@@ -628,4 +628,5 @@ make help
 **Document Version**: 1.0  
 **Last Updated**: November 21, 2025  
 **Target Hardware**: Nucleo-H753ZI (MB1364)  
-**Firmware Version**: Compatible with STEVE firmware v1.x
+**Firmware Version**: Compatible with PRISM firmware v1.x
+

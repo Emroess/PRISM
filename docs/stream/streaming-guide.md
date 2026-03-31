@@ -1,8 +1,8 @@
-# STEVE TCP Streaming Guide
+﻿# PRISM TCP Streaming Guide
 
 ## Overview
 
-STEVE provides real-time TCP streaming of valve simulation data for robotics applications, data logging, and visualization. The streaming server delivers JSON-formatted data packets containing encoder position, velocity, torque, and diagnostic information at configurable intervals.
+PRISM provides real-time TCP streaming of valve simulation data for robotics applications, data logging, and visualization. The streaming server delivers JSON-formatted data packets containing encoder position, velocity, torque, and diagnostic information at configurable intervals.
 
 ## Key Features
 
@@ -54,7 +54,7 @@ You can start and stop streaming using either the CLI or REST API.
 
 ### Using the CLI
 
-Connect to STEVE via USB ST-LINK and use the `eth_stream` command:
+Connect to PRISM via USB ST-LINK and use the `eth_stream` command:
 
 #### Start Streaming at Default Rate (100 Hz)
 
@@ -162,7 +162,7 @@ X-API-Key: steve-valve-2025
 
 ## Connecting to the Stream
 
-Once streaming is started, connect to STEVE's IP address on port 8888 using a TCP client.
+Once streaming is started, connect to PRISM's IP address on port 8888 using a TCP client.
 
 ### Connection Details
 
@@ -323,7 +323,7 @@ For extended logging sessions:
 
 ### Synchronized Multi-Device Logging
 
-When logging from multiple STEVE devices:
+When logging from multiple PRISM devices:
 
 1. Use NTP for time synchronization
 2. Include `t_us` (monotonic time) for relative timing
@@ -359,7 +359,7 @@ else:
 
 ### Timestamp Synchronization
 
-STEVE provides two time references:
+PRISM provides two time references:
 
 1. **`timestamp_ms`** - System time in milliseconds (may wrap around)
 2. **`t_us`** - Monotonic accumulated time in microseconds (never wraps)
@@ -394,7 +394,7 @@ See [Streaming Examples](streaming-examples.md) for complete ROS 2 node implemen
 The TCP streaming server has no authentication mechanism. Access control should be implemented at the network level:
 
 1. Use firewalls to restrict access to port 8888
-2. Deploy STEVE on isolated network or VLAN
+2. Deploy PRISM on isolated network or VLAN
 3. Use VPN for remote access
 4. Monitor connected clients via `GET /api/v1/stream`
 
@@ -413,4 +413,5 @@ For questions or issues with streaming:
 1. Check streaming status: `GET /api/v1/stream`
 2. Review firmware logs via CLI
 3. Verify network configuration
-4. Contact STEVE firmware team with specific error details
+4. Contact PRISM firmware team with specific error details
+

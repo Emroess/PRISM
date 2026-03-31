@@ -1,11 +1,11 @@
-# Quick Start Tutorial
+﻿# Quick Start Tutorial
 
-Get started with PySteve in 5 minutes! This tutorial covers the basics of connecting to a STEVE device and controlling the valve.
+Get started with PySteve in 5 minutes! This tutorial covers the basics of connecting to a PRISM device and controlling the valve.
 
 ## Prerequisites
 
 - PySteve installed (`pip install pysteve`)
-- STEVE device on your network
+- PRISM device on your network
 - Device IP address (e.g., `192.168.1.100`)
 
 ## Step 1: Import and Connect
@@ -18,7 +18,7 @@ client = SteveClient("192.168.1.100")
 
 # Connect to device
 client.connect()
-print("✓ Connected to STEVE device")
+print("✓ Connected to PRISM device")
 ```
 
 ## Step 2: Enable Motor
@@ -277,3 +277,4 @@ Now that you know the basics:
 - [Configuration Guide](../configuration.md)
 - [API Reference](../api/client.md)
 - [Example Gallery](../examples/index.md)
+

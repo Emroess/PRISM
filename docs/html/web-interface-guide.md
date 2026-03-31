@@ -1,8 +1,8 @@
-# STEVE Web Interface Guide
+﻿# PRISM Web Interface Guide
 
 ## Overview
 
-STEVE includes an embedded HTML control panel accessible via any web browser on your network. The web interface provides real-time monitoring and control of valve simulations without requiring additional software installation or API integration. This makes it ideal for quick configuration, testing, and demonstration of haptic valve behaviors.
+PRISM includes an embedded HTML control panel accessible via any web browser on your network. The web interface provides real-time monitoring and control of valve simulations without requiring additional software installation or API integration. This makes it ideal for quick configuration, testing, and demonstration of haptic valve behaviors.
 
 ## Key Features
 
@@ -18,13 +18,13 @@ STEVE includes an embedded HTML control panel accessible via any web browser on 
 
 ### Requirements
 
-- STEVE device connected to your network via Ethernet
+- PRISM device connected to your network via Ethernet
 - Web browser on computer connected to same network
 - Device IP address (obtain via CLI command `ip_info` or `ethstatus`)
 
 ### Connection Steps
 
-1. **Power on STEVE** and connect Ethernet cable
+1. **Power on PRISM** and connect Ethernet cable
 2. **Obtain IP address** using CLI or check your DHCP server/router
 3. **Open web browser** and navigate to:
    ```
@@ -233,7 +233,7 @@ The interface is mobile-friendly:
 - No hover-dependent features
 
 Access from mobile device:
-1. Connect phone/tablet to same WiFi network as STEVE
+1. Connect phone/tablet to same WiFi network as PRISM
 2. Open browser and navigate to `http://<device-ip>:8080`
 3. Interface adapts to screen size
 
@@ -244,7 +244,7 @@ Access from mobile device:
 **Problem:** Browser shows "Connection refused" or timeout.
 
 **Solutions:**
-1. Verify STEVE Ethernet connection (check link LED)
+1. Verify PRISM Ethernet connection (check link LED)
 2. Confirm IP address with `ip_info` CLI command
 3. Check same network/subnet (ping device IP)
 4. Verify port 8080 not blocked by firewall
@@ -301,7 +301,7 @@ Access from mobile device:
 **Solutions:**
 1. Refresh browser page (Ctrl+R)
 2. Check network connection stable
-3. Verify STEVE device not crashed (check LED, ping IP)
+3. Verify PRISM device not crashed (check LED, ping IP)
 4. Close and reopen browser
 5. Clear browser cache and cookies
 
@@ -348,9 +348,9 @@ The web interface can run alongside:
 ### Bookmarking
 
 Create browser bookmark for quick access:
-1. Navigate to STEVE web interface
+1. Navigate to PRISM web interface
 2. Bookmark page (Ctrl+D or Cmd+D)
-3. Rename to "STEVE Valve Controller"
+3. Rename to "PRISM Valve Controller"
 4. Access instantly from bookmarks bar
 
 ## Security Considerations
@@ -449,4 +449,5 @@ For web interface issues:
 2. Verify REST API endpoints work directly (curl or Python)
 3. Test with different browser
 4. Review firmware HTTP server logs via CLI
-5. Contact STEVE firmware team with specific error messages
+5. Contact PRISM firmware team with specific error messages
+

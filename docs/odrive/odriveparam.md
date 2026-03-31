@@ -1,8 +1,8 @@
-# ODrive S1 Configuration Reference for STEVE
+﻿# ODrive S1 Configuration Reference for PRISM
 
 This page lists the ODrive S1 parameters that must be configured for reliable valve emulation with the Nucleo-STM32H753ZI & SimpleCAN setup.  
 
-> Values are the **recommended STEVE defaults** (tuned for torque control, low latency, and safety).  
+> Values are the **recommended PRISM defaults** (tuned for torque control, low latency, and safety).  
 > Change only if you know what you're doing — always test after saving.
 
  ### How to Apply Configration Changes 
@@ -39,7 +39,7 @@ Connect ODrive via USB C and run `odrivetool`
 | `input_vel_scale`             | `axis0.can.config.input_vel_scale`     | `1000`| Velocity scaling factor (for vel commands) |
 | `input_torque_scale`          | `axis0.can.config.input_torque_scale`  | `1000`| Torque scaling factor (for 0x00e commands) |
 
-## Motor & Encoder (STEVE-Specific – MB325s-100KV High-Current Motor)
+## Motor & Encoder (PRISM-Specific – MB325s-100KV High-Current Motor)
 
 | Parameter                              | Path                                  | Value                    | Notes                 |
 |----------------------------------------|---------------------------------------|--------------------------|-----------------------|
@@ -53,5 +53,6 @@ Connect ODrive via USB C and run `odrivetool`
 | `thermistor_R25`                       | `axis0.motor.config.thermistor_R25`   | `10000 Ω` | NTC 10k @ 25 °C |
 | `thermistor_beta`                      | `axis0.motor.config.thermistor_beta`  | `3435` | Standard beta |
 | `max_temperature`                      | `axis0.motor.config.max_temperature`  | `130°C` | Derate or shutdown |
+
 
 

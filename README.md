@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
   <img src="docs/images/PRISMlogo.png" width="600" alt="PRISM Logo">
 </div>
 
@@ -21,12 +21,27 @@ An open-source, programmable rotary impedance suite for emulating realistic task
 - [License](#license)
 
 ## About / Overview
-PRISM (Programmable Rotary Impedance Suite for Manipulation) is an advanced haptic control system engineered to replicate the dynamics of real-world valves, handles, knobs, and fasteners. It provides precise force feedback through a high-performance motor-driven interface.
+PRISM (Programmable Rotary Impedance Suite for Manipulation) is an advanced hardware-based haptic control system engineered to replicate real-world valves, handles, knobs, and fasteners. Unlike purely virtual simulations, PRISM provides physical-world force feedback at 1kHz+ through a modular, motor-driven interface.
 
-PRISM can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior with configurable physical parameters such as damping, friction, and wall stiffness.
+The core value of PRISM is **fully automated, unattended robotic policy training**. It streams high-frequency, real-time TCP telemetry including precise position, velocity, and torque feedback. This allows robotic policies to autonomously track task status. Software can determine task completion using physical metrics like `theta_on`, `theta_off`, torque, or velocity thresholds. 
 
-## Getting Started
-Set up and build your PRISM hardware and firmware. For detailed instructions, refer to the [**Getting Started Docs**](docs/getting-started.md).
+Additionally, PRISM's fully programmatic API allows the motor to **reset to its start state**. It can also instantly re-randomize physical parameters (damping, friction, wall stiffness) for the next episode. This creates a continuous training loop. Robots can physically train on self-resetting tasks without any human intervention.
+
+## build it yourself
+All CAD files, assembly guides, and firmware are entirely open-source. Anyone can assemble a working PRISM device without any prior experience.
+
+- [bill of materials](docs/CAD%20&%20Print%20Files/README.md)
+- [CAD files & assembly guide](docs/CAD%20&%20Print%20Files/README.md)
+- [software stack (GitHub)](https://github.com/Emroess/PRISM)
+
+To start using the PRISM tool, follow these sequential steps:
+1. **Order the BOM:** Purchase the required off-the-shelf components.
+2. **Print the STLs:** 3D print the structural mounts and interface handles from the CAD files.
+3. **Assemble the Hardware:** Follow the mechanical assembly guide to put the pieces together.
+4. **Flash the Firmware:** Load the PRISM software onto the STM32 microcontroller.
+5. **Test the System:** Connect via USB and verify the haptic response.
+
+For detailed instructions on flashing the firmware and testing the assembled system, refer to the [**getting started docs**](docs/getting-started/getting-started.md).
 
 ### Prerequisites
 - [STM32 Nucleo-H753ZI](https://www.st.com/en/evaluation-tools/nucleo-h753zi.html)
@@ -37,7 +52,7 @@ Set up and build your PRISM hardware and firmware. For detailed instructions, re
 ### Installation
 ```bash
 git clone https://github.com/Emroess/PRISM.git
-cd STE-VE/firmware
+cd PRISM/firmware
 make && make flash
 ```
 
@@ -69,9 +84,12 @@ Included Handles:
 - **Programmable characteristics** (damping, friction, stiffness, endstops)
 - **Controlled randomness** for repeatable task variations
 - **Multi-interface support**: CLI, Browser GUI, REST API, Data Streaming
+- **Simulation Integration (Under Development)**: Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo).
 
 ## Contributing
 We welcome contributions! Please see [Next Steps](docs/next-steps.md) for testing opportunities, community feedback, and future enhancements.
 
 ## License
 MIT License
+
+

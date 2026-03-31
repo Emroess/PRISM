@@ -1,6 +1,6 @@
-# STEVE Streaming Examples
+﻿# PRISM Streaming Examples
 
-Complete code examples for consuming real-time valve simulation data from STEVE's TCP streaming server.
+Complete code examples for consuming real-time valve simulation data from PRISM's TCP streaming server.
 
 ## Python Examples
 
@@ -13,7 +13,7 @@ import socket
 import json
 
 def connect_stream(host='192.168.1.100', port=8888):
-    """Connect to STEVE streaming server."""
+    """Connect to PRISM streaming server."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     sock.settimeout(5.0)  # 5 second timeout
@@ -37,7 +37,7 @@ def read_stream_data(sock):
 def main():
     # Connect to stream
     sock = connect_stream('192.168.1.100', 8888)
-    print("Connected to STEVE streaming server")
+    print("Connected to PRISM streaming server")
     
     try:
         # Read hello message
@@ -73,7 +73,7 @@ import time
 from typing import Callable, Optional
 
 class SteveStreamClient:
-    """Thread-safe STEVE streaming client."""
+    """Thread-safe PRISM streaming client."""
     
     def __init__(self, host: str = '192.168.1.100', port: int = 8888):
         self.host = host
@@ -88,13 +88,13 @@ class SteveStreamClient:
         self.errors = 0
         
     def connect(self) -> bool:
-        """Connect to STEVE streaming server."""
+        """Connect to PRISM streaming server."""
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(5.0)
             self.socket.connect((self.host, self.port))
             self.connected = True
-            print(f"Connected to STEVE at {self.host}:{self.port}")
+            print(f"Connected to PRISM at {self.host}:{self.port}")
             return True
         except Exception as e:
             print(f"Connection failed: {e}")
@@ -110,7 +110,7 @@ class SteveStreamClient:
             self.socket.close()
             self.socket = None
         self.connected = False
-        print("Disconnected from STEVE")
+        print("Disconnected from PRISM")
     
     def set_data_callback(self, callback: Callable):
         """Set callback for receiving data packets."""
@@ -253,7 +253,7 @@ import time
 from datetime import datetime
 
 class SteveDataLogger:
-    """Log STEVE streaming data to CSV file."""
+    """Log PRISM streaming data to CSV file."""
     
     def __init__(self, host='192.168.1.100', port=8888):
         self.host = host
@@ -261,7 +261,7 @@ class SteveDataLogger:
         self.socket = None
         
     def connect(self):
-        """Connect to STEVE."""
+        """Connect to PRISM."""
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
         self.socket.settimeout(5.0)
@@ -374,7 +374,7 @@ public:
             tcp::resolver resolver(io_context_);
             auto endpoints = resolver.resolve(host_, std::to_string(port_));
             boost::asio::connect(socket_, endpoints);
-            std::cout << "Connected to STEVE at " << host_ << ":" << port_ << std::endl;
+            std::cout << "Connected to PRISM at " << host_ << ":" << port_ << std::endl;
             return true;
         } catch (std::exception& e) {
             std::cerr << "Connection failed: " << e.what() << std::endl;
@@ -460,7 +460,7 @@ class SteveStreamClient {
             this.client = new net.Socket();
             
             this.client.connect(this.port, this.host, () => {
-                console.log(`Connected to STEVE at ${this.host}:${this.port}`);
+                console.log(`Connected to PRISM at ${this.host}:${this.port}`);
                 this.connected = true;
                 
                 // Set up line reader
@@ -562,7 +562,7 @@ import json
 import threading
 
 class SteveStreamNode(Node):
-    """ROS 2 node for STEVE TCP streaming."""
+    """ROS 2 node for PRISM TCP streaming."""
     
     def __init__(self):
         super().__init__('steve_stream_node')
@@ -588,15 +588,15 @@ class SteveStreamNode(Node):
         self.connect()
         self.start_streaming()
         
-        self.get_logger().info(f'STEVE stream node started ({self.host}:{self.port})')
+        self.get_logger().info(f'PRISM stream node started ({self.host}:{self.port})')
     
     def connect(self):
-        """Connect to STEVE streaming server."""
+        """Connect to PRISM streaming server."""
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(5.0)
             self.socket.connect((self.host, self.port))
-            self.get_logger().info('Connected to STEVE')
+            self.get_logger().info('Connected to PRISM')
         except Exception as e:
             self.get_logger().error(f'Connection failed: {e}')
             raise
@@ -719,13 +719,13 @@ def generate_launch_description():
 ### MATLAB Stream Reader
 
 ```matlab
-% Connect to STEVE streaming server
+% Connect to PRISM streaming server
 host = '192.168.1.100';
 port = 8888;
 t = tcpclient(host, port);
 t.Timeout = 5;
 
-fprintf('Connected to STEVE at %s:%d\n', host, port);
+fprintf('Connected to PRISM at %s:%d\n', host, port);
 
 % Read hello message
 hello_line = readline(t);
@@ -766,7 +766,7 @@ figure;
 subplot(3,1,1);
 plot(timestamps, position);
 ylabel('Position (deg)');
-title('STEVE Streaming Data');
+title('PRISM Streaming Data');
 
 subplot(3,1,2);
 plot(timestamps, velocity);
@@ -784,3 +784,4 @@ xlabel('Time (ms)');
 - [REST API Reference](../rest/rest-api.md) - Control streaming via REST API
 - [CLI Reference](../cli/cli-reference.md) - Control streaming via CLI
 - [Getting Started Guide](../getting-started/getting-started.md) - Initial setup
+

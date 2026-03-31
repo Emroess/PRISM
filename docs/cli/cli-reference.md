@@ -1,6 +1,6 @@
-# STEVE CLI Reference Guide
+﻿# PRISM CLI Reference Guide
 
-This document provides a complete reference for all commands available in the STEVE (Simulated Task Exploration | Valve Emulation) command-line interface.
+This document provides a complete reference for all commands available in the PRISM (Simulated Task Exploration | Valve Emulation) command-line interface.
 
 ## Table of Contents
 
@@ -1227,5 +1227,6 @@ Common error causes:
 - [REST API Examples](../rest/rest-api-examples.md) - Integration code samples
 - [Streaming Guide](../stream/streaming-guide.md) - Real-time TCP data streaming
 - [Streaming Examples](../stream/streaming-examples.md) - Streaming integration code
-- [STEVE Project Overview](../README.md) - Project introduction and architecture
+- [PRISM Project Overview](../README.md) - Project introduction and architecture
 - Firmware source: `firmware/src/app/cli.c`
+

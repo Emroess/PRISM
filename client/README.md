@@ -1,10 +1,10 @@
-# PySteve: Python Client for STEVE Haptic Valve System
+﻿# PySteve: Python Client for PRISM Haptic Valve System
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-PySteve is a comprehensive Python client for the STEVE (Simulated Task Exploration | Valve Emulation) haptic valve simulation system. It enables robotics engineers and researchers to seamlessly integrate haptic valve simulations into their projects with support for MuJoCo, Gymnasium-Robotics, and NVIDIA Isaac Sim.
+PySteve is a comprehensive Python client for the PRISM (Simulated Task Exploration | Valve Emulation) haptic valve simulation system. It enables robotics engineers and researchers to seamlessly integrate haptic valve simulations into their projects with support for MuJoCo, Gymnasium-Robotics, and NVIDIA Isaac Sim.
 
 ## Features
 
@@ -41,7 +41,7 @@ pip install pysteve[all]         # All extras
 ```python
 from pysteve import SteveClient
 
-# Connect to STEVE device
+# Connect to PRISM device
 with SteveClient("192.168.1.100") as steve:
     # Enable motor and start valve
     steve.enable_motor()
@@ -123,12 +123,12 @@ from pysteve.integrations.mujoco import SteveValveActuator
 model = mujoco.MjModel.from_xml_path("robot_with_valve.xml")
 data = mujoco.MjData(model)
 
-# Create STEVE actuator with hardware sync
+# Create PRISM actuator with hardware sync
 actuator = SteveValveActuator(
     steve_ip="192.168.1.100",
     mujoco_joint_name="valve_joint",
     sync_mode="hardware",  # 'simulation', 'hardware', or 'hybrid'
-    target_hz=1000,  # Match STEVE's control loop
+    target_hz=1000,  # Match PRISM's control loop
     latency_compensation_ms=50
 )
 
@@ -138,7 +138,7 @@ actuator.start()
 
 # Simulation loop
 while True:
-    # Update actuator (interpolates STEVE state for MuJoCo timestep)
+    # Update actuator (interpolates PRISM state for MuJoCo timestep)
     actuator.update(model, data)
     
     # Step MuJoCo
@@ -184,7 +184,7 @@ from omni.isaac.core import World
 world = World()
 stage = world.stage
 
-# Add STEVE valve to scene
+# Add PRISM valve to scene
 connector = IsaacSteveConnector(stage, device_ip="192.168.1.100")
 valve_prim = connector.create_valve_articulation(
     path="/World/Valve",
@@ -272,7 +272,7 @@ See the [`examples/`](examples/) directory for complete working examples:
 ## Requirements
 
 - Python 3.8+
-- STEVE firmware device on network
+- PRISM firmware device on network
 - Optional: MuJoCo 2.3+, Gymnasium 0.28+, Isaac Sim 2023.1+
 
 ## Compatibility Matrix
@@ -295,8 +295,8 @@ If you use PySteve in your research, please cite:
 
 ```bibtex
 @software{pysteve2025,
-  title = {PySteve: Python Client for STEVE Haptic Valve System},
-  author = {STEVE Team},
+  title = {PySteve: Python Client for PRISM Haptic Valve System},
+  author = {PRISM Team},
   year = {2025},
   url = {https://github.com/yourusername/steve_can}
 }
@@ -315,3 +315,4 @@ PySteve is designed to integrate with:
 - [Gymnasium](https://gymnasium.farama.org/) - RL environment standard
 - [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac-sim) - Robot simulation platform
 - [Stable-Baselines3](https://stable-baselines3.readthedocs.io/) - RL algorithms
+

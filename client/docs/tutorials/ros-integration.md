@@ -1,18 +1,18 @@
-# ROS Integration Tutorial
+﻿# ROS Integration Tutorial
 
-Learn how to integrate STEVE haptic valves with ROS2 for robotics applications.
+Learn how to integrate PRISM haptic valves with ROS2 for robotics applications.
 
 ## Prerequisites
 
 - PySteve installed with ROS extras: `pip install pysteve[ros]`
 - ROS2 Humble, Iron, or Rolling installed
-- STEVE device on network
+- PRISM device on network
 - Basic ROS2 knowledge (nodes, topics, services)
 
 ## Overview
 
 The ROS2 integration provides:
-- **ROS2 node** - Bridge between STEVE and ROS ecosystem
+- **ROS2 node** - Bridge between PRISM and ROS ecosystem
 - **Topics** - Publish valve state, subscribe to commands
 - **Services** - Enable/disable motor, update parameters
 - **Actions** - Move to target position with feedback
@@ -21,10 +21,10 @@ The ROS2 integration provides:
 
 ## Quick Start
 
-### Start STEVE ROS Node
+### Start PRISM ROS Node
 
 ```bash
-# Terminal 1: Start STEVE node
+# Terminal 1: Start PRISM node
 ros2 run pysteve steve_node --device-ip 192.168.1.100
 
 # Terminal 2: Check topics
@@ -341,7 +341,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'device_ip',
             default_value='192.168.1.100',
-            description='STEVE device IP address'
+            description='PRISM device IP address'
         ),
         
         DeclareLaunchArgument(
@@ -419,7 +419,7 @@ def generate_launch_description():
 
 ## Robot Integration Example
 
-Integrate STEVE with MoveIt2 for robot manipulation:
+Integrate PRISM with MoveIt2 for robot manipulation:
 
 ```python
 import rclpy
@@ -574,7 +574,7 @@ class SteveVisualizer(Node):
 Record ROS bag for analysis:
 
 ```bash
-# Record all STEVE topics
+# Record all PRISM topics
 ros2 bag record /steve/state /steve/config /steve/diagnostics
 
 # Record specific topics with rate limit
@@ -598,7 +598,7 @@ ros2 bag play steve_recording --rate 0.5
 
 **Solution**: Check device connectivity
 ```bash
-# Test STEVE connection
+# Test PRISM connection
 python3 -c "from pysteve import SteveClient; c = SteveClient('192.168.1.100'); c.connect(); print('OK')"
 ```
 
@@ -647,3 +647,4 @@ steve_ros_example/
     ├── steve_controller.py
     └── steve_visualizer.py
 ```
+

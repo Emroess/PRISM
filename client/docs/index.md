@@ -1,6 +1,6 @@
-# PySteve Documentation
+﻿# PySteve Documentation
 
-Welcome to the PySteve documentation! This guide will help you get started with the Python client for the STEVE haptic valve system.
+Welcome to the PySteve documentation! This guide will help you get started with the Python client for the PRISM haptic valve system.
 
 ## Documentation Structure
 
@@ -22,7 +22,7 @@ Welcome to the PySteve documentation! This guide will help you get started with 
 
 ### Framework Integrations
 - **[MuJoCo Integration](tutorials/mujoco-integration.md)** - Hardware-in-the-loop simulation
-- **[Gymnasium Environments](tutorials/gymnasium-rl.md)** - Reinforcement learning with STEVE
+- **[Gymnasium Environments](tutorials/gymnasium-rl.md)** - Reinforcement learning with PRISM
 - **[Isaac Sim Integration](tutorials/isaac-sim-integration.md)** - NVIDIA Isaac Sim USD integration
 - **[ROS2 Bridge](tutorials/ros-integration.md)** - ROS2 topics and services
 
@@ -77,3 +77,4 @@ Welcome to the PySteve documentation! This guide will help you get started with 
 This documentation covers PySteve v0.1.x. For older versions, see the [version archive](versions.md).
 
 **Last Updated**: November 21, 2025
+

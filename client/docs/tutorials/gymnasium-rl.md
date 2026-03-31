@@ -1,12 +1,12 @@
-# Gymnasium RL Tutorial
+﻿# Gymnasium RL Tutorial
 
-Train reinforcement learning agents on STEVE valve manipulation tasks using Gymnasium environments.
+Train reinforcement learning agents on PRISM valve manipulation tasks using Gymnasium environments.
 
 ## Prerequisites
 
 - PySteve with Gymnasium extras: `pip install pysteve[gymnasium]`
 - (Optional) Stable-Baselines3: `pip install stable-baselines3`
-- STEVE device on network
+- PRISM device on network
 
 ## Overview
 
@@ -476,3 +476,4 @@ print(f"Best params: {study.best_params}")
 - [Isaac Sim Integration](isaac-sim-integration.md) - Advanced simulation
 - [Multi-Device Guide](../advanced/multi-device.md) - Multiple valves
 - [Performance Optimization](../advanced/performance.md) - Speed up training
+

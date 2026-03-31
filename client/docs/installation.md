@@ -1,4 +1,4 @@
-# Installation Guide
+﻿# Installation Guide
 
 This guide covers installing PySteve and its dependencies for different use cases.
 
@@ -6,7 +6,7 @@ This guide covers installing PySteve and its dependencies for different use case
 
 - Python 3.8 or higher
 - pip package manager
-- STEVE device on your network
+- PRISM device on your network
 - (Optional) MuJoCo, Gymnasium, or Isaac Sim for framework integrations
 
 ## Basic Installation
@@ -219,11 +219,11 @@ except ImportError:
 
 ## Network Configuration
 
-Ensure your STEVE device is accessible on the network:
+Ensure your PRISM device is accessible on the network:
 
 ### Find Device IP
 
-Check your STEVE device display or use network scanning:
+Check your PRISM device display or use network scanning:
 
 ```bash
 # Linux/macOS
@@ -306,3 +306,4 @@ pip install pysteve[mujoco]
 - [Quick Start Tutorial](tutorials/quickstart.md)
 - [Configuration Guide](configuration.md)
 - [API Reference](api/client.md)
+

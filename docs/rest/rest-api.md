@@ -1,6 +1,6 @@
-# STEVE REST API Reference
+﻿# PRISM REST API Reference
 
-This document provides complete reference documentation for the STEVE (Simulated Task Exploration | Valve Emulation) REST API. The API enables remote control, configuration, and monitoring of the valve haptic system over HTTP.
+This document provides complete reference documentation for the PRISM (Simulated Task Exploration | Valve Emulation) REST API. The API enables remote control, configuration, and monitoring of the valve haptic system over HTTP.
 
 ## Table of Contents
 
@@ -23,9 +23,9 @@ This document provides complete reference documentation for the STEVE (Simulated
 
 ## Overview
 
-The STEVE REST API provides programmatic access to all valve control, configuration, and monitoring functions. It is designed for:
+The PRISM REST API provides programmatic access to all valve control, configuration, and monitoring functions. It is designed for:
 
-- **Robotics Integration** - Control STEVE from your robot control system
+- **Robotics Integration** - Control PRISM from your robot control system
 - **Automated Testing** - Script test sequences and data collection
 - **Remote Monitoring** - Monitor valve status and performance over network
 - **Custom Applications** - Build custom interfaces and control logic
@@ -101,7 +101,7 @@ curl -H "X-API-Key: steve-valve-2025" \
 http://<device-ip>:8080/api/v1
 ```
 
-Replace `<device-ip>` with your STEVE device's IP address (e.g., `192.168.1.100`).
+Replace `<device-ip>` with your PRISM device's IP address (e.g., `192.168.1.100`).
 
 ### Example Endpoints
 
@@ -1108,12 +1108,13 @@ if data.get("status") == "error":
 - [Streaming Examples](../stream/streaming-examples.md) - Streaming integration code
 - [CLI Reference](../cli/cli-reference.md) - Command-line interface documentation
 - [Getting Started Guide](../getting-started/getting-started.md) - Initial setup and configuration
-- [STEVE Project Overview](../README.md) - System architecture and features
+- [PRISM Project Overview](../README.md) - System architecture and features
 
 ---
 
 ## Version Information
 
-This documentation covers the STEVE REST API as implemented in the current firmware version. All endpoints and features documented here are available in the production firmware.
+This documentation covers the PRISM REST API as implemented in the current firmware version. All endpoints and features documented here are available in the production firmware.
 
 For the latest updates and firmware downloads, see the project repository.
+

@@ -1,4 +1,4 @@
-# Configuration Guide
+﻿# Configuration Guide
 
 This guide covers configuring PySteve for your network and application requirements.
 
@@ -6,7 +6,7 @@ This guide covers configuring PySteve for your network and application requireme
 
 ### Device Discovery
 
-Find your STEVE device on the network:
+Find your PRISM device on the network:
 
 ```python
 from pysteve.utils import discover_devices
@@ -22,7 +22,7 @@ for device in devices:
 
 ### Static IP Configuration
 
-Configure your STEVE device with a static IP address via the web interface or CLI.
+Configure your PRISM device with a static IP address via the web interface or CLI.
 
 **Recommended static IP ranges:**
 - Development: `192.168.1.100-199`
@@ -260,16 +260,16 @@ Configure via environment variables:
 
 ```bash
 # Device IP
-export STEVE_IP=192.168.1.100
+export PRISM_IP=192.168.1.100
 
 # API key
-export STEVE_API_KEY=your-api-key
+export PRISM_API_KEY=your-api-key
 
 # Streaming rate
-export STEVE_STREAM_HZ=50
+export PRISM_STREAM_HZ=50
 
 # Auto-reconnect
-export STEVE_AUTO_RECONNECT=true
+export PRISM_AUTO_RECONNECT=true
 ```
 
 Load in Python:
@@ -279,9 +279,9 @@ import os
 from pysteve import SteveClient
 
 client = SteveClient(
-    os.getenv("STEVE_IP", "192.168.1.100"),
-    api_key=os.getenv("STEVE_API_KEY", "steve-valve-2025"),
-    auto_reconnect=os.getenv("STEVE_AUTO_RECONNECT", "true").lower() == "true"
+    os.getenv("PRISM_IP", "192.168.1.100"),
+    api_key=os.getenv("PRISM_API_KEY", "steve-valve-2025"),
+    auto_reconnect=os.getenv("PRISM_AUTO_RECONNECT", "true").lower() == "true"
 )
 ```
 
@@ -419,3 +419,4 @@ logger.setLevel(logging.DEBUG)
 - [Quick Start Tutorial](tutorials/quickstart.md)
 - [API Reference](api/client.md)
 - [Performance Optimization](advanced/performance.md)
+

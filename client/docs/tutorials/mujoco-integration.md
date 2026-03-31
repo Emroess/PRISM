@@ -1,12 +1,12 @@
-# MuJoCo Integration Tutorial
+﻿# MuJoCo Integration Tutorial
 
-Learn how to integrate STEVE valves with MuJoCo physics simulation for hardware-in-the-loop testing.
+Learn how to integrate PRISM valves with MuJoCo physics simulation for hardware-in-the-loop testing.
 
 ## Prerequisites
 
 - PySteve with MuJoCo extras: `pip install pysteve[mujoco]`
 - MuJoCo 2.3.0 or higher
-- STEVE device on network
+- PRISM device on network
 
 ## Overview
 
@@ -187,7 +187,7 @@ def main():
     model = mj.MjModel.from_xml_path("robot_valve_scene.xml")
     data = mj.MjData(model)
     
-    # Connect to STEVE
+    # Connect to PRISM
     client = SteveClient("192.168.1.100")
     client.connect()
     client.load_preset(0)  # Load light preset
@@ -241,7 +241,7 @@ if __name__ == "__main__":
 
 ## State Interpolation
 
-STEVE streams at ~100 Hz, MuJoCo runs at 500 Hz. Interpolation smooths the sync:
+PRISM streams at ~100 Hz, MuJoCo runs at 500 Hz. Interpolation smooths the sync:
 
 ```python
 actuator = SteveValveActuator(
@@ -262,7 +262,7 @@ for _ in range(1000):
 
 ## Multi-Device Coordination
 
-Control multiple STEVE valves in one scene:
+Control multiple PRISM valves in one scene:
 
 ```python
 from pysteve.integrations.mujoco import HardwareSyncController
@@ -335,13 +335,13 @@ actuator = SteveValveActuator(
 
 ### Synchronization Frequency
 
-Match MuJoCo and STEVE frequencies:
+Match MuJoCo and PRISM frequencies:
 
 ```python
 # MuJoCo at 500 Hz (0.002s timestep)
 model.opt.timestep = 0.002
 
-# STEVE streaming at 100 Hz
+# PRISM streaming at 100 Hz
 streamer = client.streamer
 streamer.start_stream(interval_ms=10)
 
@@ -433,3 +433,4 @@ actuator = SteveValveActuator(
 - [Gymnasium RL Tutorial](gymnasium-rl.md) - Train RL agents
 - [Multi-Device Guide](../advanced/multi-device.md) - Advanced coordination
 - [Performance Optimization](../advanced/performance.md) - Latency tuning
+

@@ -1,11 +1,11 @@
-# Parameter Sweeps Tutorial
+﻿# Parameter Sweeps Tutorial
 
 Learn how to systematically test valve parameters and analyze results.
 
 ## Prerequisites
 
 - PySteve installed with data extras: `pip install pysteve[data]`
-- STEVE device connected
+- PRISM device connected
 - Understanding of valve parameters (see [Parameter Tuning Tutorial](parameter-tuning.md))
 
 ## Overview
@@ -587,3 +587,4 @@ fine_results = sweep.sweep_grid(
 4. **Export raw data** - Keep detailed records for later analysis
 5. **Document conditions** - Note testing environment, user, etc.
 6. **Verify repeatability** - Test best configuration multiple times
+

@@ -1,4 +1,4 @@
-# Quickstart Guide
+﻿# Quickstart Guide
 
 Get started with PySteve in 5 minutes.
 
@@ -22,7 +22,7 @@ See the [full installation guide](installation.md) for detailed instructions.
 
 ## Connect to Device
 
-Find your STEVE device on the network and connect:
+Find your PRISM device on the network and connect:
 
 ```python
 from pysteve import SteveClient
@@ -199,3 +199,4 @@ client.disable_motor()
 - Verify network bandwidth
 
 For more help, see the [full documentation](index.md).
+

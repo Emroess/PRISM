@@ -1,10 +1,10 @@
-# SteveClient API Reference
+﻿# SteveClient API Reference
 
-Complete API documentation for the synchronous STEVE client.
+Complete API documentation for the synchronous PRISM client.
 
 ## Class: SteveClient
 
-Main interface for controlling STEVE haptic valve hardware.
+Main interface for controlling PRISM haptic valve hardware.
 
 ```python
 from pysteve import SteveClient
@@ -23,7 +23,7 @@ client = SteveClient(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `device_ip` | str | Required | IP address of STEVE device |
+| `device_ip` | str | Required | IP address of PRISM device |
 | `port` | int | 5000 | REST API port |
 | `timeout` | float | 5.0 | Request timeout in seconds |
 | `auto_reconnect` | bool | True | Enable automatic reconnection |
@@ -34,7 +34,7 @@ client = SteveClient(
 
 #### `connect() -> None`
 
-Establish connection to STEVE device.
+Establish connection to PRISM device.
 
 ```python
 client.connect()
@@ -451,7 +451,7 @@ except TimeoutError as e:
 except ConfigurationError as e:
     print(f"Invalid configuration: {e}")
 except SteveError as e:
-    print(f"STEVE error: {e}")
+    print(f"PRISM error: {e}")
 ```
 
 ## Thread Safety
@@ -482,3 +482,4 @@ See [Thread Safety Guide](../advanced/thread-safety.md) for details.
 - [SteveAsyncClient API](async-client.md) - Async client
 - [ValveConfig](config.md) - Configuration dataclass
 - [Error Handling Guide](../advanced/error-handling.md)
+

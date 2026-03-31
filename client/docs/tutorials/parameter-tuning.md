@@ -1,11 +1,11 @@
-# Parameter Tuning Tutorial
+﻿# Parameter Tuning Tutorial
 
-Learn how to adjust STEVE valve parameters in real-time for optimal haptic feel.
+Learn how to adjust PRISM valve parameters in real-time for optimal haptic feel.
 
 ## Prerequisites
 
 - PySteve installed: `pip install pysteve`
-- STEVE device on network
+- PRISM device on network
 - Basic understanding of haptic parameters
 
 ## Parameters Overview
@@ -478,3 +478,4 @@ tuner.set_wall_damping(0.4)
 - [Data Recording Tutorial](data-recording.md) - Record and analyze tuning results
 - [Parameter Sweeps Tutorial](parameter-sweeps.md) - Automated testing
 - [MuJoCo Integration](mujoco-integration.md) - Test in simulation
+

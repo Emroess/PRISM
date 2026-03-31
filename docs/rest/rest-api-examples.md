@@ -1,6 +1,6 @@
-# STEVE REST API Examples
+﻿# PRISM REST API Examples
 
-This guide provides practical code examples for integrating with the STEVE REST API in various programming languages. All examples include proper authentication and error handling.
+This guide provides practical code examples for integrating with the PRISM REST API in various programming languages. All examples include proper authentication and error handling.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ This guide provides practical code examples for integrating with the STEVE REST 
 
 ### Prerequisites
 
-- STEVE device on network (e.g., `192.168.1.100`)
+- PRISM device on network (e.g., `192.168.1.100`)
 - HTTP server started (CLI command: `http start`)
 - API key: `steve-valve-2025`
 
@@ -76,11 +76,11 @@ import time
 from typing import Dict, Optional, Any
 
 class SteveClient:
-    """Client for STEVE REST API."""
+    """Client for PRISM REST API."""
     
     def __init__(self, host: str, port: int = 8080, api_key: str = "steve-valve-2025"):
         """
-        Initialize STEVE client.
+        Initialize PRISM client.
         
         Args:
             host: IP address or hostname (e.g., "192.168.1.100")
@@ -216,7 +216,7 @@ class SteveClient:
 
 # Example usage
 if __name__ == "__main__":
-    # Connect to STEVE
+    # Connect to PRISM
     steve = SteveClient("192.168.1.100")
     
     # Enable ODrive
@@ -468,10 +468,10 @@ main();
 <!DOCTYPE html>
 <html>
 <head>
-    <title>STEVE Control</title>
+    <title>PRISM Control</title>
 </head>
 <body>
-    <h1>STEVE Valve Control</h1>
+    <h1>PRISM Valve Control</h1>
     <div id="status">
         <p>Position: <span id="pos">--</span>°</p>
         <p>Velocity: <span id="vel">--</span> rad/s</p>
@@ -630,13 +630,13 @@ curl -X POST \
 
 ```bash
 #!/bin/bash
-# monitor_steve.sh - Monitor STEVE status
+# monitor_steve.sh - Monitor PRISM status
 
 API_KEY="steve-valve-2025"
 HOST="192.168.1.100"
 BASE_URL="http://${HOST}:8080/api/v1"
 
-echo "Monitoring STEVE valve..."
+echo "Monitoring PRISM valve..."
 echo "Press Ctrl+C to stop"
 echo ""
 
@@ -836,7 +836,7 @@ class SteveValveNode(Node):
         update_period = 1.0 / self.get_parameter('update_rate').value
         self.timer = self.create_timer(update_period, self.update_callback)
         
-        self.get_logger().info('STEVE valve node started')
+        self.get_logger().info('PRISM valve node started')
     
     def update_callback(self):
         """Periodic status update."""
@@ -887,7 +887,7 @@ if __name__ == '__main__':
 ```python
 def run_test_sequence(steve: SteveClient):
     """Run automated test sequence."""
-    print("=== STEVE Automated Test Sequence ===\n")
+    print("=== PRISM Automated Test Sequence ===\n")
     
     # 1. System initialization
     print("1. Initializing system...")
@@ -952,7 +952,7 @@ print(f"Test {'PASSED' if success else 'FAILED'}")
 ```python
 #!/usr/bin/env python3
 """
-STEVE production monitoring script.
+PRISM production monitoring script.
 Logs status, detects anomalies, sends alerts.
 """
 
@@ -968,7 +968,7 @@ logging.basicConfig(
 )
 
 def monitor_steve(steve: SteveClient, duration_hours: float):
-    """Monitor STEVE for specified duration."""
+    """Monitor PRISM for specified duration."""
     logging.info("=== Monitoring started ===")
     
     start_time = time.time()
@@ -1078,3 +1078,4 @@ diagnose_connection("192.168.1.100")
 - [Getting Started Guide](../getting-started/getting-started.md) - Initial setup
 
 For questions or issues, refer to the project repository or documentation.
+

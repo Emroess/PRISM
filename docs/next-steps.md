@@ -1,8 +1,8 @@
-# Next Steps: The Future of STEVE
+﻿# Next Steps: The Future of PRISM
 
-Thank you for your interest in STEVE (Simulated Task Exploration | Valve Emulation)! We're excited to share this haptic feedback platform with the robotics and research community, and we're grateful for your engagement as we continue to develop and refine the system.
+Thank you for your interest in PRISM (Simulated Task Exploration | Valve Emulation)! We're excited to share this haptic feedback platform with the robotics and research community, and we're grateful for your engagement as we continue to develop and refine the system.
 
-STEVE represents our commitment to providing high-fidelity haptic simulation with accessible interfaces and robust performance. As we move forward, we invite you to join us in shaping the future of this platform.
+PRISM represents our commitment to providing high-fidelity haptic simulation with accessible interfaces and robust performance. As we move forward, we invite you to join us in shaping the future of this platform.
 
 ---
 
@@ -10,7 +10,7 @@ STEVE represents our commitment to providing high-fidelity haptic simulation wit
 
 ### We Need Your Help Finding Bugs
 
-While STEVE has been developed with careful attention to quality and reliability, real-world testing across diverse use cases is invaluable. We encourage you to thoroughly exercise both the firmware and client software:
+While PRISM has been developed with careful attention to quality and reliability, real-world testing across diverse use cases is invaluable. We encourage you to thoroughly exercise both the firmware and client software:
 
 **Firmware Testing**
 - Test all CLI commands and parameter ranges
@@ -34,7 +34,7 @@ If you discover bugs or unexpected behavior:
 3. Include relevant logs and error messages
 4. Share your findings with the development team
 
-Your bug reports help make STEVE better for everyone, thank you.
+Your bug reports help make PRISM better for everyone, thank you.
 
 ---
 
@@ -42,7 +42,7 @@ Your bug reports help make STEVE better for everyone, thank you.
 
 ### Your Experience Matters
 
-We've designed STEVE with robotics engineers and researchers in mind, but your practical experience is essential for identifying areas for improvement:
+We've designed PRISM with robotics engineers and researchers in mind, but your practical experience is essential for identifying areas for improvement:
 
 **We Welcome Feedback On:**
 - **User Interface Design** - Is the CLI intuitive? Are the REST API endpoints well-organized?
@@ -68,7 +68,7 @@ We value constructive feedback that helps us understand your needs:
 ### 1. Advanced Motor Control: Moving FOC to STM32H7
 
 **Current Architecture:**
-STEVE currently uses an ODrive S1 motor controller for Field-Oriented Control (FOC) of the brushless motor. The valve control loop runs on the STM32H753ZI and communicates with the ODrive via CAN bus.
+PRISM currently uses an ODrive S1 motor controller for Field-Oriented Control (FOC) of the brushless motor. The valve control loop runs on the STM32H753ZI and communicates with the ODrive via CAN bus.
 
 **Future Opportunity:**
 One of the most promising areas for enhancement is moving the FOC motor control loop directly onto the STM32H753ZI:
@@ -95,12 +95,12 @@ One of the most promising areas for enhancement is moving the FOC motor control 
 - Can we push control rates beyond current capabilities?
 - What are the implications for stability and passivity?
 
-This represents an exciting area for experimentation and could significantly enhance STEVE's performance characteristics. We welcome collaboration from engineers interested in motor control and real-time embedded systems.
+This represents an exciting area for experimentation and could significantly enhance PRISM's performance characteristics. We welcome collaboration from engineers interested in motor control and real-time embedded systems.
 
 ### 2. Touchscreen Interface for Preset Selection
 
 **Current Interfaces:**
-STEVE provides multiple control interfaces:
+PRISM provides multiple control interfaces:
 - CLI over USB serial
 - REST API over Ethernet
 - Web-based control panel
@@ -136,7 +136,7 @@ We'd love to hear from you: What features would be most useful? Let us know!
 ### 3. Enhanced Data Logging and Visualization
 
 **Current Capabilities:**
-STEVE currently supports real-time data streaming over TCP, enabling external data logging and visualization tools.
+PRISM currently supports real-time data streaming over TCP, enabling external data logging and visualization tools.
 
 **Future Enhancements:**
 
@@ -181,7 +181,7 @@ We're excited to explore how enhanced data capabilities can support research, de
 
 ### Community Engagement
 
-STEVE benefits from an active and engaged user community. Here's how you can participate:
+PRISM benefits from an active and engaged user community. Here's how you can participate:
 
 **Share Your Work:**
 - Publish use cases and application examples
@@ -192,7 +192,7 @@ STEVE benefits from an active and engaged user community. Here's how you can par
 **Collaborate on Development:**
 - Contribute code improvements and bug fixes
 - Develop new features and capabilities
-- Port STEVE to additional platforms
+- Port PRISM to additional platforms
 - Create integration tools for robotics frameworks
 
 **Provide Guidance:**
@@ -202,7 +202,7 @@ STEVE benefits from an active and engaged user community. Here's how you can par
 - Help prioritize development efforts
 
 **Spread the Word:**
-- Tell colleagues and collaborators about STEVE
+- Tell colleagues and collaborators about PRISM
 - Share documentation and tutorials
 - Demonstrate the system at your institution
 - Connect us with potential users and applications
@@ -240,7 +240,7 @@ We're committed to developing features that provide real value to the robotics a
 
 ### Stay Connected
 
-We're building STEVE together with the community, and your participation makes the difference:
+We're building PRISM together with the community, and your participation makes the difference:
 
 **Questions?** We're here to help.
 
@@ -252,11 +252,11 @@ We're building STEVE together with the community, and your participation makes t
 
 ## Thank You
 
-Thank you for being part of the STEVE journey! Whether you're conducting cutting-edge robotics research, developing new training systems, exploring haptic interfaces, or simply curious about valve simulation, we're grateful for your interest and engagement.
+Thank you for being part of the PRISM journey! Whether you're conducting cutting-edge robotics research, developing new training systems, exploring haptic interfaces, or simply curious about valve simulation, we're grateful for your interest and engagement.
 
 Together, we're building tools that enable new discoveries, accelerate development, and push the boundaries of what's possible in haptic feedback and robotic simulation.
 
-**We're excited to see what you'll create with STEVE!**
+**We're excited to see what you'll create with PRISM!**
 
 ---
 
@@ -264,7 +264,7 @@ Together, we're building tools that enable new discoveries, accelerate developme
 
 - **[Documentation Home](README.md)** - Complete documentation index
 - **[Firmware Installation](firmware/firmware-installation.md)** - Get started with hardware setup
-- **[Getting Started Guide](getting-started/getting-started.md)** - First steps with STEVE
+- **[Getting Started Guide](getting-started/getting-started.md)** - First steps with PRISM
 - **[CLI Reference](cli/cli-reference.md)** - Command documentation
 - **[REST API Reference](rest/rest-api.md)** - API documentation
 - **[Examples Repository](rest/rest-api-examples.md)** - Code samples and integrations
@@ -274,3 +274,4 @@ Together, we're building tools that enable new discoveries, accelerate developme
 **Document Version**: 1.0  
 **Last Updated**: November 21, 2025  
 **Status**: Living document - updated based on community feedback and development progress
+

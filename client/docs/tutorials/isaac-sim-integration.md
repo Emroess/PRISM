@@ -1,12 +1,12 @@
-# Isaac Sim Integration Tutorial
+﻿# Isaac Sim Integration Tutorial
 
-Learn how to integrate STEVE haptic valves into NVIDIA Isaac Sim for robot simulation.
+Learn how to integrate PRISM haptic valves into NVIDIA Isaac Sim for robot simulation.
 
 ## Prerequisites
 
 - PySteve installed with Isaac extras: `pip install pysteve[isaac]`
 - NVIDIA Isaac Sim 2023.1+ installed
-- STEVE device on network
+- PRISM device on network
 - Basic USD (Universal Scene Description) knowledge helpful
 
 ## Overview
@@ -30,7 +30,7 @@ from pysteve.integrations.isaac import IsaacSteveConnector
 world = World()
 stage = world.stage
 
-# Connect to STEVE device
+# Connect to PRISM device
 connector = IsaacSteveConnector(stage, device_ip="192.168.1.100")
 
 # Add valve to scene
@@ -148,7 +148,7 @@ joint.CreateBody0Rel().SetTargets([base.GetPath()])
 joint.CreateBody1Rel().SetTargets([wheel.GetPath()])
 joint.CreateAxisAttr().Set("Z")
 
-# Add STEVE custom attributes
+# Add PRISM custom attributes
 wheel_prim = wheel.GetPrim()
 wheel_prim.CreateAttribute("steve:viscous", Sdf.ValueTypeNames.Float).Set(0.08)
 wheel_prim.CreateAttribute("steve:coulomb", Sdf.ValueTypeNames.Float).Set(0.015)
@@ -180,7 +180,7 @@ for _ in range(1000):
     world.step(render=True)
 ```
 
-The valve in Isaac Sim will mirror the physical STEVE device.
+The valve in Isaac Sim will mirror the physical PRISM device.
 
 ### Simulation-to-Hardware Sync
 
@@ -247,7 +247,7 @@ add_reference_to_stage(
 robot = Robot(prim_path="/World/Franka")
 world.scene.add(robot)
 
-# Add STEVE valve
+# Add PRISM valve
 connector = IsaacSteveConnector(stage, device_ip="192.168.1.100")
 valve_prim = connector.create_valve_articulation(
     path="/World/Valve",
@@ -329,7 +329,7 @@ for i in range(2000):
 
 ## Multi-Valve Coordination
 
-Manage multiple STEVE devices in one scene:
+Manage multiple PRISM devices in one scene:
 
 ```python
 from pysteve.integrations.isaac import MultiSteveManager
@@ -448,7 +448,7 @@ for _ in range(1000):
 Match Isaac Sim timestep:
 
 ```python
-# Isaac Sim at 60 Hz, STEVE at 100 Hz
+# Isaac Sim at 60 Hz, PRISM at 100 Hz
 # Update every 1-2 sim steps
 
 connector.sync_to_hardware()
@@ -538,7 +538,7 @@ for _ in range(100):
 
 ### Connection Timeout
 
-**Problem**: Can't connect to STEVE device
+**Problem**: Can't connect to PRISM device
 
 **Solution**: Check network and device status
 ```python
@@ -555,7 +555,7 @@ except Exception as e:
 
 ### Performance Issues
 
-**Problem**: Simulation running slowly with STEVE sync
+**Problem**: Simulation running slowly with PRISM sync
 
 **Solution**: Reduce update frequency
 ```python
@@ -595,3 +595,4 @@ joint.CreateUpperLimitAttr().Set(45.0)
 - [Isaac Sim Documentation](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim.html)
 - [USD Documentation](https://graphics.pixar.com/usd/docs/index.html)
 - [PySteve API Reference](../api/integrations.md#isaac-sim)
+

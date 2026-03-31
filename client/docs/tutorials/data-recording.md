@@ -1,11 +1,11 @@
-# Data Recording Tutorial
+﻿# Data Recording Tutorial
 
 Learn how to capture, analyze, and export valve data for research and debugging.
 
 ## Prerequisites
 
 - PySteve installed with data extras: `pip install pysteve[data]`
-- STEVE device connected
+- PRISM device connected
 - Basic Python knowledge
 
 ## Quick Start
@@ -613,3 +613,4 @@ except IOError as e:
 - [Parameter Tuning Tutorial](parameter-tuning.md) - Use recordings to optimize parameters
 - [Parameter Sweeps Tutorial](parameter-sweeps.md) - Automated recording for testing
 - [API Reference: DataRecorder](../api/control.md#datarecorder) - Full API documentation
+
