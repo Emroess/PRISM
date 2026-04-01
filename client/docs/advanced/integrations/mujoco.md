@@ -1,4 +1,4 @@
-﻿# MuJoCo Integration Tutorial
+# MuJoCo Integration Tutorial
 
 Learn how to integrate PRISM valves with MuJoCo physics simulation for hardware-in-the-loop testing.
 

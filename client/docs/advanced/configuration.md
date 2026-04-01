@@ -413,10 +413,3 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("pysteve")
 logger.setLevel(logging.DEBUG)
 ```
-
-## Next Steps
-
-- [Quick Start Tutorial](tutorials/quickstart.md)
-- [API Reference](api/client.md)
-- [Performance Optimization](advanced/performance.md)
-

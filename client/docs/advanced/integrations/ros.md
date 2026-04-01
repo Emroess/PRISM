@@ -1,4 +1,4 @@
-﻿# ROS Integration Tutorial
+# ROS Integration Tutorial
 
 Learn how to integrate PRISM haptic valves with ROS2 for robotics applications.
 

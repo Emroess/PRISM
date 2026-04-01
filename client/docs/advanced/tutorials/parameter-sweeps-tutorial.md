@@ -572,13 +572,6 @@ fine_results = sweep.sweep_grid(
 )
 ```
 
-## Next Steps
-
-- [Parameter Tuning Tutorial](parameter-tuning.md) - Manual tuning strategies
-- [Data Recording Tutorial](data-recording.md) - In-depth data analysis
-- [Performance Optimization](../advanced/performance.md) - Speed up sweeps
-- [Multi-Device Coordination](../advanced/multi-device.md) - Test multiple valves
-
 ## Best Practices
 
 1. **Start with coarse sweeps** - Get overview before refining
@@ -588,3 +581,8 @@ fine_results = sweep.sweep_grid(
 5. **Document conditions** - Note testing environment, user, etc.
 6. **Verify repeatability** - Test best configuration multiple times
 
+## Next Steps
+
+- [Parameter Tuning Tutorial](parameter-tuning-tutorial.md) - Manual tuning strategies
+- [Data Recording Tutorial](data-recording-tutorial.md) - In-depth data analysis
+- [API Reference: DataRecorder](../../pyprism_api_reference.md) - Full API documentation

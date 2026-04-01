@@ -477,5 +477,4 @@ tuner.set_wall_damping(0.4)
 
 - [Data Recording Tutorial](data-recording.md) - Record and analyze tuning results
 - [Parameter Sweeps Tutorial](parameter-sweeps.md) - Automated testing
-- [MuJoCo Integration](mujoco-integration.md) - Test in simulation
-
+- [API Reference: DataRecorder](../../pyprism_api_reference.md) - Full API documentation

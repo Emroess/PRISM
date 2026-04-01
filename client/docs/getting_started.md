@@ -1,14 +1,63 @@
-﻿# Quick Start Tutorial
+# Getting Started
 
-Get started with PySteve in 5 minutes! This tutorial covers the basics of connecting to a PRISM device and controlling the valve.
+## Quickstart Guide
 
-## Prerequisites
+Get started with PySteve in 5 minutes.
 
-- PySteve installed (`pip install pysteve`)
-- PRISM device on your network
-- Device IP address (e.g., `192.168.1.100`)
+### Step 0: Installation
 
-## Step 1: Import and Connect
+Install PySteve with pip: (works on all operating systems)
+
+```bash
+pip install pysteve
+```
+
+Alternatively, you can build from source:
+
+```bash
+# Clone repository
+git clone https://github.com/Emroess/PRISM
+cd PRISM/client
+
+# Install in editable mode
+pip install -e .
+```
+
+### Step 0: Find Your PyPRISM IP
+
+*Ensure your PRISM device is accessible on the network*
+
+Check your PRISM device display or use network scanning:
+
+```bash
+# Linux/macOS
+arp -a | grep -i "odrive"
+
+# Or use nmap
+nmap -sn 192.168.1.0/24
+```
+
+### Step 0: Double Check Firewall Configuration
+
+PySteve uses these ports:
+
+- **TCP 8080**: REST API
+- **TCP 8888**: Data streaming
+
+Ensure firewall allows these connections:
+
+```bash
+# Linux (ufw)
+sudo ufw allow 8080/tcp
+sudo ufw allow 8888/tcp
+
+# Linux (firewalld)
+sudo firewall-cmd --add-port=8080/tcp --permanent
+sudo firewall-cmd --add-port=8888/tcp --permanent
+sudo firewall-cmd --reload
+```
+
+### Step 1: Import and Connect
 
 ```python
 from pysteve import SteveClient
@@ -21,7 +70,7 @@ client.connect()
 print("✓ Connected to PRISM device")
 ```
 
-## Step 2: Enable Motor
+### Step 2: Enable Motor
 
 Before starting the valve, enable the ODrive motor:
 
@@ -35,7 +84,7 @@ import time
 time.sleep(0.5)
 ```
 
-## Step 3: Start Valve Simulation
+### Step 3: Start Valve Simulation
 
 ```python
 # Start valve with current configuration
@@ -43,7 +92,7 @@ client.start_valve()
 print("✓ Valve simulation started")
 ```
 
-## Step 4: Read Status
+### Step 4: Read Status
 
 Get real-time valve state:
 
@@ -57,7 +106,7 @@ print(f"Torque: {status['torque_nm']:.3f} N·m")
 print(f"Mode: {status['mode']}")
 ```
 
-## Step 5: Load Preset
+### Step 5: Load Preset
 
 Try different haptic feels:
 
@@ -73,7 +122,7 @@ client.load_preset(2)
 print("✓ Loaded 'heavy' preset (index 2)")
 ```
 
-## Step 6: Update Parameters
+### Step 6: Update Parameters
 
 Adjust parameters in real-time:
 
@@ -93,7 +142,7 @@ client.update_config(
 print("✓ Updated multiple parameters")
 ```
 
-## Step 7: Stream Data
+### Step 7: Stream Data
 
 Get high-speed data stream:
 
@@ -124,7 +173,7 @@ streamer.stop_stream()
 print("✓ Streaming stopped")
 ```
 
-## Step 8: Stop and Cleanup
+### Step 8: Stop and Cleanup
 
 Always stop the valve and disconnect:
 
@@ -143,8 +192,6 @@ print("✓ Disconnected")
 ```
 
 ## Complete Example
-
-Here's the full program:
 
 ```python
 from pysteve import SteveClient, SteveStreamer
@@ -242,6 +289,7 @@ except Exception as e:
 **Problem**: `SteveConnectionError: Connection refused`
 
 **Solution**:
+
 - Verify device IP: `ping 192.168.1.100`
 - Check device is powered on
 - Ensure firewall allows ports 8080, 8888
@@ -251,6 +299,7 @@ except Exception as e:
 **Problem**: Valve doesn't respond
 
 **Solution**:
+
 - Always call `enable_motor()` before `start_valve()`
 - Wait 0.5s after enabling motor
 
@@ -259,22 +308,25 @@ except Exception as e:
 **Problem**: Callback not receiving data
 
 **Solution**:
+
 - Ensure valve is started: `client.start_valve()`
 - Check streaming is active: `streamer.start_stream()`
 - Verify callback is registered
 
+*For further troubleshooting, please see [client/docs/advanced/troubleshooting.md](advanced/troubleshooting.md)*
+
 ## Next Steps
 
-Now that you know the basics:
+Work through the advanced options in [client/docs/advanced](advanced):
 
-- [Parameter Tuning Tutorial](parameter-tuning.md) - Learn real-time tuning
-- [Data Recording Tutorial](data-recording.md) - Record and analyze data
-- [MuJoCo Integration](mujoco-integration.md) - Hardware-in-the-loop simulation
-- [Gymnasium RL Tutorial](gymnasium-rl.md) - Train RL agents
+- Explore options related to thread safety: [client/docs/advanced/thread-safety.md](advanced/thread-safety.md)
+- Explore various integrations in [client/docs/advanced/integrations](advanced/integrations)
+- Explore some tutorials in [client/docs/advanced/tutorials](advanced/tutorials)
+
+
 
 ## Additional Resources
 
-- [Configuration Guide](../configuration.md)
-- [API Reference](../api/client.md)
-- [Example Gallery](../examples/index.md)
-
+- [Advanced Configuration](advanced/configuration.md)
+- [Python Examples](../examples)
+- [PyPRISM API Reference](pyprism_api_reference.md)

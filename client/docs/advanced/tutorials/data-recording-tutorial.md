@@ -610,7 +610,7 @@ except IOError as e:
 
 ## Next Steps
 
-- [Parameter Tuning Tutorial](parameter-tuning.md) - Use recordings to optimize parameters
-- [Parameter Sweeps Tutorial](parameter-sweeps.md) - Automated recording for testing
-- [API Reference: DataRecorder](../api/control.md#datarecorder) - Full API documentation
+- [Parameter Tuning Tutorial](parameter-tuning-tutorial.md) - Use recordings to optimize parameters
+- [Parameter Sweeps Tutorial](parameter-sweeps-tutorial.md) - Automated recording for testing
+- [API Reference: DataRecorder](../../pyprism_api_reference.md) - Full API documentation
 

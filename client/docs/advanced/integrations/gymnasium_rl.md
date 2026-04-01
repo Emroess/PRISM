@@ -1,4 +1,4 @@
-﻿# Gymnasium RL Tutorial
+# Gymnasium RL Tutorial
 
 Train reinforcement learning agents on PRISM valve manipulation tasks using Gymnasium environments.
 

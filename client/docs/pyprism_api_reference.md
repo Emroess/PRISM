@@ -1,4 +1,4 @@
-﻿# SteveClient API Reference
+# SteveClient API Reference
 
 Complete API documentation for the synchronous PRISM client.
 

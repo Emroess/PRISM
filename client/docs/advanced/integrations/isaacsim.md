@@ -1,4 +1,4 @@
-﻿# Isaac Sim Integration Tutorial
+# Isaac Sim Integration Tutorial
 
 Learn how to integrate PRISM haptic valves into NVIDIA Isaac Sim for robot simulation.
 
