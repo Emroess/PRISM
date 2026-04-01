@@ -1,3 +1,5 @@
+[⬅ Back to Build Guide](../Build.md) | [⬅ Back to User Guide](../User.md)
+
 # Getting Started with STEVE
 
 Welcome! This guide will help you connect to your STEVE (Simulated Task Exploration | Valve Emulation) system and start using the command-line interface over USB.

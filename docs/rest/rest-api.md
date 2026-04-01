@@ -1,3 +1,5 @@
+[⬅ Back to User Guide](../User.md)
+
 # STEVE REST API Reference
 
 This document provides complete reference documentation for the STEVE (Simulated Task Exploration | Valve Emulation) REST API. The API enables remote control, configuration, and monitoring of the valve haptic system over HTTP.
