@@ -474,12 +474,5 @@ for t in threads:
     t.join()
 ```
 
-See [Thread Safety Guide](../advanced/thread-safety.md) for details.
-
-## See Also
-
-- [SteveStreamer API](streaming.md) - Data streaming
-- [SteveAsyncClient API](async-client.md) - Async client
-- [ValveConfig](config.md) - Configuration dataclass
-- [Error Handling Guide](../advanced/error-handling.md)
+See [Thread Safety Guide](advanced/thread-safety.md) for details.
 
