@@ -2,11 +2,21 @@
 
 Welcome to the PRISM Build Guide. Here you will find all the resources required to source components, print and assemble your parts, and flash the necessary firmware to get your system ready.
 
-## Navigation
+## Table of Contents
 
-- [**BOM** (Bill of Materials)](./BOM/)
-- [**CAD & Assembly**](./CAD%20%26%20Assembly/)
-- [**Flashing Firmware**](./Flashing%20Firmware/)
+- [Bill of Materials (BOM) & Cost](#bill-of-materials-bom--cost)
+  - [Core Hardware](#core-hardware)
+  - [Emulation Handles](#emulation-handles-select-one-or-more)
+- [Hardware Build Guide](#hardware-build-guide)
+  - [1. 3D Print Components](#1-3d-print-components)
+  - [2. Device Assembly](#2-device-assembly)
+  - [3. Communication Wiring](#3-communication-wiring)
+- [Initial Firmware Flash](#initial-firmware-flash)
+  - [Software Requirements](#software-requirements)
+  - [Build & Flash Process](#build--flash-process)
+- [System Diagnosis & Troubleshooting](#system-diagnosis--troubleshooting)
+  - [Basic System Check](#basic-system-check)
+  - [Debugging Common Issues](#debugging-common-issues)
 
 ## Bill of Materials (BOM) & Cost
 
