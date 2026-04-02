@@ -45,7 +45,7 @@ To start using the PRISM tool, follow these sequential steps:
 4. **Flash the Firmware:** Load the PRISM software onto the STM32 microcontroller.
 5. **Test the System:** Connect via USB and verify the haptic response.
 
-For detailed instructions on flashing the firmware and testing the assembled system, refer to the [**getting started docs**](docs/User%20Guides/getting-started.md).
+For detailed instructions on flashing the firmware and testing the assembled system, refer to the [**getting started docs**](docs/User%20Guides/User%20Guides.md).
 
 ### Prerequisites
 
