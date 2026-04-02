@@ -69,7 +69,7 @@ Several presets like `default`, `smooth`, `stiff`, and `heavy` are already built
 
 PRISM can be heavily automated using Python (via "PySteve").
 
-### **[Please refer to PyPRISM.md](../../client/PyPRISM.md)**
+### **[Please refer to client/PyPRISM.md](../../client/PyPRISM.md)**
 
 ---
 

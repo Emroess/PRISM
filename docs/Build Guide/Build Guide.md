@@ -149,6 +149,6 @@ After assembly and flashing, verify the system is behaving correctly.
     - Run `ethstatus` to check the IP address.
     - Start HTTP server: `http start`.
 
-For more in-depth operation and software control, continue to the [User Guide](User.md).
-
 </details>
+
+For more in-depth operation and software control, continue to the [User Guide](../User%20Guides/User%20Guides.md).
