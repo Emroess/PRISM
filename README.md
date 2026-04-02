@@ -29,7 +29,7 @@ The core value of PRISM is **fully automated, unattended robotic policy training
 
 Additionally, PRISM's fully programmatic API allows the motor to **reset to its start state**. It can also instantly re-randomize physical parameters (damping, friction, wall stiffness) for the next episode. This creates a continuous training loop. Robots can physically train on self-resetting tasks without any human intervention.
 
-## Build Guide
+## [▶ Build Guide (Summary Below)](docs/Build%20Guide/Build%20Guide.md)
 
 All CAD files, assembly guides, and firmware are entirely open-source. 
 
@@ -62,7 +62,7 @@ cd PRISM/firmware
 make && make flash
 ```
 
-## User Guides
+## [▶ User Guide (Summary Below)](docs/User%20Guides/User%20Guides.md)
 
 Control PRISM via the Command Line, REST API, Web Interface, or Python Client. See the [**Usage Docs**](docs/User%20Guides/usage.md) for full references.
 
@@ -79,7 +79,7 @@ steve = SteveClient("192.168.1.100")
 steve.valve_start(preset="smooth")
 ```
 
-## Rotation Library
+## [▶ Rotation Library (Summary Below)](docs/Rotation%20Library/Rotation%20Library.md)
 
 PRISM's modular handle system allows for custom haptic emulations. See the [**Rotation Library Docs**](docs/Rotation%20Library/Rotation%20Library.md) for 3D printable designs and parameter configurations.
 

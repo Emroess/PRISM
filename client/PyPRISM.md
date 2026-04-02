@@ -19,7 +19,6 @@ PySteve is a comprehensive Python client for the PRISM (Simulated Task Explorati
 
 ## Quick Links
 
-<div align="center">
 
 ### [▶ Start Here (Getting Started)](docs/getting_started.md)
 
@@ -29,7 +28,6 @@ PySteve is a comprehensive Python client for the PRISM (Simulated Task Explorati
 
 *Go to the [client/docs/advanced/integrations](docs/advanced/integrations) folder to find usage documentation for integrating [mujoco](docs/integrations/mujoco.md), [ros](docs/ros.md), [isaacsim](docs/isaacsim.md), and [gymnasium](docs/gymnasium_rl.md)*
 
-</div>
 
 
 ## PySTEVE Folder Architecture
