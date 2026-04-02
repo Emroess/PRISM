@@ -45,6 +45,7 @@ To build a complete PRISM unit, you will need the following core components:
 **Total Estimated Cost:** ~$300.00 - $400.00 (depending on handle selection and existing equipment)
 
 </details>
+
 ---
 
 <details>
@@ -72,6 +73,7 @@ Use the STLs located in the `docs/Rotation Library/Handles` directory (found in 
 3. Use a standard Micro-USB cable to connect the **CN1 (USB ST-LINK)** port of the Nucleo board to your host computer for programming. This port is typically farthest from the Ethernet port.
 
 </details>
+
 ---
 
 <details>
@@ -112,6 +114,7 @@ You will need a Linux, macOS, or Windows host equipped with:
 **Note:** Flashing while a CAN transceiver is active or connected to a powered ODrive might occasionally cause OpenOCD timeouts. Power off the ODrive logic if this happens repeatedly.
 
 </details>
+
 ---
 
 <details>
