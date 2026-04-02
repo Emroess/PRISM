@@ -19,11 +19,18 @@ PySteve is a comprehensive Python client for the PRISM (Simulated Task Explorati
 
 ## Quick Links
 
-- **Click here to get started**: [client/docs/getting_started.md](docs/getting_started.md)
-- Click here to go to the PyPRISM API Reference: [client/docs/pyprism_api_reference.md](docs/pyprism_api_reference.md)
-- Go to the `advanced` folder to explore tutorials, possible integrations (i.e. isaacsim), and additional help: [client/docs/advanced](docs/advanced)
+<div align="center">
 
-Go to the [client/docs/advanced/integrations](docs/advanced/integrations) folder to find usage documentation for integrating [mujoco](docs/integrations/mujoco.md), [ros](docs/ros.md), [isaacsim](docs/isaacsim.md), and [gymnasium](docs/gymnasium_rl.md)
+### [▶ Start Here (Getting Started)](docs/getting_started.md)
+
+### [▶ API Reference](docs/pyprism_api_reference.md)
+
+### [▶ Advanced](docs/advanced)
+
+*Go to the [client/docs/advanced/integrations](docs/advanced/integrations) folder to find usage documentation for integrating [mujoco](docs/integrations/mujoco.md), [ros](docs/ros.md), [isaacsim](docs/isaacsim.md), and [gymnasium](docs/gymnasium_rl.md)*
+
+</div>
+
 
 ## PySTEVE Folder Architecture
 
