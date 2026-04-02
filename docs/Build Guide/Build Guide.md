@@ -19,7 +19,7 @@ Welcome to the PRISM Build Guide. Here you will find all the resources required 
     - [Debugging Common Issues](#debugging-common-issues)
 
 <details>
-<summary>## Bill of Materials (BOM) & Cost</summary>
+<summary><h2>Bill of Materials (BOM) & Cost</h2></summary>
 
 To build a complete PRISM unit, you will need the following core components:
 
@@ -48,7 +48,7 @@ To build a complete PRISM unit, you will need the following core components:
 ---
 
 <details>
-<summary>## Hardware Build Guide</summary>
+<summary><h2>Hardware Build Guide</h2></summary>
 
 ### 1. 3D Print Components
 
@@ -75,7 +75,7 @@ Use the STLs located in the `docs/Rotation Library/Handles` directory (found in 
 ---
 
 <details>
-<summary>## Initial Firmware Flash</summary>
+<summary><h2>Initial Firmware Flash</h2></summary>
 
 Before the system can run, you must compile and flash the embedded firmware to the STM32 microcontroller. 
 
@@ -115,7 +115,7 @@ You will need a Linux, macOS, or Windows host equipped with:
 ---
 
 <details>
-<summary>## System Diagnosis & Troubleshooting</summary>
+<summary><h2> System Diagnosis & Troubleshooting</h2></summary>
 
 After assembly and flashing, verify the system is behaving correctly. 
 
