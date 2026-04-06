@@ -1,3 +1,5 @@
+[⬅ Back to Build Guide](../Build%20Guide/Build%20Guide.md)
+
 # PRISM User Guide
 
 This guide details how to interact with the PRISM system, from basic Command-Line Interface (CLI) configuration to complex software control integrations via Python, MuJoCo, Gymnasium, and Isaac Sim.
@@ -107,3 +109,7 @@ curl -H "X-API-Key: steve-valve-2025" http://192.168.1.100:8080/api/v1/status
 ```
 
 Full docs on the REST API endpoints can be found in [docs/rest/rest-api.md](rest/rest-api.md)
+
+---
+
+### Next: [Rotation Library](../Rotation%20Library/Rotation%20Library.md) ➡

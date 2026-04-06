@@ -1,3 +1,5 @@
+[⬅ Back to Main README](../../README.md)
+
 # Build Guide
 
 Welcome to the PRISM Build Guide. Here you will find all the resources required to source components, print and assemble your parts, and flash the necessary firmware to get your system ready.
@@ -151,4 +153,4 @@ After assembly and flashing, verify the system is behaving correctly.
 
 </details>
 
-For more in-depth operation and software control, continue to the [User Guide](../User%20Guides/User%20Guides.md).
+### Next: [User Guide](../User%20Guides/User%20Guides.md) ➡
