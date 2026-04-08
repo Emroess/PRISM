@@ -3,8 +3,7 @@
 </div>
 
 # PRISM
-
-An open-source, programmable rotary impedance suite for emulating realistic task haptics.
+Train robotic policies on physical rotational tasks — fully automated, self-resetting, zero human intervention.
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/PRISM)
 [![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/PRISM)
