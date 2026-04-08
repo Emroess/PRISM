@@ -15,37 +15,31 @@ An open-source, programmable rotary impedance suite for emulating realistic task
 ## Table of Contents
 
 - [About / Overview](#about--overview)
-- [Build Guide](docs/Build%20Guide/Build%20Guide.md)
-- [User Guides](docs/User%20Guides/User%20Guides.md)
-- [Rotation Library](docs/Rotation%20Library/Rotation%20Library.md)
+- [Build Guide](#build-guide)
+- [User Guides](#user-guides)
+- [Rotation Library](#rotation-library)
 - [Features](#features)
 - [License](#license)
 
 ## About / Overview
 
-PRISM (Programmable Rotary Impedance Suite for Manipulation) is an advanced hardware-based haptic control system engineered to replicate real-world valves, handles, knobs, and fasteners. Unlike purely virtual simulations, PRISM provides physical-world force feedback at 1kHz+ through a modular, motor-driven interface.
+PRISM (Programmable Rotary Impedance Suite for Manipulation) is an advanced hardware-based haptic control system engineered to replicate real-world valves, handles, knobs, and fasteners. Unlike purely virtual simulations, PRISM provides physical-world force feedback to the policy through a modular, motor-driven interface.
 
-The core value of PRISM is **fully automated, unattended robotic policy training**. It streams high-frequency, real-time TCP telemetry including precise position, velocity, and torque feedback. This allows robotic policies to autonomously track task status. Software can determine task completion using physical metrics like `theta_on`, `theta_off`, torque, or velocity thresholds. 
+The core value of PRISM is **fully automated, unattended robotic policy training**. It streams 1kHz, real-time TCP telemetry including precise position, velocity, and torque feedback. This allows robotic policies to autonomously track task status. Practitioner written scripts can determine task completion using physical metrics like `theta_on`, `theta_off`, torque, or velocity thresholds streamed over ethernet.
 
-Additionally, PRISM's fully programmatic API allows the motor to **reset to its start state**. It can also instantly re-randomize physical parameters (damping, friction, wall stiffness) for the next episode. This creates a continuous training loop. Robots can physically train on self-resetting tasks without any human intervention.
+PRISM's fully programmatic API allows the motor to reset to its start state. Practitioners can also instantly re-randomize physical parameters (damping, friction, wall stiffness) for the next episode. This creates a continuous training loop. Robots can physically train on **self-resetting** tasks without human intervention.
 
-## [▶ Step 1: Build Guide (Summary Below)](docs/Build%20Guide/Build%20Guide.md)
-
-All CAD files, assembly guides, and firmware are entirely open-source. 
-
-- [bill of materials](docs/Build%20Guide/Build%20Guide.md)
-- [CAD files & assembly guide](docs/Rotation%20Library/Rotation%20Library.md)
-- [software stack (GitHub)](https://github.com/Emroess/PRISM)
+## Build One <small>(or two)</small> For Your Lab
 
 To start using the PRISM tool, follow these sequential steps:
 
-1. **Order the BOM:** Purchase the required off-the-shelf components.
-2. **Print the STLs:** 3D print the structural mounts and interface handles from the CAD files.
-3. **Assemble the Hardware:** Follow the mechanical assembly guide to put the pieces together.
-4. **Flash the Firmware:** Load the PRISM software onto the STM32 microcontroller.
+1. **Order the Bill of Materials ([BOM](docs/Build%20Guide/BOM/BOM.md)):** Purchase the required off-the-shelf components.
+2. **Print the STLs:** 3D print the [structural mounts](docs/Build%20Guide/CAD%20&%20Assembly) and desired [interface handles](docs/Rotation%20Library/Rotation%20Library.md).
+3. **Assemble the Hardware:** Follow the [assembly guide](docs/Build%20Guide/Assembly%20Guide/Assembly%20Guide.md) to put the pieces together.
+4. **Flash the Firmware:** Load the PRISM firmware onto the STM32 microcontroller.
 5. **Test the System:** Connect via USB and verify the haptic response.
 
-For detailed instructions on flashing the firmware and testing the assembled system, refer to the [**getting started docs**](docs/User%20Guides/User%20Guides.md).
+For detailed instructions on flashing the firmware and testing the assembled system, refer to the [**getting started docs**](docs/User%20Guides/getting-started.md).
 
 ### Prerequisites
 
@@ -62,7 +56,7 @@ cd PRISM/firmware
 make && make flash
 ```
 
-## [▶ Step 2: User Guide (Summary Below)](docs/User%20Guides/User%20Guides.md)
+## User Guides
 
 Control PRISM via the Command Line, REST API, Web Interface, or Python Client. See the [**Usage Docs**](docs/User%20Guides/usage.md) for full references.
 
@@ -79,7 +73,7 @@ steve = SteveClient("192.168.1.100")
 steve.valve_start(preset="smooth")
 ```
 
-## [▶ Rotation Library (Summary Below)](docs/Rotation%20Library/Rotation%20Library.md)
+## Rotation Library
 
 PRISM's modular handle system allows for custom haptic emulations. See the [**Rotation Library Docs**](docs/Rotation%20Library/Rotation%20Library.md) for 3D printable designs and parameter configurations.
 
