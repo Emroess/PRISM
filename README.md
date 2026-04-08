@@ -59,18 +59,11 @@ make && make flash
 
 Control PRISM via the Command Line, REST API, Web Interface, or Python Client. See the [**Usage Docs**](docs/User%20Guides/)) for full references.
 
-To start using the Python client:
-
-```bash
-pip install -e client/
-```
-
-```python
-from pysteve import SteveClient
-
-steve = SteveClient("192.168.1.100")
-steve.valve_start(preset="smooth")
-```
+- [CLI](docs/User%20Guides/cli/cli-reference.md)
+- [PyPRISM](client/PyPRISM.md)
+- [REST API](docs/User%20Guides/rest/rest-api.md)
+- [Web Interface](docs/User%20Guides/web/web-interface-guide.md)
+- [Streaming](docs/User%20Guides/streaming/streaming-guide.md)
 
 ## Rotation Library
 
