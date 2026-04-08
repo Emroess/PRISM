@@ -32,12 +32,13 @@ PRISM’s fully programmatic API allows the motor to automatically reset to its 
 
 - A PC running Linux, Windows, or MacOS
 - A 180 x 180 x 180 mm or larger 3D printer
+- BOM
 - Python 3.10+
 - GNU ARM Embedded Toolchain & Make
 - IssacSim, MuJoCo, ect (For RL training)
 - A cool robot to train (optional)
 
-## Build One <small>(or two)</small> For Your Lab
+## Build One For Your Lab
 All CAD files, assembly guides, and firmware are open-sourced. So start building and make it your own. 
 
 1. **Order the Bill of Materials ([BOM](docs/Build%20Guide/BOM/BOM.md)):** (Add BOM Total Cost Here)
