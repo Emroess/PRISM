@@ -21,7 +21,7 @@ Use `valve_preset <name>` in the CLI to instantly switch emulation modes.
 
 ## Physical Handle Library
 
-Attaching 3D-printed and COTS (Commercial Off-The-Shelf) parts allows the robotic policy to interact with real geometry. Handle metadata is stored in [`handles.json`](CAD/Handles/handles.json) for extending.
+Attaching 3D-printed and COTS (Commercial Off-The-Shelf) parts allows the robotic policy to interact with real geometry. Handle metadata is stored in [`handles.json`](Handles/handles.json) for extending.
 
 ### 1. Hydrant Handwheel
 *For 4-turn valve emulation - industrial handwheel design*
@@ -29,8 +29,8 @@ Attaching 3D-printed and COTS (Commercial Off-The-Shelf) parts allows the roboti
 **Assembly & Components:**
 - [Handwheel Handle](https://a.co/d/cDYmmxf)
 - [goBILDA 1310 Series Hyper Hub (8mm REX Bore)](https://www.gobilda.com/1310-series-hyper-hub-8mm-rex-bore/)
-- *3D Print File:* [`Hand Wheel Adapter Upper.stl`](CAD/Handles/HydrantHandwheel/cad/Hand%20Wheel%20Adapter%20Upper.stl)
-- *3D Print File:* [`Handwheel Adapter Lower.stl`](CAD/Handles/HydrantHandwheel/cad/Handwheel%20Adapter%20Lower.stl)
+- *3D Print File:* [`Hand Wheel Adapter Upper.stl`](Handles/HydrantHandwheel/cad/Hand%20Wheel%20Adapter%20Upper.stl)
+- *3D Print File:* [`Handwheel Adapter Lower.stl`](Handles/HydrantHandwheel/cad/Handwheel%20Adapter%20Lower.stl)
 - **Installation:** Install the lower adapter onto the main PRISM driveshaft using the GoBilda Hyper Hub and 4 M4 screws. Press-fit the handle onto the lower adapter. Place the upper adapter on top of the valve handle and install 3 M4 screws through the entire assembly using washers and locknuts.
 
 ### 2. Quarter-Turn Handle
@@ -63,7 +63,7 @@ Attaching 3D-printed and COTS (Commercial Off-The-Shelf) parts allows the roboti
 ---
 
 ## Contributing a New Handle
-You can construct your own handle adapters and submit them. They require a JSON schema representation inside [`docs/CAD/Handles/handles.json`](CAD/Handles/handles.json) specifying images, purchased BOM objects, printed parts, and CAD/Sim files.
+You can construct your own handle adapters and submit them. They require a JSON schema representation inside [`docs/CAD/Handles/handles.json`](Handles/handles.json) specifying images, purchased BOM objects, printed parts, and CAD/Sim files.
 
 ---
 
