@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-PySteve is a comprehensive Python client for the PRISM (Simulated Task Exploration | Valve Emulation) haptic valve simulation system. It enables robotics engineers and researchers to seamlessly integrate haptic valve simulations into their projects with support for MuJoCo, Gymnasium-Robotics, and NVIDIA Isaac Sim.
+PySteve is a comprehensive Python client for the PRISM's haptic rotational emulation system. It enables robotics engineers and researchers to seamlessly integrate haptic rotational emulation into their projects with support for MuJoCo, Gymnasium-Robotics, and NVIDIA Isaac Sim.
 
 ## Features
 

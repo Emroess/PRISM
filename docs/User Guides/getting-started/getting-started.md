@@ -1,21 +1,6 @@
 ﻿# Getting Started with PRISM
 
-Welcome! This guide will help you connect to your PRISM (Simulated Task Exploration | Valve Emulation) system and start using the command-line interface over USB.
-
-## build it yourself
-All CAD files, assembly guides, and firmware are entirely open-source. Anyone can assemble a working PRISM device without any prior experience.
-
-- [bill of materials](../CAD%20&%20Print%20Files/README.md)
-- [CAD files & assembly guide](../CAD%20&%20Print%20Files/README.md)
-- [software stack (GitHub)](https://github.com/Emroess/PRISM)
-
-### Build Sequence
-To start using the PRISM tool, ensure you have completed these steps:
-1. **Order the BOM:** Purchase the required off-the-shelf components.
-2. **Print the STLs:** 3D print the necessary structural mounts and haptic handles.
-3. **Assemble the Hardware:** Complete the mechanical mating of the motor to the base and handles.
-4. **Flash the Firmware:** Follow the instructions below to load the software onto the STM32 Nucleo.
-5. **Test**: Use the CLI to verify the motor output.
+Welcome! This guide will help you connect to your PRISM system and start using the command-line interface over USB.
 
 ## Table of Contents
 
