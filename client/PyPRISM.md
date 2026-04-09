@@ -7,9 +7,9 @@
 
 - [Features](#features)
 - [Quick Links](#quick-links)
-  - [▶ Start Here (Getting Started)](#start-here-getting-started)
-  - [▶ API Reference](#api-reference)
-  - [▶ Advanced](#advanced)
+  - [▶ Start Here (Getting Started)](#-start-here-getting-started)
+  - [▶ API Reference](#-api-reference)
+  - [▶ Advanced](#-advanced)
 - [PySTEVE Folder Architecture](#pysteve-folder-architecture)
 - [Python Examples](#python-examples)
 - [Requirements](#requirements)
