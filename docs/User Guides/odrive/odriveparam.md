@@ -1,3 +1,11 @@
+
+## Table of Contents
+
+  - [How to Apply Configration Changes](#how-to-apply-configration-changes)
+- [CAN Configuration Parameters](#can-configuration-parameters)
+- [Motor & Encoder (PRISM-Specific – MB325s-100KV High-Current Motor)](#motor-encoder-prism-specific-mb325s-100kv-high-current-motor)
+
+
 ﻿# ODrive S1 Configuration Reference for PRISM
 
 This page lists the ODrive S1 parameters that must be configured for reliable valve emulation with the Nucleo-STM32H753ZI & SimpleCAN setup.  

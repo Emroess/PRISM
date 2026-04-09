@@ -2,6 +2,23 @@
 
 # PRISM User Guide
 
+
+## Table of Contents
+
+- [1. Connecting to PRISM](#1-connecting-to-prism)
+  - [Physical Connection](#physical-connection)
+  - [Basic CLI Operations](#basic-cli-operations)
+- [2. Haptic Parameter Tuning & Profiles](#2-haptic-parameter-tuning-profiles)
+  - [Key Adjustable Parameters](#key-adjustable-parameters)
+  - [Using Presets](#using-presets)
+- [3. Advanced Software Integrations](#3-advanced-software-integrations)
+  - [**Please refer to client/PyPRISM.md**](#please-refer-to-clientpyprismmd)
+- [4. Alternative Control Interfaces](#4-alternative-control-interfaces)
+  - [Web Control Panel](#web-control-panel)
+  - [Real-Time Network Data Streaming](#real-time-network-data-streaming)
+  - [Custom REST API](#custom-rest-api)
+
+
 This guide details how to interact with the PRISM system, from basic Command-Line Interface (CLI) configuration to complex software control integrations via Python, MuJoCo, Gymnasium, and Isaac Sim.
 
 ## 1. Connecting to PRISM

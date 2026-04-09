@@ -1,5 +1,19 @@
 # CMSIS Version 5
 
+
+## Table of Contents
+
+- [Overview of CMSIS Components](#overview-of-cmsis-components)
+- [Implemented Enhancements](#implemented-enhancements)
+- [Further Planned Enhancements](#further-planned-enhancements)
+- [Other related GitHub repositories](#other-related-github-repositories)
+- [Directory Structure](#directory-structure)
+- [Generate CMSIS Pack for Release](#generate-cmsis-pack-for-release)
+- [License](#license)
+- [Contributions and Pull Requests](#contributions-and-pull-requests)
+  - [Issues and Labels](#issues-and-labels)
+
+
 The branch *master* of this GitHub repository contains the CMSIS Version 5.6.0.  The [documentation](http://arm-software.github.io/CMSIS_5/General/html/index.html) is available under http://arm-software.github.io/CMSIS_5/General/html/index.html
 
 Use [Issues](https://github.com/ARM-software/CMSIS_5#issues-and-labels) to provide feedback and report problems for CMSIS Version 5. 

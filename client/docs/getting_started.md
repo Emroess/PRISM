@@ -2,6 +2,32 @@
 
 # Getting Started
 
+
+## Table of Contents
+
+- [Quickstart Guide](#quickstart-guide)
+  - [Step 0: Installation](#step-0-installation)
+  - [Step 0: Find Your PyPRISM IP](#step-0-find-your-pyprism-ip)
+  - [Step 0: Double Check Firewall Configuration](#step-0-double-check-firewall-configuration)
+  - [Step 1: Import and Connect](#step-1-import-and-connect)
+  - [Step 2: Enable Motor](#step-2-enable-motor)
+  - [Step 3: Start Valve Simulation](#step-3-start-valve-simulation)
+  - [Step 4: Read Status](#step-4-read-status)
+  - [Step 5: Load Preset](#step-5-load-preset)
+  - [Step 6: Update Parameters](#step-6-update-parameters)
+  - [Step 7: Stream Data](#step-7-stream-data)
+  - [Step 8: Stop and Cleanup](#step-8-stop-and-cleanup)
+- [Complete Example](#complete-example)
+- [Using Context Manager](#using-context-manager)
+- [Error Handling](#error-handling)
+- [Common Issues](#common-issues)
+  - [Connection Refused](#connection-refused)
+  - [Motor Not Enabled](#motor-not-enabled)
+  - [Streaming No Data](#streaming-no-data)
+- [Next Steps](#next-steps)
+- [Additional Resources](#additional-resources)
+
+
 ## Quickstart Guide
 
 Get started with PySteve in 5 minutes.

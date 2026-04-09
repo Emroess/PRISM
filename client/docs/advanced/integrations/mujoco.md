@@ -1,5 +1,33 @@
 # MuJoCo Integration Tutorial
 
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Overview](#overview)
+- [Sync Modes](#sync-modes)
+  - [Simulation Mode](#simulation-mode)
+  - [Hardware Mode](#hardware-mode)
+  - [Hybrid Mode](#hybrid-mode)
+- [Building MJCF Scenes](#building-mjcf-scenes)
+  - [Basic Valve Model](#basic-valve-model)
+  - [Using MJCF Builder](#using-mjcf-builder)
+- [Complete Example: Robot Manipulation](#complete-example-robot-manipulation)
+- [State Interpolation](#state-interpolation)
+- [Multi-Device Coordination](#multi-device-coordination)
+- [Performance Tuning](#performance-tuning)
+  - [Latency Compensation](#latency-compensation)
+  - [Synchronization Frequency](#synchronization-frequency)
+- [Visualization](#visualization)
+  - [Real-time Plotting](#real-time-plotting)
+  - [Data Recording](#data-recording)
+- [Troubleshooting](#troubleshooting)
+  - [Jittery Motion](#jittery-motion)
+  - [Desynchronization](#desynchronization)
+  - [Performance Issues](#performance-issues)
+- [Next Steps](#next-steps)
+
+
 Learn how to integrate PRISM valves with MuJoCo physics simulation for hardware-in-the-loop testing.
 
 ## Prerequisites

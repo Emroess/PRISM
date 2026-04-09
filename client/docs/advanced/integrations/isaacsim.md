@@ -1,5 +1,37 @@
 # Isaac Sim Integration Tutorial
 
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+  - [Basic Valve Setup](#basic-valve-setup)
+- [USD Scene Building](#usd-scene-building)
+  - [Creating Valve Articulation](#creating-valve-articulation)
+  - [Accessing USD Attributes](#accessing-usd-attributes)
+  - [Manual USD Scene Creation](#manual-usd-scene-creation)
+- [Synchronization Modes](#synchronization-modes)
+  - [Hardware-to-Simulation Sync](#hardware-to-simulation-sync)
+  - [Simulation-to-Hardware Sync](#simulation-to-hardware-sync)
+  - [Bidirectional Sync](#bidirectional-sync)
+- [Complete Robot Manipulation Example](#complete-robot-manipulation-example)
+- [Multi-Valve Coordination](#multi-valve-coordination)
+- [Data Recording in Isaac Sim](#data-recording-in-isaac-sim)
+- [Performance Optimization](#performance-optimization)
+  - [Async Updates](#async-updates)
+  - [Update Rate Control](#update-rate-control)
+  - [Interpolation](#interpolation)
+- [Camera and Sensors](#camera-and-sensors)
+- [Troubleshooting](#troubleshooting)
+  - [Valve Not Moving in Simulation](#valve-not-moving-in-simulation)
+  - [Connection Timeout](#connection-timeout)
+  - [Performance Issues](#performance-issues)
+  - [Joint Limits Not Working](#joint-limits-not-working)
+- [Next Steps](#next-steps)
+- [Resources](#resources)
+
+
 Learn how to integrate PRISM haptic valves into NVIDIA Isaac Sim for robot simulation.
 
 ## Prerequisites

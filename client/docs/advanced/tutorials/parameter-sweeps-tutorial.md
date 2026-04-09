@@ -24,6 +24,36 @@ from pysteve import SteveClient
 from pysteve.control import ParameterSweep
 
 # Connect and prepare
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [ParameterSweep API](#parametersweep-api)
+  - [Single Parameter Sweep](#single-parameter-sweep)
+  - [Multi-Parameter Grid Search](#multi-parameter-grid-search)
+  - [Custom Value Lists](#custom-value-lists)
+- [Optimization Workflows](#optimization-workflows)
+  - [Find Smoothest Operation](#find-smoothest-operation)
+  - [Maximize Energy Efficiency](#maximize-energy-efficiency)
+  - [Balance Multiple Objectives](#balance-multiple-objectives)
+- [Data Export and Analysis](#data-export-and-analysis)
+  - [Export Results](#export-results)
+  - [Visualization](#visualization)
+- [Advanced Sweep Strategies](#advanced-sweep-strategies)
+  - [Adaptive Sweeps](#adaptive-sweeps)
+  - [Random Search](#random-search)
+  - [Bayesian Optimization](#bayesian-optimization)
+- [Real-World Testing](#real-world-testing)
+  - [User Study Protocol](#user-study-protocol)
+- [Troubleshooting](#troubleshooting)
+  - [Inconsistent Results](#inconsistent-results)
+  - [Sweep Takes Too Long](#sweep-takes-too-long)
+- [Best Practices](#best-practices)
+- [Next Steps](#next-steps)
+
+
 client = SteveClient("192.168.1.100")
 client.connect()
 client.enable_motor()

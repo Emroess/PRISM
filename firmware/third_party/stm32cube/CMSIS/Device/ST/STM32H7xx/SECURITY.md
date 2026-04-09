@@ -1,5 +1,11 @@
 # Report potential product security vulnerabilities
 
+
+## Table of Contents
+
+- [IMPORTANT - READ CAREFULLY:](#important-read-carefully)
+
+
 ST places a high priority on security, and our Product Security Incident
 Response Team (PSIRT) is committed to rapidly addressing potential security
 vulnerabilities affecting our products. PSIRT's long history and vast experience

@@ -1,5 +1,41 @@
 # ROS Integration Tutorial
 
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+  - [Start PRISM ROS Node](#start-prism-ros-node)
+  - [Python ROS Node](#python-ros-node)
+- [ROS2 Node Setup](#ros2-node-setup)
+  - [Installing ROS2 Bridge](#installing-ros2-bridge)
+  - [Message Definitions](#message-definitions)
+- [Topics](#topics)
+  - [Published Topics](#published-topics)
+  - [Subscribed Topics](#subscribed-topics)
+- [Services](#services)
+  - [Enable/Disable Motor](#enabledisable-motor)
+  - [Start/Stop Valve](#startstop-valve)
+  - [Update Configuration](#update-configuration)
+  - [Load Preset](#load-preset)
+- [Actions](#actions)
+  - [Move to Position](#move-to-position)
+- [Launch Files](#launch-files)
+  - [Basic Launch](#basic-launch)
+  - [Multi-Device Launch](#multi-device-launch)
+- [Robot Integration Example](#robot-integration-example)
+- [Parameter Server](#parameter-server)
+- [Visualization in RViz2](#visualization-in-rviz2)
+- [Data Recording](#data-recording)
+- [Troubleshooting](#troubleshooting)
+  - [Node Not Starting](#node-not-starting)
+  - [No Data on Topics](#no-data-on-topics)
+  - [High Latency](#high-latency)
+- [Next Steps](#next-steps)
+- [Example Package Structure](#example-package-structure)
+
+
 Learn how to integrate PRISM haptic valves with ROS2 for robotics applications.
 
 ## Prerequisites

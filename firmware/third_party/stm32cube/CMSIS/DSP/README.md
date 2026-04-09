@@ -1,5 +1,17 @@
 # README
 
+
+## Table of Contents
+
+- [How to use](#how-to-use)
+  - [Generating the Makefiles](#generating-the-makefiles)
+  - [Toolchain](#toolchain)
+  - [Building](#building)
+  - [Running](#running)
+- [Customization](#customization)
+- [Compilation symbols for tables](#compilation-symbols-for-tables)
+
+
 ## How to use
 
 This document is explaining how to use cmake with CMSIS-DSP and AC6 ARM compiler.

@@ -2,6 +2,56 @@
 
 # SteveClient API Reference
 
+
+## Table of Contents
+
+- [Class: SteveClient](#class-steveclient)
+  - [Constructor Parameters](#constructor-parameters)
+  - [Connection Management](#connection-management)
+    - [`connect() -> None`](#connect-none)
+    - [`disconnect() -> None`](#disconnect-none)
+    - [`is_connected() -> bool`](#is_connected-bool)
+    - [`ping() -> float`](#ping-float)
+  - [Motor Control](#motor-control)
+    - [`enable_motor() -> None`](#enable_motor-none)
+    - [`disable_motor() -> None`](#disable_motor-none)
+    - [`is_motor_enabled() -> bool`](#is_motor_enabled-bool)
+  - [Valve Control](#valve-control)
+    - [`start_valve() -> None`](#start_valve-none)
+    - [`stop_valve() -> None`](#stop_valve-none)
+    - [`is_valve_running() -> bool`](#is_valve_running-bool)
+  - [Status and State](#status-and-state)
+    - [`get_status() -> Dict[str, Any]`](#get_status-dictstr-any)
+    - [`get_position() -> float`](#get_position-float)
+    - [`get_velocity() -> float`](#get_velocity-float)
+    - [`get_torque() -> float`](#get_torque-float)
+  - [Configuration](#configuration)
+    - [`get_config() -> ValveConfig`](#get_config-valveconfig)
+    - [`update_config(**kwargs) -> None`](#update_configkwargs-none)
+  - [Presets](#presets)
+    - [`load_preset(preset: int) -> None`](#load_presetpreset-int-none)
+    - [`save_preset(slot: int, config: ValveConfig) -> None`](#save_presetslot-int-config-valveconfig-none)
+    - [`list_presets() -> List[str]`](#list_presets-liststr)
+  - [Streaming](#streaming)
+    - [`start_streaming(rate_hz: int = 100) -> None`](#start_streamingrate_hz-int-100-none)
+    - [`stop_streaming() -> None`](#stop_streaming-none)
+  - [Context Manager](#context-manager)
+    - [`__enter__() / __exit__()`](#__enter__-__exit__)
+  - [Properties](#properties)
+    - [`device_ip: str`](#device_ip-str)
+    - [`port: int`](#port-int)
+    - [`streamer: SteveStreamer`](#streamer-stevestreamer)
+  - [Callbacks](#callbacks)
+    - [`register_connection_callback(callback: Callable[[bool], None]) -> None`](#register_connection_callbackcallback-callablebool-none-none)
+    - [`unregister_connection_callback(callback: Callable) -> None`](#unregister_connection_callbackcallback-callable-none)
+- [Example Usage](#example-usage)
+  - [Basic Control](#basic-control)
+  - [With Context Manager](#with-context-manager)
+  - [With Streaming](#with-streaming)
+- [Error Handling](#error-handling)
+- [Thread Safety](#thread-safety)
+
+
 Complete API documentation for the synchronous PRISM client.
 
 ## Class: SteveClient

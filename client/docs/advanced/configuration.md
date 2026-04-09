@@ -2,6 +2,41 @@
 
 # Configuration Guide
 
+
+## Table of Contents
+
+- [Network Configuration](#network-configuration)
+  - [Device Discovery](#device-discovery)
+  - [Static IP Configuration](#static-ip-configuration)
+  - [API Key Configuration](#api-key-configuration)
+- [Valve Parameters](#valve-parameters)
+  - [Parameter Ranges](#parameter-ranges)
+  - [Configuration Presets](#configuration-presets)
+    - [Preset 0: "smooth"](#preset-0-smooth)
+    - [Preset 1: "medium"](#preset-1-medium)
+    - [Preset 2: "tight"](#preset-2-tight)
+    - [Preset 3: "custom"](#preset-3-custom)
+  - [Loading Presets](#loading-presets)
+  - [Custom Configuration](#custom-configuration)
+- [Streaming Configuration](#streaming-configuration)
+  - [Stream Rate](#stream-rate)
+  - [Buffer Size](#buffer-size)
+  - [Thread Safety](#thread-safety)
+- [Connection Configuration](#connection-configuration)
+  - [Auto-Reconnect](#auto-reconnect)
+  - [Connection Callbacks](#connection-callbacks)
+  - [Timeout Configuration](#timeout-configuration)
+- [Environment Variables](#environment-variables)
+- [Configuration Files](#configuration-files)
+  - [YAML Configuration](#yaml-configuration)
+  - [JSON Configuration](#json-configuration)
+- [Multi-Device Configuration](#multi-device-configuration)
+- [Performance Tuning](#performance-tuning)
+  - [Latency Optimization](#latency-optimization)
+  - [Throughput Optimization](#throughput-optimization)
+- [Logging Configuration](#logging-configuration)
+
+
 This guide covers configuring PySteve for your network and application requirements.
 
 ## Network Configuration

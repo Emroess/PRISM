@@ -2,6 +2,18 @@
 
 # Rotation Library
 
+
+## Table of Contents
+
+- [Emulation Profiles (Haptic Presets)](#emulation-profiles-haptic-presets)
+- [Physical Handle Library](#physical-handle-library)
+  - [1. Hydrant Handwheel](#1-hydrant-handwheel)
+  - [2. Quarter-Turn Handle](#2-quarter-turn-handle)
+  - [3. Lever Style Door Handle](#3-lever-style-door-handle)
+  - [4. Wrench Tightening](#4-wrench-tightening)
+- [Contributing a New Handle](#contributing-a-new-handle)
+
+
 The PRISM system relies on interchangeable physical handles combined with software "Presets" to accurately emulate real-world environments. This Rotation Library documents the physically accurate rotational profiles and how to assemble the required handles.
 
 ## Emulation Profiles (Haptic Presets)

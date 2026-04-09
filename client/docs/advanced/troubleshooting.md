@@ -1,5 +1,42 @@
 # Troubleshooting Guide
 
+
+## Table of Contents
+
+- [Connection Issues](#connection-issues)
+  - [Cannot Connect to Device](#cannot-connect-to-device)
+  - [Connection Drops Randomly](#connection-drops-randomly)
+  - [Timeout Errors](#timeout-errors)
+- [Motor and Valve Issues](#motor-and-valve-issues)
+  - [Motor Won't Enable](#motor-wont-enable)
+  - [Valve Won't Start](#valve-wont-start)
+  - [Valve Feels Unstable](#valve-feels-unstable)
+  - [Valve Doesn't Respond](#valve-doesnt-respond)
+- [Streaming Issues](#streaming-issues)
+  - [No Streaming Data](#no-streaming-data)
+  - [Streaming Lag/Delay](#streaming-lagdelay)
+  - [Missing Samples](#missing-samples)
+- [Configuration Issues](#configuration-issues)
+  - [Invalid Parameter Values](#invalid-parameter-values)
+  - [Preset Not Found](#preset-not-found)
+  - [Configuration Not Applied](#configuration-not-applied)
+- [Integration Issues](#integration-issues)
+  - [MuJoCo Sync Issues](#mujoco-sync-issues)
+  - [Gymnasium Environment Issues](#gymnasium-environment-issues)
+  - [Isaac Sim Connection Issues](#isaac-sim-connection-issues)
+- [Performance Issues](#performance-issues)
+  - [Slow API Calls](#slow-api-calls)
+  - [High CPU Usage](#high-cpu-usage)
+- [Data Recording Issues](#data-recording-issues)
+  - [No Data Recorded](#no-data-recorded)
+  - [Export Fails](#export-fails)
+- [Python/Environment Issues](#pythonenvironment-issues)
+  - [Import Errors](#import-errors)
+  - [Version Compatibility](#version-compatibility)
+  - [Dependency Issues](#dependency-issues)
+- [Getting Help](#getting-help)
+
+
 Common issues and solutions when using PySteve.
 
 ## Connection Issues

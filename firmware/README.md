@@ -1,5 +1,19 @@
 # Firmware Directory Structure
 
+
+## Table of Contents
+
+- [Directory Layout](#directory-layout)
+  - [`src/`](#src)
+  - [`third_party/`](#third_party)
+  - [`inc/`](#inc)
+  - [`ports/`](#ports)
+  - [`ld/`](#ld)
+  - [`startup/`](#startup)
+- [Build System](#build-system)
+- [Key Improvements](#key-improvements)
+
+
 This document describes the reorganized firmware directory structure for improved maintainability and code organization.
 
 ## Directory Layout

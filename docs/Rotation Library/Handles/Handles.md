@@ -1,3 +1,17 @@
+
+## Table of Contents
+
+- [📁 Directory Structure](#directory-structure)
+  - [Handles](#handles)
+    - [Handle Options](#handle-options)
+      - [🔴 **Hydrant Style "Handwheel" Valve Handle**](#hydrant-style-handwheel-valve-handle)
+      - [🟡 **Handle Style "Quarter-Turn" Valve Handle**](#handle-style-quarter-turn-valve-handle)
+      - [🟢 **Lever Style "Door Handle"**](#lever-style-door-handle)
+      - [🔵 **Wrench Tightening**](#wrench-tightening)
+  - [PRISM Device](#prism-device)
+- [🔗 Related Resources](#related-resources)
+
+
 ﻿# CAD Files
 
 This directory contains all CAD files and 3D models for the **PRISM** (Simulated Task Exploration | Valve Emulation) project.

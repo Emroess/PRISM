@@ -1,3 +1,22 @@
+
+## Table of Contents
+
+- [Quick Reference](#quick-reference)
+- [Contributing a New Handle](#contributing-a-new-handle)
+  - [1. Add Entry to handles.json](#1-add-entry-to-handlesjson)
+  - [2. Organize Your Files](#2-organize-your-files)
+  - [3. Add Images](#3-add-images)
+  - [4. Write Assembly Instructions (Optional but Recommended)](#4-write-assembly-instructions-optional-but-recommended)
+  - [5. Validate](#5-validate)
+- [File Format Guidelines](#file-format-guidelines)
+  - [Images](#images)
+  - [CAD Files](#cad-files)
+  - [Mesh Files](#mesh-files)
+  - [Simulation Files](#simulation-files)
+- [Schema Reference](#schema-reference)
+- [Updating the Markdown Reference](#updating-the-markdown-reference)
+
+
 ﻿# Handle Library
 
 A curated catalog of contributed valve/handle designs for PRISM. Handle metadata is stored in [handles.json](handles.json) for easy management and extensibility.

@@ -1,5 +1,17 @@
 # Contributing guide
 
+
+## Table of Contents
+
+- [1. Issues](#1-issues)
+  - [1.1 Before opening an issue](#11-before-opening-an-issue)
+  - [1.2 Posting the issue](#12-posting-the-issue)
+- [2. Pull Requests](#2-pull-requests)
+  - [2.1 Before opening a pull-request](#21-before-opening-a-pull-request)
+  - [2.2 How to proceed](#22-how-to-proceed)
+- [3. Support requests and questions](#3-support-requests-and-questions)
+
+
 This guide serves as a checklist before contributing to this repository. It mainly focuses on the steps to follow to submit an issue or a pull-request.
 
 ## 1. Issues

@@ -2,6 +2,21 @@
 
 # PySteve: Python Client for PRISM Haptic Valve System
 
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Links](#quick-links)
+  - [▶ Start Here (Getting Started)](#start-here-getting-started)
+  - [▶ API Reference](#api-reference)
+  - [▶ Advanced](#advanced)
+- [PySTEVE Folder Architecture](#pysteve-folder-architecture)
+- [Python Examples](#python-examples)
+- [Requirements](#requirements)
+- [Compatibility Matrix](#compatibility-matrix)
+- [Citation](#citation)
+
+
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
