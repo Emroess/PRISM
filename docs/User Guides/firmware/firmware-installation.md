@@ -1,4 +1,6 @@
-﻿# Firmware Installation Guide
+﻿[⬅ Back to Main README](../../../README.md#Build%20One%20For%20Your%20Lab)
+
+# Firmware Installation Guide
 
 This guide walks you through installing the PRISM firmware onto a Nucleo-H753ZI development board using the onboard ST-LINK debugger/programmer.
 
@@ -27,6 +29,7 @@ This guide walks you through installing the PRISM firmware onto a Nucleo-H753ZI 
 ### Knowledge Requirements
 
 Basic familiarity with:
+
 - Command-line terminal usage
 - Embedded systems concepts
 - Make build system
@@ -38,6 +41,7 @@ Basic familiarity with:
 ### 1. Inspect the Board
 
 The Nucleo-H753ZI has two USB connectors:
+
 - **CN1 (USB ST-LINK)**: Micro-USB connector at the top of the board - **Use this one for programming**
 - **CN13 (USB USER)**: Micro-USB connector close to RJ45 network port- This is for the target MCU, not for programming
 
@@ -46,10 +50,13 @@ The Nucleo-H753ZI has two USB connectors:
 1. Connect the **Micro-USB cable** to the **CN1 (ST-LINK)** connector
 2. Connect the other end to your host computer
 3. The board should power on - you should see the following LEDs:
+
    - **LD1 (COM)**: Red/Green - Indicates ST-LINK communication
    - **LD2 (Power)**: Green - Board is powered
+
   <!-- **LD3 (PWR)**: Red - 3.3V rail is active
 -->
+
 ### 3. Verify Connection (Linux)
 
 After connecting, verify the ST-LINK is detected:
@@ -59,24 +66,29 @@ lsusb | grep STMicroelectronics
 ```
 
 Expected output:
+
 ```
 Bus 001 Device 005: ID 0483:374b STMicroelectronics ST-LINK/V2-1
 ```
 
 Check if the device appears in `/dev`:
+
 ```bash
 ls -la /dev/ttyACM*
 ```
 
 Expected output:
+
 ```
 crw-rw---- 1 root dialout 166, 0 Nov 21 10:30 /dev/ttyACM0
 ```
 
 **Note**: You may need to add your user to the `dialout` group to access the serial port:
+
 ```bash
 sudo usermod -aG dialout $USER
 ```
+
 Then log out and log back in for the changes to take effect.
 
 ---
@@ -88,22 +100,26 @@ Then log out and log back in for the changes to take effect.
 The firmware is built using the ARM GCC compiler. Install it using your package manager:
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt-get update
 sudo apt-get install gcc-arm-none-eabi binutils-arm-none-eabi
 ```
 
 **Fedora/RHEL:**
+
 ```bash
 sudo dnf install arm-none-eabi-gcc-cs arm-none-eabi-binutils
 ```
 
 **macOS (Homebrew):**
+
 ```bash
 brew install --cask gcc-arm-embedded
 ```
 
 Verify installation:
+
 ```bash
 arm-none-eabi-gcc --version
 ```
@@ -113,21 +129,25 @@ arm-none-eabi-gcc --version
 OpenOCD (Open On-Chip Debugger) is used to program and debug the microcontroller via ST-LINK.
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt-get install openocd
 ```
 
 **Fedora/RHEL:**
+
 ```bash
 sudo dnf install openocd
 ```
 
 **macOS (Homebrew):**
+
 ```bash
 brew install openocd
 ```
 
 Verify installation:
+
 ```bash
 openocd --version
 ```
@@ -139,17 +159,20 @@ Expected output should show version 0.11.0 or newer.
 The build system uses GNU Make:
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt-get install build-essential
 ```
 
 **Fedora/RHEL:**
+
 ```bash
 sudo dnf groupinstall "Development Tools"
 ```
 
 **macOS:**
 Make is included with Xcode Command Line Tools:
+
 ```bash
 xcode-select --install
 ```
@@ -159,20 +182,26 @@ xcode-select --install
 To interact with the firmware via UART, install a serial terminal:
 
 **Option A: screen** (usually pre-installed)
+
 ```bash
 screen /dev/ttyACM0 115200
 ```
+
 **Option B: picocom** 
+
 ```bash
 picocom -b 115200 /dev/ttyACM0 
 ```
+
 **Option C: minicom**
+
 ```bash
 sudo apt-get install minicom
 minicom -D /dev/ttyACM0 -b 115200
 ```
 
 **Option D: PuTTY** (GUI option)
+
 ```bash
 sudo apt-get install putty
 ```
@@ -214,6 +243,7 @@ make CFLAGS_OPT=-O0
 ### 4. Build Output
 
 The build process will:
+
 1. Compile all C source files to object files (`.o`)
 2. Generate dependency files (`.d`)
 3. Link everything into an ELF executable
@@ -221,6 +251,7 @@ The build process will:
 5. Display memory usage
 
 Expected output:
+
 ```
 Compiling: src/main.c
 Compiling: src/bsp/board.c
@@ -245,6 +276,7 @@ ls -lh build/firmware.*
 ```
 
 You should see:
+
 - `firmware.elf` - Executable with debug symbols
 - `firmware.hex` - Intel HEX format
 - `firmware.bin` - Raw binary format
@@ -253,8 +285,8 @@ You should see:
 ---
 
 ## Flashing the Firmware
+
 > **_NOTE:_** Flashing the firmware to the Nucleo-STM32H7ZI while a CAN transceiver is connected might result in a OpenOCD core timeout error.
-### Method 1: Using Make (Recommended)
 
 The simplest way to flash the firmware is using the provided Makefile target:
 
@@ -263,6 +295,7 @@ make flash
 ```
 
 This command:
+
 1. Builds the firmware (if not already built)
 2. Launches OpenOCD with ST-LINK interface configuration
 3. Programs the firmware to flash memory
@@ -271,6 +304,7 @@ This command:
 6. Exits
 
 **Expected output:**
+
 ```
 openocd -f interface/stlink.cfg -f target/stm32h7x.cfg \
     -c "program build/firmware.elf verify reset exit"
@@ -312,6 +346,7 @@ telnet localhost 4444
 ```
 
 Then manually program:
+
 ```
 > halt
 > flash write_image erase build/firmware.elf
@@ -327,6 +362,7 @@ Then manually program:
 ### 1. Check LED Behavior
 
 After flashing and reset, observe the board LEDs:
+
 - **LD1 (Green/User LED)**: Should blink or show activity patterns defined in the firmware
 - **LD2 (Power)**: Should remain solid green
 
@@ -339,11 +375,13 @@ screen /dev/ttyACM0 115200
 ```
 
 Press Enter - you should see the CLI prompt:
+
 ```
 PRISM> 
 ```
 
 Type `help` to see available commands:
+
 ```
 PRISM> help
 ```
@@ -351,6 +389,7 @@ PRISM> help
 ### 3. Check Firmware Version
 
 Query the firmware version:
+
 ```
 PRISM> version
 ```
@@ -358,11 +397,13 @@ PRISM> version
 ### 4. Check System Status
 
 View system status:
+
 ```
 PRISM> status
 ```
 
 This should display:
+
 - CPU usage
 - Memory usage
 - Network status
@@ -379,14 +420,17 @@ To exit `screen`: Press `Ctrl+A`, then `K`, then `Y`
 ### Problem: OpenOCD Can't Find ST-LINK
 
 **Error:**
+
 ```
 Error: open failed
 ```
 
 **Solutions:**
+
 1. Check USB cable is connected to CN1 (ST-LINK port)
 2. Verify ST-LINK is detected: `lsusb | grep STM`
 3. Check udev rules (Linux):
+
    ```bash
    sudo cp /usr/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d/
    sudo udevadm control --reload-rules
@@ -397,25 +441,30 @@ Error: open failed
 ### Problem: Permission Denied on /dev/ttyACM0
 
 **Error:**
+
 ```
 /dev/ttyACM0: Permission denied
 ```
 
 **Solution:**
 Add your user to the `dialout` group:
+
 ```bash
 sudo usermod -aG dialout $USER
 ```
+
 Then log out and back in.
 
 ### Problem: Target Voltage Detected as 0V
 
 **Error:**
+
 ```
 Error: Target voltage may be too low for reliable debugging
 ```
 
 **Solutions:**
+
 1. Ensure board is powered (LD2 LED should be on)
 2. Check USB cable is properly connected
 3. Try a different USB port or cable
@@ -424,6 +473,7 @@ Error: Target voltage may be too low for reliable debugging
 ### Problem: Build Fails - Command Not Found
 
 **Error:**
+
 ```
 arm-none-eabi-gcc: command not found
 ```
@@ -434,14 +484,17 @@ Install ARM GCC toolchain (see [Software Requirements](#software-requirements))
 ### Problem: OpenOCD Times Out
 
 **Error:**
+
 ```
 Error: timed out while waiting for target halted
 ```
 
 **Solutions:**
+
 1. Press the black RESET button (B2) on the board
 2. Disconnect and reconnect USB cable
 3. Try lower SWD speed:
+
    ```bash
    openocd -f interface/stlink.cfg -f target/stm32h7x.cfg \
        -c "adapter speed 1000" \
@@ -451,18 +504,21 @@ Error: timed out while waiting for target halted
 ### Problem: Verification Failed
 
 **Error:**
+
 ```
 Error: verification failed
 ```
 
 **Solutions:**
+
 1. Try erasing the flash first:
+
    ```bash
    openocd -f interface/stlink.cfg -f target/stm32h7x.cfg \
        -c "init" -c "reset halt" -c "flash erase_sector 0 0 last" \
        -c "reset" -c "exit"
    ```
-2. Then reflash: `make flash`
+1. Then reflash: `make flash`
 
 ### Problem: No Serial Port Appears
 
@@ -470,6 +526,7 @@ Error: verification failed
 The `/dev/ttyACM0` device doesn't appear after flashing.
 
 **Solutions:**
+
 1. Check firmware has UART initialized properly
 2. Try different USB cable
 3. Check dmesg for errors: `dmesg | tail -20`
@@ -482,18 +539,21 @@ The `/dev/ttyACM0` device doesn't appear after flashing.
 ### Building with Different Optimization Levels
 
 **Debug build (no optimization):**
+
 ```bash
 make clean
 make CFLAGS_OPT=-O0
 ```
 
 **Size-optimized build:**
+
 ```bash
 make clean
 make CFLAGS_OPT=-Os
 ```
 
 **Release build (default):**
+
 ```bash
 make clean
 make CFLAGS_OPT=-O2
@@ -508,6 +568,7 @@ make validate-all
 ```
 
 This runs:
+
 - Dual-build validation (-O0 and -O2)
 - MISRA-C compliance checks (requires cppcheck)
 - Hardware access layering validation
@@ -521,6 +582,7 @@ make size
 ```
 
 This displays:
+
 - Flash usage (text + data sections)
 - RAM usage (data + bss sections)
 - Breakdown by section
@@ -534,11 +596,13 @@ make debug
 ```
 
 This:
+
 1. Starts OpenOCD in background
 2. Launches GDB and connects to target
 3. Loads symbols from ELF file
 
 In GDB, you can:
+
 - Set breakpoints: `break main`
 - Continue execution: `continue`
 - Single-step: `step` or `next`
@@ -629,4 +693,3 @@ make help
 **Last Updated**: November 21, 2025  
 **Target Hardware**: Nucleo-H753ZI (MB1364)  
 **Firmware Version**: Compatible with PRISM firmware v1.x
-

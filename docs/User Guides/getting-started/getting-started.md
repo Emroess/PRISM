@@ -1,4 +1,6 @@
-﻿# Getting Started with PRISM
+﻿[⬅ Back to Main README](../../../README.md#Build%20One%20For%20Your%20Lab)
+
+# Getting Started with PRISM
 
 Welcome! This guide will help you connect to your PRISM system and start using the command-line interface over USB.
 
@@ -17,17 +19,20 @@ Welcome! This guide will help you connect to your PRISM system and start using t
 ## What You'll Need
 
 ### Hardware
+
 - **PRISM Device** - STM32 Nucleo-H753ZI development board with firmware
 - **USB Cable** - Standard Micro-USB cable
 - **Computer** - Windows, Mac, or Linux PC
 
 ### Software
+
 - **Serial Terminal** - One of the following:
-  - Windows: PuTTY, TeraTerm, or Windows Terminal
-  - Mac/Linux: screen, minicom, or picocom
-  - Cross-platform: Arduino IDE Serial Monitor
+    - Windows: PuTTY, TeraTerm, or Windows Terminal
+    - Mac/Linux: screen, minicom, or picocom
+    - Cross-platform: Arduino IDE Serial Monitor
 
 ### Optional
+
 - **Ethernet Cable** - For network features (web interface, streaming)
 
 ---
@@ -37,36 +42,39 @@ Welcome! This guide will help you connect to your PRISM system and start using t
 ### Physical Connection
 
 1. **Locate the ST-LINK USB port** on your Nucleo-H753ZI board
+
    - This is typically the USB connection farthest fromthe Ethernet port.
-     
-        > **Note:** If the 3D printed enclosure and USB extention is installed, this connection will be to the side of the AC power input cable. 
+
+     > **Note:** If the 3D printed enclosure and USB extention is installed, this connection will be to the side of the AC power input cable. 
    - Labeled "USB ST-LINK" or "CN1" on the board
+1. **Connect the USB cable** between your computer and the ST-LINK port
+1. **Power up the board**
 
-2. **Connect the USB cable** between your computer and the ST-LINK port
-
-3. **Power up the board**
    - The board is powered through the USB connection
    - You should see LED indicators light up
    - Green LED typically indicates normal operation
+1. **Wait for driver installation** (first time only)
 
-4. **Wait for driver installation** (first time only)
    - Windows: ST-LINK drivers install automatically
    - Mac/Linux: Usually works without additional drivers
 
 ### Identifying the Serial Port
 
 **Windows:**
+
 - Open Device Manager (Win+X, then Device Manager)
 - Look under "Ports (COM & LPT)"
 - Find "STMicroelectronics STLink Virtual COM Port (COMx)"
 - Note the COM port number (e.g., COM3, COM7)
 
 **Mac:**
+
 - Open Terminal
 - Run: `ls /dev/tty.usbmodem*`
 - The device will be something like `/dev/tty.usbmodem1234`
 
 **Linux:**
+
 - Open Terminal
 - Run: `ls /dev/ttyACM*`
 - The device will be something like `/dev/ttyACM0`
@@ -97,6 +105,7 @@ Welcome! This guide will help you connect to your PRISM system and start using t
 
 1. Open Terminal
 2. Run: `screen /dev/tty.usbmodem1234 115200`
+
    - Replace with your actual device name
 3. To exit screen: Press Ctrl+A, then K, then Y
 
@@ -104,18 +113,21 @@ Welcome! This guide will help you connect to your PRISM system and start using t
 
 1. Open Terminal
 2. You may need to add yourself to the dialout group:
+
    ```bash
    sudo usermod -a -G dialout $USER
    ```
-   Then log out and back in
 
+   Then log out and back in
 3. Run: `screen /dev/ttyACM0 115200`
+
    - Replace with your actual device name
 4. To exit screen: Press Ctrl+A, then K, then Y
 
 ### Connection Parameters
 
 Always use these settings:
+
 - **Baud rate:** 115200
 - **Data bits:** 8
 - **Parity:** None
@@ -129,6 +141,7 @@ Always use these settings:
 ### Verify Connection
 
 After connecting, you should see a welcome message:
+
 ```
 Type 'help' for available commands
 > 
@@ -270,18 +283,21 @@ ODrive disabled
 Change the haptic characteristics in real-time:
 
 **Make it smoother:**
+
 ```
 > valve_damping 0.02
 > valve_friction 0.005
 ```
 
 **Make it stiffer:**
+
 ```
 > valve_damping 0.1
 > valve_friction 0.02
 ```
 
 **Adjust wall boundaries:**
+
 ```
 > valve_wall_k 2.0
 > valve_wall_c 0.2
@@ -298,6 +314,7 @@ Preset saved: myconfig
 ```
 
 Load it later:
+
 ```
 > valve_preset myconfig
 
@@ -377,6 +394,7 @@ Copy and paste this data into Excel or your analysis tool.
 **Problem:** No response when typing commands
 
 **Solutions:**
+
 1. Verify USB cable is connected firmly
 2. Check you have the correct COM port / device name
 3. Confirm baud rate is 115200
@@ -389,6 +407,7 @@ Copy and paste this data into Excel or your analysis tool.
 **Problem:** `odrive_ping` shows no response
 
 **Solutions:**
+
 1. Check CAN bus wiring (CAN_H, CAN_L, GND)
 2. Verify CAN termination resistors (120Ω on each end)
 3. Ensure ODrive is powered on
@@ -400,6 +419,7 @@ Copy and paste this data into Excel or your analysis tool.
 **Problem:** `valve_start` fails with error
 
 **Solutions:**
+
 1. Ensure ODrive is enabled first: `odrive_enable`
 2. Clear any ODrive errors: `odrive_clear`
 3. Check ODrive mode is correct: `odrive_mode 1` (torque control)
@@ -411,6 +431,7 @@ Copy and paste this data into Excel or your analysis tool.
 **Problem:** Commands not recognized or producing errors
 
 **Solutions:**
+
 1. Check spelling (commands are case-sensitive, all lowercase)
 2. Ensure proper number of arguments
 3. Type `help` to see correct command list
@@ -422,6 +443,7 @@ Copy and paste this data into Excel or your analysis tool.
 **Problem:** Can't access web interface or streaming
 
 **Solutions:**
+
 1. Check Ethernet cable is connected
 2. Verify IP address with `ethstatus`
 3. Ensure computer is on same subnet
@@ -434,6 +456,7 @@ Copy and paste this data into Excel or your analysis tool.
 **Problem:** Motor vibrates or behaves erratically
 
 **Solutions:**
+
 1. Reduce damping: `valve_damping 0.03`
 2. Lower torque limit: `valve_torquelimit 0.3`
 3. Check ODrive gains aren't too high
@@ -445,6 +468,7 @@ Copy and paste this data into Excel or your analysis tool.
 **Problem:** System in bad state
 
 **Solutions:**
+
 1. Stop valve control: `valve_stop`
 2. Disable ODrive: `odrive_disable`
 3. Emergency stop if needed: `odrive_estop`
@@ -475,6 +499,7 @@ For remote control and automation, see the [REST API Reference](../rest/rest-api
 ## Quick Command Cheatsheet
 
 ### Essential Commands
+
 ```
 help                    # Show all commands
 valve_status            # Check current status
@@ -483,6 +508,7 @@ ethstatus              # Check network status
 ```
 
 ### Basic Operation
+
 ```
 odrive_enable          # Enable motor
 valve_start            # Start control
@@ -491,6 +517,7 @@ odrive_disable         # Disable motor
 ```
 
 ### Configuration
+
 ```
 valve_damping 0.05     # Set damping
 valve_friction 0.01    # Set friction
@@ -499,6 +526,7 @@ valve_preset default   # Load preset
 ```
 
 ### Monitoring
+
 ```
 valve_timing           # Check loop performance
 perf_stats             # View statistics
@@ -506,6 +534,7 @@ can_telemetry          # Check power/temp
 ```
 
 ### Network
+
 ```
 setip 192.168.1.100 255.255.255.0 192.168.1.1  # Configure network
 http start             # Start web server
@@ -513,5 +542,3 @@ eth_stream start       # Start data streaming
 ```
 
 Happy exploring with PRISM!
-
-

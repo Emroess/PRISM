@@ -1,4 +1,6 @@
-﻿# PRISM CLI Reference Guide
+﻿[⬅ Back to Main README](../../../README.md#User%20Guides)
+
+# PRISM CLI Reference Guide
 
 This document provides a complete reference for all commands available in the PRISM (Simulated Task Exploration | Valve Emulation) command-line interface.
 
@@ -24,11 +26,13 @@ This document provides a complete reference for all commands available in the PR
 Display a list of all available commands with brief descriptions.
 
 **Usage:**
+
 ```
 help
 ```
 
 **Example:**
+
 ```
 > help
 Available commands:
@@ -48,17 +52,20 @@ These commands control the valve's operational state and provide real-time statu
 Start the valve control system. This command initializes the haptic feedback control loop and begins actively controlling the valve based on the configured parameters.
 
 **Usage:**
+
 ```
 valve_start
 ```
 
 **Example:**
+
 ```
 > valve_start
 Valve started
 ```
 
 **Notes:**
+
 - The ODrive must be enabled and in the correct control mode before starting valve control
 - Ensure all safety parameters (torque limits, wall boundaries) are properly configured
 - The control loop runs at high frequency (1kHz+) for responsive haptic feedback
@@ -68,17 +75,20 @@ Valve started
 Stop the valve control system and disable active haptic feedback control.
 
 **Usage:**
+
 ```
 valve_stop
 ```
 
 **Example:**
+
 ```
 > valve_stop
 Valve stopped
 ```
 
 **Notes:**
+
 - This command safely disables the control loop
 - The motor remains enabled but torque commands cease
 - Use this before making configuration changes
@@ -88,11 +98,13 @@ Valve stopped
 Display comprehensive valve system status including current position, velocity, torque, and control parameters.
 
 **Usage:**
+
 ```
 valve_status
 ```
 
 **Example:**
+
 ```
 > valve_status
 Valve Status:
@@ -107,6 +119,7 @@ Wall C:      0.100 N·m·s/turn
 ```
 
 **Information Provided:**
+
 - Current encoder position (raw counts and mechanical degrees)
 - Current velocity (counts/s and mechanical degrees/s)
 - Current applied torque
@@ -118,17 +131,20 @@ Wall C:      0.100 N·m·s/turn
 Display the current passivity energy tank level. This value is used to ensure system stability and prevent energy generation that could lead to unstable behavior.
 
 **Usage:**
+
 ```
 valve_energy
 ```
 
 **Example:**
+
 ```
 > valve_energy
 Passivity Energy Tank: 0.000123 J
 ```
 
 **Notes:**
+
 - The energy tank should remain positive for passive, stable behavior
 - Negative values may indicate parameter tuning issues
 - Energy dissipation should match physical expectations
@@ -138,11 +154,13 @@ Passivity Energy Tank: 0.000123 J
 Show detailed timing diagnostics for the control loop including execution time, cycle period, and timing violations.
 
 **Usage:**
+
 ```
 valve_timing
 ```
 
 **Example:**
+
 ```
 > valve_timing
 Loop Timing Diagnostics:
@@ -153,6 +171,7 @@ Overruns:           0
 ```
 
 **Information Provided:**
+
 - Target control loop frequency
 - Average execution time per cycle
 - Maximum execution time observed
@@ -169,20 +188,24 @@ These commands adjust the haptic feedback characteristics and physical parameter
 Set the viscous damping coefficient for the valve. This parameter controls velocity-dependent resistance.
 
 **Usage:**
+
 ```
 valve_damping <value>
 ```
 
 **Parameters:**
+
 - `value` - Damping coefficient in N·m·s/rad (Newton-meters-seconds per radian)
 
 **Example:**
+
 ```
 > valve_damping 0.05
 Viscous damping set
 ```
 
 **Notes:**
+
 - Higher values create more resistance to motion
 - Typical range: 0.01 to 0.5 N·m·s/rad
 - Affects feel smoothness and stability
@@ -193,20 +216,24 @@ Viscous damping set
 Set the Coulomb (static) friction torque for the valve. This parameter simulates friction that opposes motion regardless of velocity.
 
 **Usage:**
+
 ```
 valve_friction <value>
 ```
 
 **Parameters:**
+
 - `value` - Friction torque in N·m (Newton-meters)
 
 **Example:**
+
 ```
 > valve_friction 0.01
 Coulomb friction set
 ```
 
 **Notes:**
+
 - Creates a constant resistance to overcome
 - Typical range: 0.005 to 0.05 N·m
 - Simulates bearing friction and seal resistance
@@ -217,20 +244,24 @@ Coulomb friction set
 Set the smoothing epsilon parameter used in friction calculations to prevent discontinuities at zero velocity.
 
 **Usage:**
+
 ```
 valve_epsilon <value>
 ```
 
 **Parameters:**
+
 - `value` - Smoothing parameter (dimensionless)
 
 **Example:**
+
 ```
 > valve_epsilon 0.001
 Smoothing epsilon set
 ```
 
 **Notes:**
+
 - Smaller values create sharper transitions
 - Typical range: 0.0001 to 0.01
 - Affects friction behavior near zero velocity
@@ -241,20 +272,24 @@ Smoothing epsilon set
 Set the maximum torque that can be commanded to the motor. This is a critical safety parameter.
 
 **Usage:**
+
 ```
 valve_torquelimit <value>
 ```
 
 **Parameters:**
+
 - `value` - Maximum torque in N·m (Newton-meters)
 
 **Example:**
+
 ```
 > valve_torquelimit 0.5
 Torque limit set
 ```
 
 **Notes:**
+
 - Safety limit to prevent damage
 - Should be below motor and mechanical limits
 - Typical range: 0.1 to 2.0 N·m depending on hardware
@@ -265,20 +300,24 @@ Torque limit set
 Set the wall stiffness coefficient. This defines how hard the virtual walls are at the travel limits.
 
 **Usage:**
+
 ```
 valve_wall_k <value>
 ```
 
 **Parameters:**
+
 - `value` - Wall stiffness in N·m/turn
 
 **Example:**
+
 ```
 > valve_wall_k 1.0
 Wall stiffness set
 ```
 
 **Notes:**
+
 - Higher values create harder walls
 - Typical range: 0.5 to 5.0 N·m/turn
 - Defines end-stop feel
@@ -289,20 +328,24 @@ Wall stiffness set
 Set the wall damping coefficient. This controls energy dissipation when hitting virtual walls.
 
 **Usage:**
+
 ```
 valve_wall_c <value>
 ```
 
 **Parameters:**
+
 - `value` - Wall damping in N·m·s/turn
 
 **Example:**
+
 ```
 > valve_wall_c 0.1
 Wall damping set
 ```
 
 **Notes:**
+
 - Prevents bouncing off walls
 - Typical range: 0.05 to 0.5 N·m·s/turn
 - Critical for stability near limits
@@ -313,20 +356,24 @@ Wall damping set
 Set the mechanical scaling factor that defines how many mechanical degrees correspond to one encoder revolution.
 
 **Usage:**
+
 ```
 valve_scale <value>
 ```
 
 **Parameters:**
+
 - `value` - Mechanical degrees per encoder turn
 
 **Example:**
+
 ```
 > valve_scale 360.0
 Mechanical scale set
 ```
 
 **Notes:**
+
 - Depends on gear ratio or direct drive configuration
 - Direct drive: typically 360.0 degrees/turn
 - Geared: depends on gear ratio
@@ -343,20 +390,24 @@ Presets allow you to save and recall complete valve configurations for different
 Load a previously saved valve preset configuration.
 
 **Usage:**
+
 ```
 valve_preset <preset_name>
 ```
 
 **Parameters:**
+
 - `preset_name` - Name of the preset to load (no spaces)
 
 **Example:**
+
 ```
 > valve_preset default
 Loaded preset: default
 ```
 
 **Available Presets:**
+
 - `default` - Standard configuration for general use
 - `smooth` - Low friction, light damping for smooth feel
 - `stiff` - High stiffness for precise positioning
@@ -364,6 +415,7 @@ Loaded preset: default
 - Custom presets you've created
 
 **Notes:**
+
 - Instantly updates all valve parameters
 - Changes take effect on next control cycle
 - Does not require stopping the valve
@@ -373,20 +425,24 @@ Loaded preset: default
 Save the current valve configuration as a named preset.
 
 **Usage:**
+
 ```
 valve_preset_save <preset_name>
 ```
 
 **Parameters:**
+
 - `preset_name` - Name for the new preset (no spaces)
 
 **Example:**
+
 ```
 > valve_preset_save myconfig
 Preset saved: myconfig
 ```
 
 **Notes:**
+
 - Saves all current valve parameters
 - Overwrites preset if name already exists
 - Stored in non-volatile memory
@@ -397,11 +453,13 @@ Preset saved: myconfig
 Display all available presets and their parameter values.
 
 **Usage:**
+
 ```
 valve_preset_show
 ```
 
 **Example:**
+
 ```
 > valve_preset_show
 Available Presets:
@@ -418,6 +476,7 @@ Available Presets:
 ```
 
 **Notes:**
+
 - Shows all parameters for each preset
 - Helps compare different configurations
 - Useful for documentation and version control
@@ -433,11 +492,13 @@ These commands control the ODrive motor controller that drives the valve's hapti
 Test connectivity with the ODrive motor controller over CAN bus.
 
 **Usage:**
+
 ```
 odrive_ping
 ```
 
 **Example:**
+
 ```
 > odrive_ping
 ODrive heartbeat received
@@ -446,6 +507,7 @@ Axis state: IDLE
 ```
 
 **Notes:**
+
 - Verifies CAN communication is working
 - Shows basic ODrive status
 - Should respond within 100ms
@@ -456,11 +518,13 @@ Axis state: IDLE
 Display comprehensive ODrive status including state, errors, position, velocity, and current.
 
 **Usage:**
+
 ```
 odrive_status
 ```
 
 **Example:**
+
 ```
 > odrive_status
 ODrive Status:
@@ -474,6 +538,7 @@ Errors:        None
 ```
 
 **Information Provided:**
+
 - Current operational state
 - Encoder position and velocity
 - Applied torque/current
@@ -485,17 +550,20 @@ Errors:        None
 Enable the ODrive for closed-loop motor control. This transitions the ODrive from idle to active control mode.
 
 **Usage:**
+
 ```
 odrive_enable
 ```
 
 **Example:**
+
 ```
 > odrive_enable
 ODrive enabled
 ```
 
 **Notes:**
+
 - Motor must be calibrated first
 - Required before valve control can start
 - Motor will actively hold position
@@ -506,17 +574,20 @@ ODrive enabled
 Disable the ODrive and enter idle mode. The motor will coast freely.
 
 **Usage:**
+
 ```
 odrive_disable
 ```
 
 **Example:**
+
 ```
 > odrive_disable
 ODrive disabled
 ```
 
 **Notes:**
+
 - Motor will coast (no active control)
 - Reduces power consumption
 - Safe for making mechanical adjustments
@@ -527,17 +598,20 @@ ODrive disabled
 Trigger an emergency stop on the ODrive. This immediately disables the motor.
 
 **Usage:**
+
 ```
 odrive_estop
 ```
 
 **Example:**
+
 ```
 > odrive_estop
 ODrive emergency stop triggered
 ```
 
 **Notes:**
+
 - Use in emergency situations only
 - Immediately cuts motor power
 - Requires odrive_clear before re-enabling
@@ -548,17 +622,20 @@ ODrive emergency stop triggered
 Clear any active errors on the ODrive.
 
 **Usage:**
+
 ```
 odrive_clear
 ```
 
 **Example:**
+
 ```
 > odrive_clear
 ODrive errors cleared
 ```
 
 **Notes:**
+
 - Required after estop or error conditions
 - Does not fix underlying problems
 - Check odrive_status after clearing
@@ -569,11 +646,13 @@ ODrive errors cleared
 Perform a full calibration sequence for the motor and encoder. This includes offset calibration and index search.
 
 **Usage:**
+
 ```
 odrive_calibrate
 ```
 
 **Example:**
+
 ```
 > odrive_calibrate
 ODrive calibration started
@@ -581,6 +660,7 @@ Note: Motor will move during calibration
 ```
 
 **Notes:**
+
 - Required after power-up (if not saved)
 - Motor will rotate during calibration
 - Ensure clear range of motion
@@ -592,20 +672,24 @@ Note: Motor will move during calibration
 Send a direct torque command to the ODrive. ODrive must be in torque control mode.
 
 **Usage:**
+
 ```
 odrive_torque <value>
 ```
 
 **Parameters:**
+
 - `value` - Torque setpoint in N·m
 
 **Example:**
+
 ```
 > odrive_torque 0.1
 Torque command sent: 0.100 N·m
 ```
 
 **Notes:**
+
 - Direct low-level control
 - Bypasses valve control system
 - Use for testing and diagnostics
@@ -616,20 +700,24 @@ Torque command sent: 0.100 N·m
 Send a velocity command to the ODrive. ODrive must be in velocity control mode.
 
 **Usage:**
+
 ```
 odrive_velocity <value>
 ```
 
 **Parameters:**
+
 - `value` - Velocity setpoint in turns/s
 
 **Example:**
+
 ```
 > odrive_velocity 0.5
 Velocity command sent: 0.500 turns/s
 ```
 
 **Notes:**
+
 - Constant velocity mode
 - Subject to velocity and current limits
 - Use for testing motor response
@@ -640,20 +728,24 @@ Velocity command sent: 0.500 turns/s
 Send a position command to the ODrive. ODrive must be in position control mode.
 
 **Usage:**
+
 ```
 odrive_position <value>
 ```
 
 **Parameters:**
+
 - `value` - Position setpoint in turns
 
 **Example:**
+
 ```
 > odrive_position 1.5
 Position command sent: 1.500 turns
 ```
 
 **Notes:**
+
 - Moves to absolute position
 - Uses configured position PID gains
 - Subject to velocity and current limits
@@ -670,24 +762,28 @@ These commands configure the ODrive's control parameters and operational limits.
 Set the ODrive's control mode (voltage, torque, velocity, or position control).
 
 **Usage:**
+
 ```
 odrive_mode <mode>
 ```
 
 **Parameters:**
+
 - `mode` - Control mode:
-  - `0` - Voltage control (open loop)
-  - `1` - Torque control
-  - `2` - Velocity control
-  - `3` - Position control
+    - `0` - Voltage control (open loop)
+    - `1` - Torque control
+    - `2` - Velocity control
+    - `3` - Position control
 
 **Example:**
+
 ```
 > odrive_mode 1
 ODrive mode set to TORQUE_CONTROL
 ```
 
 **Notes:**
+
 - Valve control typically uses torque mode (1)
 - Position mode (3) for automated testing
 - Mode must match command type
@@ -698,21 +794,25 @@ ODrive mode set to TORQUE_CONTROL
 Set velocity and current limits for the ODrive. These are safety parameters.
 
 **Usage:**
+
 ```
 odrive_limits <vel_limit> <current_limit>
 ```
 
 **Parameters:**
+
 - `vel_limit` - Maximum velocity in turns/s
 - `current_limit` - Maximum current in Amperes
 
 **Example:**
+
 ```
 > odrive_limits 2.0 10.0
 Limits set: vel=2.000 turns/s, current=10.000 A
 ```
 
 **Notes:**
+
 - Protects motor and mechanics from damage
 - Velocity limit prevents overspeed
 - Current limit prevents overheating
@@ -724,20 +824,24 @@ Limits set: vel=2.000 turns/s, current=10.000 A
 Set the proportional gain (Kp) for position control mode.
 
 **Usage:**
+
 ```
 odrive_pos_gain <kp>
 ```
 
 **Parameters:**
+
 - `kp` - Position proportional gain
 
 **Example:**
+
 ```
 > odrive_pos_gain 20.0
 Position gain set: Kp=20.000
 ```
 
 **Notes:**
+
 - Higher Kp = stiffer position control
 - Too high causes oscillation
 - Typical range: 5.0 to 50.0
@@ -749,21 +853,25 @@ Position gain set: Kp=20.000
 Set the proportional and integral gains (Kp, Ki) for velocity control mode.
 
 **Usage:**
+
 ```
 odrive_vel_gains <kp> <ki>
 ```
 
 **Parameters:**
+
 - `kp` - Velocity proportional gain
 - `ki` - Velocity integral gain
 
 **Example:**
+
 ```
 > odrive_vel_gains 0.15 0.3
 Velocity gains set: Kp=0.150, Ki=0.300
 ```
 
 **Notes:**
+
 - Kp affects responsiveness
 - Ki eliminates steady-state error
 - Higher gains = faster response but less stability
@@ -782,11 +890,13 @@ These commands provide diagnostics and monitoring for the CAN bus communication 
 Read the current encoder position and velocity from the ODrive over CAN.
 
 **Usage:**
+
 ```
 can_encoder
 ```
 
 **Example:**
+
 ```
 > can_encoder
 Encoder feedback:
@@ -795,6 +905,7 @@ Velocity: 78.90 counts/s
 ```
 
 **Notes:**
+
 - Raw encoder data from ODrive
 - Updates continuously in real-time
 - Useful for verifying encoder operation
@@ -805,11 +916,13 @@ Velocity: 78.90 counts/s
 Read bus voltage, current, and temperature data from the ODrive.
 
 **Usage:**
+
 ```
 can_telemetry
 ```
 
 **Example:**
+
 ```
 > can_telemetry
 Telemetry:
@@ -820,6 +933,7 @@ Motor Temp:     38.7 °C
 ```
 
 **Notes:**
+
 - Monitor for overheating
 - Bus current indicates load
 - FET temp should stay below 80°C
@@ -831,11 +945,13 @@ Motor Temp:     38.7 °C
 Display CAN bus communication statistics and status.
 
 **Usage:**
+
 ```
 can_status
 ```
 
 **Example:**
+
 ```
 > can_status
 CAN Bus Status:
@@ -847,6 +963,7 @@ Bus state:      ACTIVE
 ```
 
 **Information Provided:**
+
 - CAN bitrate configuration
 - Message transmit/receive counts
 - Error counters
@@ -864,11 +981,13 @@ These commands configure and monitor the Ethernet network interface.
 Display current Ethernet interface status and IP configuration.
 
 **Usage:**
+
 ```
 ethstatus
 ```
 
 **Example:**
+
 ```
 > ethstatus
 Ethernet Status:
@@ -881,6 +1000,7 @@ Interface status:  UP
 ```
 
 **Notes:**
+
 - Shows active network configuration
 - Link status indicates physical connection
 - Interface status shows if network stack is running
@@ -891,16 +1011,19 @@ Interface status:  UP
 Configure static IP address, subnet mask, and gateway. Changes take effect immediately and are saved to non-volatile memory.
 
 **Usage:**
+
 ```
 setip <ip_address> <netmask> <gateway>
 ```
 
 **Parameters:**
+
 - `ip_address` - Static IP address (e.g., 192.168.1.100)
 - `netmask` - Subnet mask (e.g., 255.255.255.0)
 - `gateway` - Default gateway (e.g., 192.168.1.1)
 
 **Example:**
+
 ```
 > setip 192.168.1.100 255.255.255.0 192.168.1.1
 IP configuration updated
@@ -910,6 +1033,7 @@ New Gateway: 192.168.1.1
 ```
 
 **Notes:**
+
 - Configuration persists across reboots
 - Ensure IP doesn't conflict with other devices
 - Gateway must be on same subnet
@@ -921,20 +1045,24 @@ New Gateway: 192.168.1.1
 Send ICMP ping packets to test network connectivity to a remote host.
 
 **Usage:**
+
 ```
 ping <ip_address>
 ```
 
 **Parameters:**
+
 - `ip_address` - Target IP address to ping
 
 **Example:**
+
 ```
 > ping 192.168.1.1
 Ping initiated
 ```
 
 **Notes:**
+
 - Tests network reachability
 - Results appear in subsequent output
 - Use to verify gateway connectivity
@@ -946,11 +1074,13 @@ Ping initiated
 Display detailed information about the network configuration stored in non-volatile memory, including magic numbers, checksums, and validation status.
 
 **Usage:**
+
 ```
 nvm_status
 ```
 
 **Example:**
+
 ```
 > nvm_status
 NVM Network Config Status:
@@ -965,6 +1095,7 @@ IP: 192.168.1.100
 ```
 
 **Notes:**
+
 - Diagnostic tool for network configuration storage
 - Shows raw flash data and validation
 - Helps troubleshoot boot configuration issues
@@ -976,17 +1107,20 @@ IP: 192.168.1.100
 Control the HTTP web server for browser-based control interface.
 
 **Usage:**
+
 ```
 http start | stop | status | log on|off
 ```
 
 **Subcommands:**
+
 - `start` - Start HTTP server on port 8080
 - `stop` - Stop HTTP server
 - `status` - Show if server is running
 - `log on|off` - Enable/disable HTTP request logging
 
 **Examples:**
+
 ```
 > http start
 HTTP server started (port 8080)
@@ -1002,6 +1136,7 @@ HTTP server stopped
 ```
 
 **Notes:**
+
 - Provides web-based control interface
 - Access via http://[device-ip]:8080
 - REST API available for automation
@@ -1013,14 +1148,17 @@ HTTP server stopped
 Control real-time data streaming over TCP for data logging and visualization.
 
 **Usage:**
+
 ```
 eth_stream start [interval_ms] | stop
 ```
 
 **Parameters:**
+
 - `interval_ms` - Optional streaming interval in milliseconds (default: 100ms)
 
 **Examples:**
+
 ```
 > eth_stream start
 Ethernet streaming started (port 8888)
@@ -1033,6 +1171,7 @@ Ethernet streaming stopped
 ```
 
 **Notes:**
+
 - Streams position, velocity, torque data
 - Client connects to port 8888
 - Lower interval = higher data rate
@@ -1051,11 +1190,13 @@ These commands provide detailed performance metrics and data logging capabilitie
 Display comprehensive performance statistics including min/max/mean values for key measurements.
 
 **Usage:**
+
 ```
 perf_stats
 ```
 
 **Example:**
+
 ```
 > perf_stats
 Performance Statistics:
@@ -1075,6 +1216,7 @@ Samples:   10000
 ```
 
 **Notes:**
+
 - Statistics over recent time window
 - Useful for characterizing system behavior
 - Min/max values help identify extremes
@@ -1086,11 +1228,13 @@ Samples:   10000
 Display root-mean-square (RMS) values for position, velocity, and torque. RMS provides a measure of signal magnitude over time.
 
 **Usage:**
+
 ```
 perf_rms
 ```
 
 **Example:**
+
 ```
 > perf_rms
 RMS Values:
@@ -1100,6 +1244,7 @@ Torque:      0.089 N·m
 ```
 
 **Notes:**
+
 - RMS better represents signal energy than mean
 - Useful for power and frequency analysis
 - Higher RMS = more active system
@@ -1111,11 +1256,13 @@ Torque:      0.089 N·m
 Export recorded performance data in CSV format for offline analysis.
 
 **Usage:**
+
 ```
 perf_dump
 ```
 
 **Example:**
+
 ```
 > perf_dump
 time_ms,position_deg,velocity_deg_s,torque_nm
@@ -1126,6 +1273,7 @@ time_ms,position_deg,velocity_deg_s,torque_nm
 ```
 
 **Notes:**
+
 - CSV format for easy import to Excel/Python/MATLAB
 - Timestamp in milliseconds
 - Position in degrees
@@ -1143,11 +1291,13 @@ time_ms,position_deg,velocity_deg_s,torque_nm
 Display information about the last hard fault (crash) that occurred, including register values for debugging.
 
 **Usage:**
+
 ```
 fault_last
 ```
 
 **Example:**
+
 ```
 > fault_last
 Last Hard Fault:
@@ -1160,6 +1310,7 @@ CFSR:      0x00000001
 ```
 
 **Notes:**
+
 - Debugging tool for firmware developers
 - Shows ARM Cortex-M7 fault registers
 - PC (Program Counter) indicates fault location
@@ -1185,6 +1336,7 @@ CFSR:      0x00000001
 ### Error Handling
 
 If a command fails, you'll see an error message:
+
 ```
 > valve_damping xyz
 Failed to set damping
@@ -1192,6 +1344,7 @@ Error: Invalid parameter
 ```
 
 Common error causes:
+
 - Missing required arguments
 - Invalid numeric format
 - System not in correct state
@@ -1207,15 +1360,15 @@ Common error causes:
 
 ## Quick Reference Table
 
-| Command Category | Key Commands |
-|-----------------|-------------|
-| Basic Control | `valve_start`, `valve_stop`, `valve_status` |
-| ODrive Control | `odrive_enable`, `odrive_disable`, `odrive_status` |
-| Configuration | `valve_damping`, `valve_friction`, `valve_torquelimit` |
-| Presets | `valve_preset`, `valve_preset_save`, `valve_preset_show` |
-| Network | `ethstatus`, `setip`, `http`, `eth_stream` |
-| Monitoring | `perf_stats`, `perf_rms`, `perf_dump` |
-| Diagnostics | `can_status`, `valve_timing`, `fault_last` |
+| Command Category | Key Commands                                             |
+| ---------------- | -------------------------------------------------------- |
+| Basic Control    | `valve_start`, `valve_stop`, `valve_status`              |
+| ODrive Control   | `odrive_enable`, `odrive_disable`, `odrive_status`       |
+| Configuration    | `valve_damping`, `valve_friction`, `valve_torquelimit`   |
+| Presets          | `valve_preset`, `valve_preset_save`, `valve_preset_show` |
+| Network          | `ethstatus`, `setip`, `http`, `eth_stream`               |
+| Monitoring       | `perf_stats`, `perf_rms`, `perf_dump`                    |
+| Diagnostics      | `can_status`, `valve_timing`, `fault_last`               |
 
 ---
 
@@ -1229,4 +1382,3 @@ Common error causes:
 - [Streaming Examples](../stream/streaming-examples.md) - Streaming integration code
 - [PRISM Project Overview](../README.md) - Project introduction and architecture
 - Firmware source: `firmware/src/app/cli.c`
-

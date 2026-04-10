@@ -1,4 +1,6 @@
-﻿# PRISM REST API Reference
+﻿[⬅ Back to Main README](../../../README.md#User%20Guides)
+
+# PRISM REST API Reference
 
 This document provides complete reference documentation for the PRISM (Simulated Task Exploration | Valve Emulation) REST API. The API enables remote control, configuration, and monitoring of the valve haptic system over HTTP.
 
@@ -10,13 +12,13 @@ This document provides complete reference documentation for the PRISM (Simulated
 - [Response Format](#response-format)
 - [Error Handling](#error-handling)
 - [API Endpoints](#api-endpoints)
-  - [Status and Configuration](#status-and-configuration)
-  - [Control](#control)
-  - [Presets](#presets)
-  - [ODrive Motor Controller](#odrive-motor-controller)
-  - [CAN Bus](#can-bus)
-  - [Performance Metrics](#performance-metrics)
-  - [Data Streaming](#data-streaming)
+    - [Status and Configuration](#status-and-configuration)
+    - [Control](#control)
+    - [Presets](#presets)
+    - [ODrive Motor Controller](#odrive-motor-controller)
+    - [CAN Bus](#can-bus)
+    - [Performance Metrics](#performance-metrics)
+    - [Data Streaming](#data-streaming)
 - [Complete Endpoint Reference](#complete-endpoint-reference)
 
 ---
@@ -159,26 +161,26 @@ Most GET requests return data directly without a wrapper:
 
 ### HTTP Status Codes
 
-| Code | Meaning | Common Causes |
-|------|---------|---------------|
-| 200 | OK | Request succeeded |
-| 400 | Bad Request | Invalid JSON, missing parameters |
-| 401 | Unauthorized | Missing or invalid API key |
-| 404 | Not Found | Invalid endpoint |
-| 500 | Internal Server Error | Firmware error, hardware issue |
-| 503 | Service Unavailable | System not initialized |
+| Code | Meaning               | Common Causes                    |
+| ---- | --------------------- | -------------------------------- |
+| 200  | OK                    | Request succeeded                |
+| 400  | Bad Request           | Invalid JSON, missing parameters |
+| 401  | Unauthorized          | Missing or invalid API key       |
+| 404  | Not Found             | Invalid endpoint                 |
+| 500  | Internal Server Error | Firmware error, hardware issue   |
+| 503  | Service Unavailable   | System not initialized           |
 
 ### Common Error Messages
 
-| Error Code | Description |
-|------------|-------------|
-| `invalid_request` | Malformed request body |
-| `json_parse_error` | Invalid JSON syntax |
-| `missing_action` | Required action parameter not provided |
-| `invalid_action` | Unsupported action value |
-| `valve_uninitialized` | Valve system not ready |
-| `odrive_unavailable` | ODrive not connected |
-| `unauthorized` | Authentication failed |
+| Error Code            | Description                            |
+| --------------------- | -------------------------------------- |
+| `invalid_request`     | Malformed request body                 |
+| `json_parse_error`    | Invalid JSON syntax                    |
+| `missing_action`      | Required action parameter not provided |
+| `invalid_action`      | Unsupported action value               |
+| `valve_uninitialized` | Valve system not ready                 |
+| `odrive_unavailable`  | ODrive not connected                   |
+| `unauthorized`        | Authentication failed                  |
 
 ---
 
@@ -191,6 +193,7 @@ Most GET requests return data directly without a wrapper:
 Get current valve configuration parameters.
 
 **Request:**
+
 ```http
 GET /api/v1/config HTTP/1.1
 Host: 192.168.1.100:8080
@@ -198,6 +201,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Response:**
+
 ```json
 {
   "viscous": 0.0500,
@@ -214,17 +218,17 @@ X-API-Key: steve-valve-2025
 
 **Response Fields:**
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `viscous` | float | N·m·s/rad | Viscous damping coefficient |
-| `coulomb` | float | N·m | Coulomb friction torque |
-| `wall_stiffness` | float | N·m/turn | Virtual wall spring constant |
-| `wall_damping` | float | N·m·s/turn | Virtual wall damping |
-| `smoothing` | float | - | Friction smoothing epsilon |
-| `torque_limit` | float | N·m | Maximum output torque |
-| `open_position` | float | degrees | Fully open position |
-| `closed_position` | float | degrees | Fully closed position |
-| `degrees_per_turn` | float | deg/turn | Mechanical scaling |
+| Field              | Type  | Unit       | Description                  |
+| ------------------ | ----- | ---------- | ---------------------------- |
+| `viscous`          | float | N·m·s/rad  | Viscous damping coefficient  |
+| `coulomb`          | float | N·m        | Coulomb friction torque      |
+| `wall_stiffness`   | float | N·m/turn   | Virtual wall spring constant |
+| `wall_damping`     | float | N·m·s/turn | Virtual wall damping         |
+| `smoothing`        | float | -          | Friction smoothing epsilon   |
+| `torque_limit`     | float | N·m        | Maximum output torque        |
+| `open_position`    | float | degrees    | Fully open position          |
+| `closed_position`  | float | degrees    | Fully closed position        |
+| `degrees_per_turn` | float | deg/turn   | Mechanical scaling           |
 
 ---
 
@@ -233,6 +237,7 @@ X-API-Key: steve-valve-2025
 Update valve configuration parameters.
 
 **Request:**
+
 ```http
 POST /api/v1/config HTTP/1.1
 Host: 192.168.1.100:8080
@@ -249,19 +254,20 @@ Content-Type: application/json
 
 **Request Body** (all fields optional):
 
-| Field | Type | Range | Description |
-|-------|------|-------|-------------|
-| `viscous` | float | 0.01 - 0.5 | Viscous damping |
-| `coulomb` | float | 0.005 - 0.05 | Coulomb friction |
-| `wall_stiffness` | float | 0.5 - 5.0 | Wall stiffness |
-| `wall_damping` | float | 0.05 - 0.5 | Wall damping |
-| `smoothing` | float | 0.0001 - 0.01 | Smoothing epsilon |
-| `torque_limit` | float | 0.1 - 2.0 | Torque limit |
-| `open_position` | float | 0 - 360 | Open position |
-| `closed_position` | float | 0 - 360 | Closed position |
-| `degrees_per_turn` | float | > 0 | Mechanical scaling |
+| Field              | Type  | Range         | Description        |
+| ------------------ | ----- | ------------- | ------------------ |
+| `viscous`          | float | 0.01 - 0.5    | Viscous damping    |
+| `coulomb`          | float | 0.005 - 0.05  | Coulomb friction   |
+| `wall_stiffness`   | float | 0.5 - 5.0     | Wall stiffness     |
+| `wall_damping`     | float | 0.05 - 0.5    | Wall damping       |
+| `smoothing`        | float | 0.0001 - 0.01 | Smoothing epsilon  |
+| `torque_limit`     | float | 0.1 - 2.0     | Torque limit       |
+| `open_position`    | float | 0 - 360       | Open position      |
+| `closed_position`  | float | 0 - 360       | Closed position    |
+| `degrees_per_turn` | float | > 0           | Mechanical scaling |
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -270,6 +276,7 @@ Content-Type: application/json
 ```
 
 **Notes:**
+
 - Only include fields you want to update
 - Changes take effect immediately
 - Does not require stopping the valve
@@ -281,6 +288,7 @@ Content-Type: application/json
 Get real-time valve status and measurements.
 
 **Request:**
+
 ```http
 GET /api/v1/status HTTP/1.1
 Host: 192.168.1.100:8080
@@ -288,6 +296,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Response:**
+
 ```json
 {
   "mode": "running",
@@ -303,18 +312,19 @@ X-API-Key: steve-valve-2025
 
 **Response Fields:**
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `mode` | string | - | "idle" or "running" |
-| `pos_deg` | float | degrees | Current position |
-| `vel_rad_s` | float | rad/s | Current velocity |
-| `torque_nm` | float | N·m | Applied torque |
-| `energy_j` | float | Joules | Passivity energy tank |
-| `loop_hz` | integer | Hz | Control loop frequency |
-| `pos_raw` | integer | counts | Raw encoder position |
-| `vel_raw` | integer | counts/s | Raw encoder velocity |
+| Field       | Type    | Unit     | Description            |
+| ----------- | ------- | -------- | ---------------------- |
+| `mode`      | string  | -        | "idle" or "running"    |
+| `pos_deg`   | float   | degrees  | Current position       |
+| `vel_rad_s` | float   | rad/s    | Current velocity       |
+| `torque_nm` | float   | N·m      | Applied torque         |
+| `energy_j`  | float   | Joules   | Passivity energy tank  |
+| `loop_hz`   | integer | Hz       | Control loop frequency |
+| `pos_raw`   | integer | counts   | Raw encoder position   |
+| `vel_raw`   | integer | counts/s | Raw encoder velocity   |
 
 **Update Rate:**
+
 - Poll up to 10 Hz for smooth UI updates
 - Lower rates (1-5 Hz) sufficient for monitoring
 
@@ -327,6 +337,7 @@ X-API-Key: steve-valve-2025
 Start or stop valve control, optionally load a preset.
 
 **Request - Start:**
+
 ```http
 POST /api/v1/control HTTP/1.1
 Host: 192.168.1.100:8080
@@ -339,6 +350,7 @@ Content-Type: application/json
 ```
 
 **Request - Stop:**
+
 ```json
 {
   "action": "stop"
@@ -346,6 +358,7 @@ Content-Type: application/json
 ```
 
 **Request - Start with Preset:**
+
 ```json
 {
   "action": "start",
@@ -354,6 +367,7 @@ Content-Type: application/json
 ```
 
 **Request - Apply Preset (no start/stop):**
+
 ```json
 {
   "preset": 1
@@ -362,18 +376,20 @@ Content-Type: application/json
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `action` | string | No | "start" or "stop" |
-| `preset` | integer | No | Preset index (0-3) |
+| Field    | Type    | Required | Description        |
+| -------- | ------- | -------- | ------------------ |
+| `action` | string  | No       | "start" or "stop"  |
+| `preset` | integer | No       | Preset index (0-3) |
 
 **Available Presets:**
+
 - `0` - Light (butterfly/faucet)
 - `1` - Medium (ball valve)
 - `2` - Heavy (gate valve)
 - `3` - Industrial (globe/gas)
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -384,13 +400,14 @@ Content-Type: application/json
 
 **Response Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `status` | string | "ok" or "error" |
-| `mode` | string | Current mode: "running" or "idle" |
-| `preset_applied` | boolean | Whether a preset was applied |
+| Field            | Type    | Description                       |
+| ---------------- | ------- | --------------------------------- |
+| `status`         | string  | "ok" or "error"                   |
+| `mode`           | string  | Current mode: "running" or "idle" |
+| `preset_applied` | boolean | Whether a preset was applied      |
 
 **Workflow:**
+
 1. Ensure ODrive is enabled (`POST /api/v1/odrive` with `action: enable`)
 2. Optionally load configuration or preset
 3. Start valve control with `action: start`
@@ -406,6 +423,7 @@ Content-Type: application/json
 Get all available presets and their parameters.
 
 **Request:**
+
 ```http
 GET /api/v1/presets HTTP/1.1
 Host: 192.168.1.100:8080
@@ -413,6 +431,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -463,6 +482,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Notes:**
+
 - Returns array of all 4 preset slots
 - Use `index` or `name` to reference presets
 - Units same as `/api/v1/config`
@@ -474,6 +494,7 @@ X-API-Key: steve-valve-2025
 Save or update a preset configuration.
 
 **Request - Save Custom Values:**
+
 ```http
 POST /api/v1/presets HTTP/1.1
 Host: 192.168.1.100:8080
@@ -494,6 +515,7 @@ Content-Type: application/json
 ```
 
 **Request - Save Current Configuration:**
+
 ```json
 {
   "index": 0,
@@ -503,20 +525,21 @@ Content-Type: application/json
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `index` | integer | Yes | Preset slot (0-3) |
-| `save_current` | boolean | No | Save active config to preset |
-| `name` | string | If !save_current | Preset name (max 15 chars) |
-| `viscous` | float | If !save_current | Viscous damping |
-| `coulomb` | float | If !save_current | Coulomb friction |
-| `wall_stiffness` | float | If !save_current | Wall stiffness |
-| `wall_damping` | float | If !save_current | Wall damping |
-| `travel` | float | If !save_current | Travel range (degrees) |
-| `torque_limit` | float | If !save_current | Torque limit |
-| `smoothing` | float | If !save_current | Smoothing epsilon |
+| Field            | Type    | Required         | Description                  |
+| ---------------- | ------- | ---------------- | ---------------------------- |
+| `index`          | integer | Yes              | Preset slot (0-3)            |
+| `save_current`   | boolean | No               | Save active config to preset |
+| `name`           | string  | If !save_current | Preset name (max 15 chars)   |
+| `viscous`        | float   | If !save_current | Viscous damping              |
+| `coulomb`        | float   | If !save_current | Coulomb friction             |
+| `wall_stiffness` | float   | If !save_current | Wall stiffness               |
+| `wall_damping`   | float   | If !save_current | Wall damping                 |
+| `travel`         | float   | If !save_current | Travel range (degrees)       |
+| `torque_limit`   | float   | If !save_current | Torque limit                 |
+| `smoothing`      | float   | If !save_current | Smoothing epsilon            |
 
 **Response:**
+
 ```json
 {
   "status": "ok"
@@ -524,6 +547,7 @@ Content-Type: application/json
 ```
 
 **Notes:**
+
 - Presets stored in non-volatile memory
 - Persist across power cycles
 - 4 preset slots available (indices 0-3)
@@ -538,6 +562,7 @@ Content-Type: application/json
 Get ODrive motor controller status and telemetry.
 
 **Request:**
+
 ```http
 GET /api/v1/odrive HTTP/1.1
 Host: 192.168.1.100:8080
@@ -545,6 +570,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Response:**
+
 ```json
 {
   "axis_error": 0,
@@ -563,21 +589,22 @@ X-API-Key: steve-valve-2025
 
 **Response Fields:**
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `axis_error` | integer | - | Error flags (0 = no errors) |
-| `axis_state` | integer | - | State code (8 = closed loop) |
-| `motor_flags` | integer | - | Motor status flags |
-| `encoder_flags` | integer | - | Encoder status flags |
-| `controller_status` | integer | - | Controller status |
-| `position` | float | turns | Encoder position |
-| `velocity` | float | turns/s | Encoder velocity |
-| `bus_voltage` | float | V | Power supply voltage |
-| `bus_current` | float | A | Power supply current |
-| `fet_temp` | float | °C | FET temperature |
-| `motor_temp` | float | °C | Motor temperature |
+| Field               | Type    | Unit    | Description                  |
+| ------------------- | ------- | ------- | ---------------------------- |
+| `axis_error`        | integer | -       | Error flags (0 = no errors)  |
+| `axis_state`        | integer | -       | State code (8 = closed loop) |
+| `motor_flags`       | integer | -       | Motor status flags           |
+| `encoder_flags`     | integer | -       | Encoder status flags         |
+| `controller_status` | integer | -       | Controller status            |
+| `position`          | float   | turns   | Encoder position             |
+| `velocity`          | float   | turns/s | Encoder velocity             |
+| `bus_voltage`       | float   | V       | Power supply voltage         |
+| `bus_current`       | float   | A       | Power supply current         |
+| `fet_temp`          | float   | °C      | FET temperature              |
+| `motor_temp`        | float   | °C      | Motor temperature            |
 
 **Axis States:**
+
 - `1` = IDLE
 - `8` = CLOSED_LOOP_CONTROL
 - Others indicate calibration or error states
@@ -589,6 +616,7 @@ X-API-Key: steve-valve-2025
 Send commands to the ODrive motor controller.
 
 **Request - Enable:**
+
 ```http
 POST /api/v1/odrive HTTP/1.1
 Host: 192.168.1.100:8080
@@ -601,6 +629,7 @@ Content-Type: application/json
 ```
 
 **Request - Set Torque:**
+
 ```json
 {
   "action": "set_torque",
@@ -609,6 +638,7 @@ Content-Type: application/json
 ```
 
 **Request - Set Mode:**
+
 ```json
 {
   "action": "set_mode",
@@ -618,26 +648,28 @@ Content-Type: application/json
 
 **Available Actions:**
 
-| Action | Value Required | Description |
-|--------|---------------|-------------|
-| `ping` | No | Check ODrive connectivity |
-| `enable` | No | Enable closed-loop control |
-| `disable` | No | Disable (idle mode) |
-| `estop` | No | Emergency stop |
-| `clear` | No | Clear errors |
-| `calibrate` | No | Run calibration sequence |
-| `set_mode` | Yes | Set control mode (0-3) |
-| `set_torque` | Yes | Set torque command (N·m) |
-| `set_velocity` | Yes | Set velocity command (turns/s) |
-| `set_position` | Yes | Set position command (turns) |
+| Action         | Value Required | Description                    |
+| -------------- | -------------- | ------------------------------ |
+| `ping`         | No             | Check ODrive connectivity      |
+| `enable`       | No             | Enable closed-loop control     |
+| `disable`      | No             | Disable (idle mode)            |
+| `estop`        | No             | Emergency stop                 |
+| `clear`        | No             | Clear errors                   |
+| `calibrate`    | No             | Run calibration sequence       |
+| `set_mode`     | Yes            | Set control mode (0-3)         |
+| `set_torque`   | Yes            | Set torque command (N·m)       |
+| `set_velocity` | Yes            | Set velocity command (turns/s) |
+| `set_position` | Yes            | Set position command (turns)   |
 
 **Control Modes:**
+
 - `0` = Voltage control
 - `1` = Torque control (used by valve)
 - `2` = Velocity control
 - `3` = Position control
 
 **Response:**
+
 ```json
 {
   "status": "ok"
@@ -645,6 +677,7 @@ Content-Type: application/json
 ```
 
 **Error Response:**
+
 ```json
 {
   "status": "error",
@@ -661,6 +694,7 @@ Content-Type: application/json
 Get CAN bus status, encoder, and telemetry data.
 
 **Request:**
+
 ```http
 GET /api/v1/can HTTP/1.1
 Host: 192.168.1.100:8080
@@ -668,6 +702,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Response:**
+
 ```json
 {
   "tx_count": 12345,
@@ -685,20 +720,21 @@ X-API-Key: steve-valve-2025
 
 **Response Fields:**
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `tx_count` | integer | - | Messages transmitted |
-| `rx_count` | integer | - | Messages received |
-| `error_count` | integer | - | CAN errors |
-| `bus_state` | integer | - | Bus state (0 = active) |
-| `position` | float | turns | Encoder position |
-| `velocity` | float | turns/s | Encoder velocity |
-| `bus_voltage` | float | V | Power voltage |
-| `bus_current` | float | A | Power current |
-| `fet_temp` | float | °C | FET temperature |
-| `motor_temp` | float | °C | Motor temperature |
+| Field         | Type    | Unit    | Description            |
+| ------------- | ------- | ------- | ---------------------- |
+| `tx_count`    | integer | -       | Messages transmitted   |
+| `rx_count`    | integer | -       | Messages received      |
+| `error_count` | integer | -       | CAN errors             |
+| `bus_state`   | integer | -       | Bus state (0 = active) |
+| `position`    | float   | turns   | Encoder position       |
+| `velocity`    | float   | turns/s | Encoder velocity       |
+| `bus_voltage` | float   | V       | Power voltage          |
+| `bus_current` | float   | A       | Power current          |
+| `fet_temp`    | float   | °C      | FET temperature        |
+| `motor_temp`  | float   | °C      | Motor temperature      |
 
 **Bus States:**
+
 - `0` = Active (normal operation)
 - `1` = Warning
 - `2` = Passive
@@ -713,6 +749,7 @@ X-API-Key: steve-valve-2025
 Get detailed performance statistics and timing information.
 
 **Request:**
+
 ```http
 GET /api/v1/performance HTTP/1.1
 Host: 192.168.1.100:8080
@@ -720,6 +757,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Response:**
+
 ```json
 {
   "pos_min_deg": -5.234,
@@ -751,44 +789,45 @@ X-API-Key: steve-valve-2025
 
 **Response Fields - Motion Statistics:**
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `pos_min_deg` | float | degrees | Minimum position |
-| `pos_max_deg` | float | degrees | Maximum position |
-| `pos_mean_deg` | float | degrees | Mean position |
-| `pos_rms_deg` | float | degrees | RMS position |
-| `vel_min_rad_s` | float | rad/s | Minimum velocity |
-| `vel_max_rad_s` | float | rad/s | Maximum velocity |
-| `vel_mean_rad_s` | float | rad/s | Mean velocity |
-| `vel_rms_rad_s` | float | rad/s | RMS velocity |
-| `tau_min_nm` | float | N·m | Minimum torque |
-| `tau_max_nm` | float | N·m | Maximum torque |
-| `tau_mean_nm` | float | N·m | Mean torque |
-| `tau_rms_nm` | float | N·m | RMS torque |
-| `pos_peak_to_peak_deg` | float | degrees | Position range |
-| `vel_peak_to_peak_rad_s` | float | rad/s | Velocity range |
-| `zero_crossing_hz` | integer | Hz | Direction change rate |
+| Field                    | Type    | Unit    | Description           |
+| ------------------------ | ------- | ------- | --------------------- |
+| `pos_min_deg`            | float   | degrees | Minimum position      |
+| `pos_max_deg`            | float   | degrees | Maximum position      |
+| `pos_mean_deg`           | float   | degrees | Mean position         |
+| `pos_rms_deg`            | float   | degrees | RMS position          |
+| `vel_min_rad_s`          | float   | rad/s   | Minimum velocity      |
+| `vel_max_rad_s`          | float   | rad/s   | Maximum velocity      |
+| `vel_mean_rad_s`         | float   | rad/s   | Mean velocity         |
+| `vel_rms_rad_s`          | float   | rad/s   | RMS velocity          |
+| `tau_min_nm`             | float   | N·m     | Minimum torque        |
+| `tau_max_nm`             | float   | N·m     | Maximum torque        |
+| `tau_mean_nm`            | float   | N·m     | Mean torque           |
+| `tau_rms_nm`             | float   | N·m     | RMS torque            |
+| `pos_peak_to_peak_deg`   | float   | degrees | Position range        |
+| `vel_peak_to_peak_rad_s` | float   | rad/s   | Velocity range        |
+| `zero_crossing_hz`       | integer | Hz      | Direction change rate |
 
 **Response Fields - Timing:**
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `loop_total_min_us` | integer | μs | Minimum loop time |
-| `loop_total_max_us` | integer | μs | Maximum loop time |
-| `loop_total_mean_us` | float | μs | Mean loop time |
-| `loop_physics_min_us` | integer | μs | Min physics calc time |
-| `loop_physics_max_us` | integer | μs | Max physics calc time |
-| `loop_physics_mean_us` | float | μs | Mean physics calc time |
+| Field                  | Type    | Unit | Description            |
+| ---------------------- | ------- | ---- | ---------------------- |
+| `loop_total_min_us`    | integer | μs   | Minimum loop time      |
+| `loop_total_max_us`    | integer | μs   | Maximum loop time      |
+| `loop_total_mean_us`   | float   | μs   | Mean loop time         |
+| `loop_physics_min_us`  | integer | μs   | Min physics calc time  |
+| `loop_physics_max_us`  | integer | μs   | Max physics calc time  |
+| `loop_physics_mean_us` | float   | μs   | Mean physics calc time |
 
 **Response Fields - Safety:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `torque_clamps` | integer | Torque limit violations |
-| `rate_limits` | integer | Rate limit activations |
+| Field              | Type    | Description             |
+| ------------------ | ------- | ----------------------- |
+| `torque_clamps`    | integer | Torque limit violations |
+| `rate_limits`      | integer | Rate limit activations  |
 | `stability_events` | integer | Stability interventions |
 
 **Notes:**
+
 - Statistics computed over recent time window
 - Reset when valve control restarts
 - Use for system characterization and validation
@@ -802,6 +841,7 @@ X-API-Key: steve-valve-2025
 Get status of the real-time data streaming server.
 
 **Request:**
+
 ```http
 GET /api/v1/stream HTTP/1.1
 Host: 192.168.1.100:8080
@@ -809,6 +849,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Response:**
+
 ```json
 {
   "active": true,
@@ -823,15 +864,15 @@ X-API-Key: steve-valve-2025
 
 **Response Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `active` | boolean | Streaming server running |
-| `connected_clients` | integer | Number of connected clients |
-| `default_interval_ms` | integer | Streaming interval (ms) |
-| `messages_sent` | integer | Total messages sent |
-| `send_errors` | integer | Failed send attempts |
-| `invalid_samples` | integer | Invalid data samples |
-| `last_send_tick_ms` | integer | Last send timestamp |
+| Field                 | Type    | Description                 |
+| --------------------- | ------- | --------------------------- |
+| `active`              | boolean | Streaming server running    |
+| `connected_clients`   | integer | Number of connected clients |
+| `default_interval_ms` | integer | Streaming interval (ms)     |
+| `messages_sent`       | integer | Total messages sent         |
+| `send_errors`         | integer | Failed send attempts        |
+| `invalid_samples`     | integer | Invalid data samples        |
+| `last_send_tick_ms`   | integer | Last send timestamp         |
 
 ---
 
@@ -840,6 +881,7 @@ X-API-Key: steve-valve-2025
 Start or stop the real-time data streaming server.
 
 **Request - Start:**
+
 ```http
 POST /api/v1/stream HTTP/1.1
 Host: 192.168.1.100:8080
@@ -853,6 +895,7 @@ Content-Type: application/json
 ```
 
 **Request - Stop:**
+
 ```json
 {
   "action": "stop"
@@ -861,12 +904,13 @@ Content-Type: application/json
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `action` | string | Yes | "start" or "stop" |
-| `interval_ms` | integer | No | Streaming interval (default: 100ms) |
+| Field         | Type    | Required | Description                         |
+| ------------- | ------- | -------- | ----------------------------------- |
+| `action`      | string  | Yes      | "start" or "stop"                   |
+| `interval_ms` | integer | No       | Streaming interval (default: 100ms) |
 
 **Response:**
+
 ```json
 {
   "status": "ok"
@@ -874,6 +918,7 @@ Content-Type: application/json
 ```
 
 **Notes:**
+
 - Streaming server listens on TCP port 8888
 - Binary data format for efficiency
 - Multiple clients supported
@@ -886,21 +931,21 @@ Content-Type: application/json
 
 ### Summary Table
 
-| Endpoint | Method | Purpose | Auth Required |
-|----------|--------|---------|---------------|
-| `/` | GET | Web UI (HTML page) | No |
-| `/api/v1/config` | GET | Get configuration | Yes |
-| `/api/v1/config` | POST | Update configuration | Yes |
-| `/api/v1/status` | GET | Get real-time status | Yes |
-| `/api/v1/control` | POST | Start/stop/preset | Yes |
-| `/api/v1/presets` | GET | List all presets | Yes |
-| `/api/v1/presets` | POST | Save preset | Yes |
-| `/api/v1/odrive` | GET | Get ODrive status | Yes |
-| `/api/v1/odrive` | POST | Control ODrive | Yes |
-| `/api/v1/can` | GET | Get CAN bus status | Yes |
-| `/api/v1/performance` | GET | Get performance data | Yes |
-| `/api/v1/stream` | GET | Get stream status | Yes |
-| `/api/v1/stream` | POST | Control streaming | Yes |
+| Endpoint              | Method | Purpose              | Auth Required |
+| --------------------- | ------ | -------------------- | ------------- |
+| `/`                   | GET    | Web UI (HTML page)   | No            |
+| `/api/v1/config`      | GET    | Get configuration    | Yes           |
+| `/api/v1/config`      | POST   | Update configuration | Yes           |
+| `/api/v1/status`      | GET    | Get real-time status | Yes           |
+| `/api/v1/control`     | POST   | Start/stop/preset    | Yes           |
+| `/api/v1/presets`     | GET    | List all presets     | Yes           |
+| `/api/v1/presets`     | POST   | Save preset          | Yes           |
+| `/api/v1/odrive`      | GET    | Get ODrive status    | Yes           |
+| `/api/v1/odrive`      | POST   | Control ODrive       | Yes           |
+| `/api/v1/can`         | GET    | Get CAN bus status   | Yes           |
+| `/api/v1/performance` | GET    | Get performance data | Yes           |
+| `/api/v1/stream`      | GET    | Get stream status    | Yes           |
+| `/api/v1/stream`      | POST   | Control streaming    | Yes           |
 
 ### Rate Limits
 
@@ -925,17 +970,16 @@ There are no enforced rate limits, but recommended polling rates:
 ### For Robotics Integration
 
 1. **Initialize in sequence:**
+
    ```
    POST /api/v1/odrive (action: enable)
    POST /api/v1/config (set parameters)
    POST /api/v1/control (action: start)
    ```
+1. **Monitor with GET /api/v1/status** at 5-10 Hz
+1. **Use streaming** (port 8888) for real-time feedback
+1. **Graceful shutdown:**
 
-2. **Monitor with GET /api/v1/status** at 5-10 Hz
-
-3. **Use streaming** (port 8888) for real-time feedback
-
-4. **Graceful shutdown:**
    ```
    POST /api/v1/control (action: stop)
    POST /api/v1/odrive (action: disable)
@@ -944,19 +988,19 @@ There are no enforced rate limits, but recommended polling rates:
 ### For Data Collection
 
 1. **Start streaming server:**
+
    ```json
    POST /api/v1/stream
    {"action": "start", "interval_ms": 10}
    ```
+1. **Connect TCP client to port 8888**
+1. **Query performance data periodically:**
 
-2. **Connect TCP client to port 8888**
-
-3. **Query performance data periodically:**
    ```
    GET /api/v1/performance (every 5-10 seconds)
    ```
+1. **Stop and save:**
 
-4. **Stop and save:**
    ```json
    POST /api/v1/stream
    {"action": "stop"}
@@ -965,23 +1009,24 @@ There are no enforced rate limits, but recommended polling rates:
 ### For Parameter Tuning
 
 1. **Load a baseline preset:**
+
    ```json
    POST /api/v1/control
    {"preset": "default"}
    ```
+1. **Adjust parameters incrementally:**
 
-2. **Adjust parameters incrementally:**
    ```json
    POST /api/v1/config
    {"viscous": 0.06}
    ```
+1. **Monitor real-time response:**
 
-3. **Monitor real-time response:**
    ```
    GET /api/v1/status
    ```
+1. **Save good configurations:**
 
-4. **Save good configurations:**
    ```json
    POST /api/v1/presets
    {"index": 0, "save_current": true}
@@ -1006,15 +1051,16 @@ if data.get("status") == "error":
 ### Network Configuration
 
 1. **Find device IP:**
+
    - Connect to CLI over USB
    - Run `ethstatus` command
    - Note IP address
+1. **Set static IP (optional):**
 
-2. **Set static IP (optional):**
    - CLI: `setip 192.168.1.100 255.255.255.0 192.168.1.1`
    - Configuration persists across reboots
+1. **Test connectivity:**
 
-3. **Test connectivity:**
    ```bash
    curl -H "X-API-Key: steve-valve-2025" \
         http://192.168.1.100:8080/api/v1/status
@@ -1054,6 +1100,7 @@ if data.get("status") == "error":
 **Problem:** All requests return 401
 
 **Solution:**
+
 - Check `X-API-Key` header is included
 - Verify key matches: `steve-valve-2025`
 - Check for typos in header name
@@ -1063,6 +1110,7 @@ if data.get("status") == "error":
 **Problem:** Cannot connect to port 8080
 
 **Solution:**
+
 - Verify device IP with CLI `ethstatus`
 - Check HTTP server is started: CLI `http status`
 - Start server: CLI `http start`
@@ -1073,6 +1121,7 @@ if data.get("status") == "error":
 **Problem:** Requests return 503 error
 
 **Solution:**
+
 - Valve system may not be initialized
 - Check with CLI `valve_status`
 - May need to enable ODrive first
@@ -1083,6 +1132,7 @@ if data.get("status") == "error":
 **Problem:** Requests hang or timeout
 
 **Solution:**
+
 - Check network connectivity
 - Verify device is powered on
 - Check Ethernet cable connection
@@ -1093,6 +1143,7 @@ if data.get("status") == "error":
 **Problem:** 400 error with `json_parse_error`
 
 **Solution:**
+
 - Validate JSON syntax
 - Ensure proper Content-Type header
 - Check for trailing commas
@@ -1117,4 +1168,3 @@ if data.get("status") == "error":
 This documentation covers the PRISM REST API as implemented in the current firmware version. All endpoints and features documented here are available in the production firmware.
 
 For the latest updates and firmware downloads, see the project repository.
-

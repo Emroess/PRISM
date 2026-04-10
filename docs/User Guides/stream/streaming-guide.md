@@ -1,4 +1,6 @@
-﻿# PRISM TCP Streaming Guide
+﻿[⬅ Back to Main README](../../../README.md#User%20Guides)
+
+# PRISM TCP Streaming Guide
 
 ## Overview
 
@@ -18,23 +20,28 @@ PRISM provides real-time TCP streaming of valve simulation data for robotics app
 Each data packet is a single-line JSON object containing:
 
 ### Position Data
+
 - `position_turns` - Encoder position in turns (floating point)
 - `position_deg` - Encoder position in degrees (floating point)
 
 ### Velocity Data
+
 - `omega_rad_s` - Angular velocity in rad/s (floating point)
 
 ### Torque Data
+
 - `torque_nm` - Commanded torque in Newton-meters (floating point)
 - `filt_torque_nm` - Filtered torque in Newton-meters (floating point)
 
 ### Timing Data
+
 - `timestamp_ms` - System timestamp in milliseconds
 - `t_us` - Accumulated control loop time in microseconds (monotonic)
 - `loop_time_us` - Last control loop iteration time in microseconds
 - `seq` - Sample sequence number (increments each control cycle)
 
 ### Diagnostic Data
+
 - `status` - Valve state: "RUNNING", "IDLE", or "ERROR"
 - `passivity_mj` - Passivity energy in millijoules
 - `quiet` - Quiet mode active (boolean)
@@ -81,6 +88,7 @@ eth_stream stop
 ```
 
 **CLI Syntax:**
+
 ```
 eth_stream start [interval_ms]
 eth_stream stop
@@ -96,6 +104,7 @@ You can control streaming programmatically via HTTP requests to `/api/v1/stream`
 #### Start Streaming at 50 Hz
 
 **Request:**
+
 ```http
 POST /api/v1/stream HTTP/1.1
 Host: 192.168.1.100:8080
@@ -109,6 +118,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "status": "success",
@@ -119,6 +129,7 @@ Content-Type: application/json
 #### Stop Streaming
 
 **Request:**
+
 ```http
 POST /api/v1/stream HTTP/1.1
 Host: 192.168.1.100:8080
@@ -131,6 +142,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "status": "success",
@@ -141,6 +153,7 @@ Content-Type: application/json
 #### Get Streaming Status
 
 **Request:**
+
 ```http
 GET /api/v1/stream HTTP/1.1
 Host: 192.168.1.100:8080
@@ -148,6 +161,7 @@ X-API-Key: steve-valve-2025
 ```
 
 **Response:**
+
 ```json
 {
   "active": true,
@@ -192,14 +206,14 @@ This confirms the connection and reports the current streaming interval.
 
 ## Common Streaming Rates
 
-| Frequency | Interval (ms) | Use Case |
-|-----------|---------------|----------|
-| 100 Hz | 10 | High-speed control, research |
-| 50 Hz | 20 | Real-time robotics control |
-| 20 Hz | 50 | Visualization, monitoring |
-| 10 Hz | 100 | Data logging, low bandwidth |
-| 5 Hz | 200 | Status monitoring |
-| 1 Hz | 1000 | Slow polling |
+| Frequency | Interval (ms) | Use Case                     |
+| --------- | ------------- | ---------------------------- |
+| 100 Hz    | 10            | High-speed control, research |
+| 50 Hz     | 20            | Real-time robotics control   |
+| 20 Hz     | 50            | Visualization, monitoring    |
+| 10 Hz     | 100           | Data logging, low bandwidth  |
+| 5 Hz      | 200           | Status monitoring            |
+| 1 Hz      | 1000          | Slow polling                 |
 
 **Recommended:** 20 ms interval provides excellent balance between data rate and network overhead for most robotics applications.
 
@@ -219,6 +233,7 @@ See [Streaming Examples](streaming-examples.md) for complete code examples in:
 **Problem:** TCP connection succeeds but no data arrives.
 
 **Solutions:**
+
 1. Verify streaming is started: `GET /api/v1/stream` should show `"active": true`
 2. Check that valve is running: `valve_status` in CLI or `GET /api/v1/status`
 3. Verify network connectivity: `ping <device-ip>`
@@ -229,6 +244,7 @@ See [Streaming Examples](streaming-examples.md) for complete code examples in:
 **Problem:** Cannot connect to port 8888.
 
 **Solutions:**
+
 1. Ensure streaming is started via `eth_stream start` or REST API
 2. Verify correct IP address (use `ip_info` in CLI)
 3. Check network cable and switch connectivity
@@ -239,6 +255,7 @@ See [Streaming Examples](streaming-examples.md) for complete code examples in:
 **Problem:** Data arrives at wrong rate.
 
 **Solutions:**
+
 1. Adjust interval with `eth_stream start <interval_ms>`
 2. Or via REST API: `POST /api/v1/stream` with `"interval_ms": 20`
 3. Verify current rate: `GET /api/v1/stream` shows `default_interval_ms`
@@ -248,6 +265,7 @@ See [Streaming Examples](streaming-examples.md) for complete code examples in:
 **Problem:** JSON contains invalid values or `"data_valid": false`.
 
 **Solutions:**
+
 1. Check that ODrive is enabled and calibrated
 2. Verify valve is in RUNNING state
 3. Check encoder connection to ODrive
@@ -259,6 +277,7 @@ See [Streaming Examples](streaming-examples.md) for complete code examples in:
 **Problem:** TCP connection disconnects unexpectedly.
 
 **Solutions:**
+
 1. Implement automatic reconnection in client code
 2. Check network stability and cable quality
 3. Verify no IP address conflicts on network
@@ -270,6 +289,7 @@ See [Streaming Examples](streaming-examples.md) for complete code examples in:
 **Problem:** Data buffering causes increasing latency.
 
 **Solutions:**
+
 1. Process data immediately upon receipt (don't buffer)
 2. Reduce streaming rate to match processing capability
 3. Use separate thread for network I/O
@@ -292,6 +312,7 @@ Ethernet bandwidth is typically 100 Mbps, so network congestion is unlikely with
 ### CPU Load
 
 Streaming adds minimal CPU overhead:
+
 - ~0.1% CPU per client at 100 Hz
 - Negligible impact on control loop performance
 
@@ -470,4 +491,3 @@ For questions or issues with streaming:
 2. Review firmware logs via CLI
 3. Verify network configuration
 4. Contact PRISM firmware team with specific error details
-

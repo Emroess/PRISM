@@ -3,6 +3,7 @@
 </div>
 
 # PRISM
+
 Train robotic policies on physical rotational tasks — fully automated, self-resetting, zero human intervention.
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/PRISM)
@@ -26,7 +27,7 @@ PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hard
 
 The core value of PRISM lies in helping the practitioner **automate robotic policy training**. It streams high-frequency (1 kHz) real-time TCP telemetry, including precise position, velocity, and torque feedback. This enables robotic policies to autonomously monitor task progress in real time. Practitioner-written scripts can then determine task success or failure using physical metrics — such as theta_on, theta_off, torque, or velocity thresholds — streamed over Ethernet.
 
-PRISM’s fully programmatic API allows the motor to automatically reset to its starting state. Practitioners can also instantly re-randomize physical parameters — such as damping, friction, and wall stiffness — for the next episode. This creates a seamless, continuous training loop, enabling robots to physically train on **self-resetting tasks** with zero human intervention.
+PRISM’s fully programmatic API allows the motor to automatically reset to its starting state. Practitioners can also instantly re-randomize physical parameters — such as damping, friction, and wall stiffness — for the next episode. This creates a seamless, continuous training loop, enabling the creation of scripts that let robots physically train on **self-resetting tasks** with zero human intervention.
 
 ### Prerequisites
 
@@ -39,11 +40,12 @@ PRISM’s fully programmatic API allows the motor to automatically reset to its 
 - A cool robot to train (optional)
 
 ## Build One For Your Lab
+
 All CAD files, assembly guides, and firmware are open-sourced. So start building and make it your own. 
 
-1. **Order the Bill of Materials ([BOM](docs/Build%20Guide/BOM/BOM.md)):** (Add BOM Total Cost Here)
+1. **Order the Bill of Materials ([BOM](docs/Build%20Guide/BOM/BOM.md)):** (~$300.00 - $400.00)
 2. **Print the STLs:** 3D print the [structural mounts](docs/Build%20Guide/CAD%20&%20Assembly) and desired [interface handles](docs/Rotation%20Library/Rotation%20Library.md).
-3. **Assembly:** Follow the [assembly guide](docs/Build%20Guide/Assembly%20Guide/Assembly%20Guide.md) to put the pieces together.
+3. **Assembly:** Follow the [assembly guide](docs/Build%20Guide/Assembly%20Guide.md) to put the pieces together.
 4. **Install the Firmware:** Install the PRISM [firmware](docs/User%20Guides/firmware/firmware-installation.md) onto the STM32 microcontroller.
 5. **First Use:** Follow the [getting started guide](docs/User%20Guides/getting-started/getting-started.md) to verify the haptic response and learn how to use the CLI.
 
@@ -63,7 +65,7 @@ Control PRISM via the Command Line, REST API, Web Interface, or Python Client. S
 - [PyPRISM](client/PyPRISM.md)
 - [REST API](docs/User%20Guides/rest/rest-api.md)
 - [Web Interface](docs/User%20Guides/web/web-interface-guide.md)
-- [Streaming](docs/User%20Guides/streaming/streaming-guide.md)
+- [Streaming Data](docs/User%20Guides/stream/streaming-guide.md)
 
 ## Rotation Library
 

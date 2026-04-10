@@ -1,21 +1,19 @@
-[⬅ Back to Main README](../README.md)
+[⬅ Back to Main README](../README.md#User%20Guides)
 
 # PySteve: Python Client for PRISM Haptic Valve System
-
 
 ## Table of Contents
 
 - [Features](#features)
 - [Quick Links](#quick-links)
-  - [▶ Start Here (Getting Started)](#-start-here-getting-started)
-  - [▶ API Reference](#-api-reference)
-  - [▶ Advanced](#-advanced)
+    - [▶ Start Here (Getting Started)](#-start-here-getting-started)
+    - [▶ API Reference](#-api-reference)
+    - [▶ Advanced](#-advanced)
 - [PySTEVE Folder Architecture](#pysteve-folder-architecture)
 - [Python Examples](#python-examples)
 - [Requirements](#requirements)
 - [Compatibility Matrix](#compatibility-matrix)
 - [Citation](#citation)
-
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -36,7 +34,6 @@ PySteve is a comprehensive Python client for the PRISM's haptic rotational emula
 
 ## Quick Links
 
-
 ### [▶ Start Here (Getting Started)](docs/getting_started.md)
 
 ### [▶ API Reference](docs/pyprism_api_reference.md)
@@ -44,8 +41,6 @@ PySteve is a comprehensive Python client for the PRISM's haptic rotational emula
 ### [▶ Advanced](docs/advanced)
 
 *Go to the [client/docs/advanced/integrations](docs/advanced/integrations) folder to find usage documentation for integrating [mujoco](docs/integrations/mujoco.md), [ros](docs/ros.md), [isaacsim](docs/isaacsim.md), and [gymnasium](docs/gymnasium_rl.md)*
-
-
 
 ## PySTEVE Folder Architecture
 
