@@ -1,4 +1,4 @@
-[⬅ Back to Main README](../README.md#User%20Guides)
+[⬅ Back to Main README](../README.md#user-guides)
 
 # PySteve: Python Client for PRISM Haptic Valve System
 

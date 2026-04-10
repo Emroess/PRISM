@@ -1,4 +1,4 @@
-﻿[⬅ Back to Main README](../../../README.md#User%20Guides)
+﻿[⬅ Back to Main README](../../../README.md#user-guides)
 
 # PRISM TCP Streaming Guide
 

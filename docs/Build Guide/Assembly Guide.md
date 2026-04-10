@@ -1,4 +1,4 @@
-[⬅ Back to Main README](../../README.md#Build%20One%20For%20Your%20Lab)
+[⬅ Back to Main README](../../README.md#build-one-for-your-lab)
 
 # Build Guide
 
