@@ -10,15 +10,8 @@ Welcome to the PRISM Build Guide. Here you will find all the resources required 
     - [1. 3D Print Components](#1-3d-print-components)
     - [2. Device Assembly](#2-device-assembly)
     - [3. Communication Wiring](#3-communication-wiring)
-- [Initial Firmware Flash](#initial-firmware-flash)
-    - [Software Requirements](#software-requirements)
-    - [Build & Flash Process](#build--flash-process)
-- [System Diagnosis & Troubleshooting](#system-diagnosis--troubleshooting)
-    - [Basic System Check](#basic-system-check)
-    - [Debugging Common Issues](#debugging-common-issues)
 
-<details>
-<summary><h2>Hardware Build Guide</h2></summary>
+## Hardware Build Guide
 
 ### 1. 3D Print Components
 
@@ -41,6 +34,5 @@ Use the STLs located in the `docs/Rotation Library/Handles` directory (found in 
 2. Ensure you have a 120Ω termination resistor at both ends of the CAN bus.
 3. Use a standard Micro-USB cable to connect the **CN1 (USB ST-LINK)** port of the Nucleo board to your host computer for programming. This port is typically farthest from the Ethernet port.
 
-</details>
 
 ### Next: [Firmware Installation](../User%20Guides/firmware/firmware-installation.md)

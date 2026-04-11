@@ -1,6 +1,6 @@
 ﻿[⬅ Back to Main README](../../../README.md#build-one-for-your-lab)
 
-# Getting Started with PRISM
+# Connecting to Prism's CLI
 
 Welcome! This guide will help you connect to your PRISM system and start using the command-line interface over USB.
 

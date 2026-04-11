@@ -12,7 +12,7 @@
     - [4. Wrench Tightening](#4-wrench-tightening)
 - [Contributing a New Handle](#contributing-a-new-handle)
 
-The PRISM system relies on interchangeable physical handles combined with software "Presets" to accurately emulate real-world environments. This Rotation Library documents the physically accurate rotational profiles and how to assemble the required handles.
+The PRISM system relies on interchangeable physical handles combined with software "Presets" (of which can be changed if desired) to accurately emulate real-world environments. This Rotation Library documents the physically accurate rotational profiles and how to assemble the required handles.
 
 ## Emulation Profiles (Haptic Presets)
 
@@ -85,5 +85,3 @@ Attaching 3D-printed and COTS (Commercial Off-The-Shelf) parts allows the roboti
 You can construct your own handle adapters and submit them. They require a JSON schema representation inside [`docs/CAD/Handles/handles.json`](Handles/handles.json) specifying images, purchased BOM objects, printed parts, and CAD/Sim files.
 
 ---
-
-### Next: [PyPRISM Python Client](../../client/PyPRISM.md) ➡

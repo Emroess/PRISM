@@ -210,6 +210,12 @@ sudo apt-get install putty
 
 ## Building the Firmware
 
+### Download the Firmware
+
+```bash
+git clone https://github.com/Emroess/PRISM.git
+```
+
 ### 1. Navigate to Firmware Directory
 
 ```bash
@@ -291,6 +297,7 @@ You should see:
 The simplest way to flash the firmware is using the provided Makefile target:
 
 ```bash
+cd /path/to/PRISM/firmware
 make flash
 ```
 
