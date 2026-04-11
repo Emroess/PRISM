@@ -27,7 +27,7 @@ PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hard
 
 The core value of PRISM lies in helping the practitioner **automate robotic policy training**. It streams high-frequency (1 kHz) real-time TCP telemetry, including precise position, velocity, and torque feedback. This enables robotic policies to autonomously monitor task progress in real time. Practitioner-written scripts can then determine task success or failure using physical metrics — such as theta_on, theta_off, torque, or velocity thresholds — streamed over Ethernet.
 
-PRISM’s fully programmatic API allows the motor to automatically reset to its starting state. Practitioners can also instantly re-randomize physical parameters — such as damping, friction, and wall stiffness — for the next episode. This creates a seamless, continuous training loop, enabling the creation of scripts that let robots physically train on **self-resetting tasks** with zero human intervention.
+PRISM’s fully programmable API allows the motor to automatically reset to its starting state. Practitioners can also instantly re-randomize physical parameters — such as damping, friction, and wall stiffness — for the next episode. This creates a seamless, continuous training loop, enabling the creation of scripts that let robots physically train on **self-resetting tasks** with zero human intervention.
 
 ## Features
 
