@@ -2,7 +2,7 @@
 
 # PRISM CLI Reference Guide
 
-This document provides a complete reference for all commands available in the PRISM (Simulated Task Exploration | Valve Emulation) command-line interface.
+This document provides a complete reference for all commands available in the PRISM command-line interface.
 
 ## Table of Contents
 
