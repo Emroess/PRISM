@@ -18,12 +18,13 @@ The PRISM system relies on interchangeable physical handles combined with softwa
 
 Profiles control the resistance, stiffness, and feel of the main drive shaft. These parameters correspond precisely to real forces and can be recalled instantaneously on the hardware.
 
-| Preset      | Purpose                                                          | Primary Settings                                        |
-| ----------- | ---------------------------------------------------------------- | ------------------------------------------------------- |
-| **default** | Balanced configuration for general testing.                      | Damping: 0.05, Friction: 0.01, Wall K: 1.0, Wall C: 0.1 |
-| **smooth**  | Low friction and damping for easy, uninhibited rotation.         | Damping: 0.02, Friction: 0.005                          |
-| **stiff**   | High stiffness for precise positioning, mimics strict fasteners. | Damping: 0.1, Friction: 0.02                            |
-| **heavy**   | High damping for sluggish, viscous feel (e.g. rusted valves).    | (Drivetrain torque must be calibrated)                  |
+| Preset          | Purpose                                                                 | Primary Settings                                                                                           |
+| --------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **90 valve**    | Quarter-turn valve emulator with hard stops (90° travel)                | Viscous: 0.01, Coulomb: 0.8, Wall K: 100, Wall C: 0, Smoothing: 10, Limit: 8Nm                             |
+| **h-wrench**    | Simulates tightening a rigid fastener (180° travel)                     | Viscous: 0.1, Coulomb: 0.2, Wall K: 150, Wall C: 0, Smoothing: 100, Limit: 10Nm                            |
+| **door handle** | Emulates a standard spring-loaded door handle behavior (45° travel)     | Viscous: 0.01, Coulomb: 0.01, Wall K: 4.0, Wall C: 0.005, Smoothing: 1, Limit: 10Nm                        |
+| **turnwheel**   | Emulates a heavy industrial handwheel feel (360° travel)                | Viscous: 0.1, Coulomb: 0.01, Wall K: 100.0, Wall C: 0.1, Smoothing: 100, Limit: 8Nm                        |
+| **custom**      | User-defined custom configurations                                      | Variable (User Defined)                                                                                    |
 
 Use `valve_preset <name>` in the CLI to instantly switch emulation modes.
 

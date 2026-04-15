@@ -2,40 +2,38 @@
 
 # Configuration Guide
 
-
 ## Table of Contents
 
 - [Network Configuration](#network-configuration)
-  - [Device Discovery](#device-discovery)
-  - [Static IP Configuration](#static-ip-configuration)
-  - [API Key Configuration](#api-key-configuration)
+    - [Device Discovery](#device-discovery)
+    - [Static IP Configuration](#static-ip-configuration)
+    - [API Key Configuration](#api-key-configuration)
 - [Valve Parameters](#valve-parameters)
-  - [Parameter Ranges](#parameter-ranges)
-  - [Configuration Presets](#configuration-presets)
-    - [Preset 0: "smooth"](#preset-0-smooth)
-    - [Preset 1: "medium"](#preset-1-medium)
-    - [Preset 2: "tight"](#preset-2-tight)
-    - [Preset 3: "custom"](#preset-3-custom)
-  - [Loading Presets](#loading-presets)
-  - [Custom Configuration](#custom-configuration)
+    - [Parameter Ranges](#parameter-ranges)
+    - [Configuration Presets](#configuration-presets)
+        - [Preset 0: "smooth"](#preset-0-smooth)
+        - [Preset 1: "medium"](#preset-1-medium)
+        - [Preset 2: "tight"](#preset-2-tight)
+        - [Preset 3: "custom"](#preset-3-custom)
+    - [Loading Presets](#loading-presets)
+    - [Custom Configuration](#custom-configuration)
 - [Streaming Configuration](#streaming-configuration)
-  - [Stream Rate](#stream-rate)
-  - [Buffer Size](#buffer-size)
-  - [Thread Safety](#thread-safety)
+    - [Stream Rate](#stream-rate)
+    - [Buffer Size](#buffer-size)
+    - [Thread Safety](#thread-safety)
 - [Connection Configuration](#connection-configuration)
-  - [Auto-Reconnect](#auto-reconnect)
-  - [Connection Callbacks](#connection-callbacks)
-  - [Timeout Configuration](#timeout-configuration)
+    - [Auto-Reconnect](#auto-reconnect)
+    - [Connection Callbacks](#connection-callbacks)
+    - [Timeout Configuration](#timeout-configuration)
 - [Environment Variables](#environment-variables)
 - [Configuration Files](#configuration-files)
-  - [YAML Configuration](#yaml-configuration)
-  - [JSON Configuration](#json-configuration)
+    - [YAML Configuration](#yaml-configuration)
+    - [JSON Configuration](#json-configuration)
 - [Multi-Device Configuration](#multi-device-configuration)
 - [Performance Tuning](#performance-tuning)
-  - [Latency Optimization](#latency-optimization)
-  - [Throughput Optimization](#throughput-optimization)
+    - [Latency Optimization](#latency-optimization)
+    - [Throughput Optimization](#throughput-optimization)
 - [Logging Configuration](#logging-configuration)
-
 
 This guide covers configuring PySteve for your network and application requirements.
 
@@ -62,6 +60,7 @@ for device in devices:
 Configure your PRISM device with a static IP address via the web interface or CLI.
 
 **Recommended static IP ranges:**
+
 - Development: `192.168.1.100-199`
 - Production: Configure based on your network policy
 
@@ -87,65 +86,88 @@ client = SteveClient("192.168.1.100", api_key="your-custom-key")
 
 Valid ranges for each parameter:
 
-| Parameter | Range | Unit | Description |
-|-----------|-------|------|-------------|
-| `viscous` | 0.01 - 0.5 | N·m·s/rad | Viscous damping coefficient |
-| `coulomb` | 0.005 - 0.05 | N·m | Coulomb friction torque |
-| `wall_stiffness` | 0.5 - 5.0 | N·m/turn | Wall spring stiffness |
-| `wall_damping` | 0.05 - 0.5 | N·m·s/turn | Wall damping coefficient |
-| `smoothing` | 0.0001 - 0.01 | - | Smoothing epsilon |
-| `torque_limit` | 0.1 - 2.0 | N·m | Maximum torque |
-| `travel` | 1 - 360 | degrees | Total valve travel |
-| `closed_position` | 0 - 360 | degrees | Closed endpoint |
-| `open_position` | 0 - 360 | degrees | Open endpoint |
+| Parameter         | Absolute Firmware Limits | Unit       | Description                 |
+| ----------------- | ------------------------ | ---------- | --------------------------- |
+| `viscous`         | ≥ 0.0                    | N·m·s/rad  | Viscous damping coefficient |
+| `coulomb`         | ≥ 0.0                    | N·m        | Coulomb friction torque     |
+| `wall_stiffness`  | ≥ 0.0                    | N·m/turn   | Wall spring stiffness       |
+| `wall_damping`    | ≥ 0.0                    | N·m·s/turn | Wall damping coefficient    |
+| `smoothing`       | > 0.0                    | -          | Smoothing epsilon           |
+| `torque_limit`    | (0.0, 30.0]              | N·m        | Maximum torque              |
+| `travel`          | (0.0, 3600.0]            | degrees    | Total valve travel          |
+| `closed_position` | < open_position          | degrees    | Closed endpoint             |
+| `open_position`   | > closed_position        | degrees    | Open endpoint               |
 
 ### Configuration Presets
 
 PySteve includes 4 preset configurations:
 
-#### Preset 0: "smooth"
+#### Preset 0: "90 valve"
+
 ```python
 ValveConfig(
-    viscous=0.05,
-    coulomb=0.005,
-    wall_stiffness=1.0,
-    wall_damping=0.1,
-    smoothing=0.001,
-    torque_limit=0.5,
+    viscous=0.01,
+    coulomb=0.8,
+    wall_stiffness=100,
+    wall_damping=0,
+    smoothing=10,
+    torque_limit=8,
     travel=90
 )
 ```
+
 **Use case**: Smooth, low-friction operation
 
-#### Preset 1: "medium"
+#### Preset 1: "h-wrench"
+
+```python
+ValveConfig(
+    viscous=0.1,
+    coulomb=0.2,
+    wall_stiffness=150,
+    wall_damping=0,
+    smoothing=100,
+    torque_limit=10,
+    travel=180
+)
+```
+
+**Use case**: Balanced feel, general purpose
+
+#### Preset 2: "door handle"
+
+```python
+ValveConfig(
+    viscous=0.01,
+    coulomb=0.01,
+    wall_stiffness=4.0,
+    wall_damping=0.005,
+    smoothing=1,
+    torque_limit=10,
+    travel=45
+)
+```
+
+**Use case**: High damping, tight control
+
+#### Preset 3: "turnwheel"
+
 ```python
 ValveConfig(
     viscous=0.1,
     coulomb=0.01,
-    wall_stiffness=2.0,
-    wall_damping=0.2,
-    smoothing=0.001,
-    torque_limit=0.5,
-    travel=90
+    wall_stiffness=100.0,
+    wall_damping=0.1,
+    smoothing=100,
+    torque_limit=8,
+    travel=360
 )
 ```
-**Use case**: Balanced feel, general purpose
 
-#### Preset 2: "tight"
-```python
-ValveConfig(
-    viscous=0.2,
-    coulomb=0.02,
-    wall_stiffness=3.0,
-    wall_damping=0.3,
-    smoothing=0.001,
-    torque_limit=0.5,
-    travel=90
-)
-```
 **Use case**: High damping, tight control
 
-#### Preset 3: "custom"
+#### Preset 4: "custom"
+
 ```python
 # User-defined configuration
 # Saved via save_preset(3, config)
@@ -197,12 +219,12 @@ client.save_preset(3, config)
 
 Configure streaming rate based on your needs:
 
-| Rate (Hz) | Interval (ms) | Use Case |
-|-----------|---------------|----------|
-| 10 | 100 | Low-bandwidth monitoring |
-| 20 | 50 | Standard data logging |
-| 50 | 20 | Real-time control |
-| 100 | 10 | High-speed data acquisition |
+| Rate (Hz) | Interval (ms) | Use Case                    |
+| --------- | ------------- | --------------------------- |
+| 10        | 100           | Low-bandwidth monitoring    |
+| 20        | 50            | Standard data logging       |
+| 50        | 20            | Real-time control           |
+| 100       | 10            | High-speed data acquisition |
 
 ```python
 from pysteve import SteveStreamer
