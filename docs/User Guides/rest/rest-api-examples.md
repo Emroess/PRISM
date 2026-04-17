@@ -1,4 +1,4 @@
-﻿# PRISM REST API Examples
+# PRISM REST API Examples
 
 This guide provides practical code examples for integrating with the PRISM REST API in various programming languages. All examples include proper authentication and error handling.
 

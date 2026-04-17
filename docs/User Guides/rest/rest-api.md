@@ -1,4 +1,4 @@
-﻿[⬅ Back to Main README](../../../README.md#user-guides)
+[⬅ Back to Main README](../../../README.md#user-guides)
 
 # PRISM REST API Reference
 
