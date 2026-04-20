@@ -1012,7 +1012,7 @@ There are no enforced rate limits, but recommended polling rates:
 
    ```json
    POST /api/v1/control
-   {"preset": "default"}
+   {"preset": 0}
    ```
 1. **Adjust parameters incrementally:**
 

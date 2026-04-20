@@ -1,4 +1,4 @@
-﻿[⬅ Back to Main README](../../../README.md#user-guides)
+[⬅ Back to Main README](../../../README.md#user-guides)
 
 # PRISM CLI Reference Guide
 
@@ -392,18 +392,18 @@ Load a previously saved valve preset configuration.
 **Usage:**
 
 ```
-valve_preset <preset_name>
+valve_preset <preset_idx>
 ```
 
 **Parameters:**
 
-- `preset_name` - Name of the preset to load (no spaces)
+- `preset_idx` - Index of the preset to load (0-3)
 
 **Example:**
 
 ```
-> valve_preset default
-Loaded preset: default
+> valve_preset 0
+Loaded preset: 0
 ```
 
 **Available Presets:**
@@ -427,18 +427,18 @@ Save the current valve configuration as a named preset.
 **Usage:**
 
 ```
-valve_preset_save <preset_name>
+valve_preset_save <preset_idx>
 ```
 
 **Parameters:**
 
-- `preset_name` - Name for the new preset (no spaces)
+- `preset_idx` - Index for the new preset (0-3)
 
 **Example:**
 
 ```
-> valve_preset_save myconfig
-Preset saved: myconfig
+> valve_preset_save 1
+Preset saved: 1
 ```
 
 **Notes:**

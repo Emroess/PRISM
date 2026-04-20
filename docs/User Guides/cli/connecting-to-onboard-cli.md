@@ -237,9 +237,9 @@ ODrive enabled
 ### 4. Load a Preset (optional)
 
 ```
-> valve_preset default
+> valve_preset 0
 
-Loaded preset: default
+Loaded preset: 0
 ```
 
 ### 5. Start Valve Control
@@ -308,17 +308,17 @@ Change the haptic characteristics in real-time:
 Once you have settings you like:
 
 ```
-> valve_preset_save myconfig
+> valve_preset_save 0
 
-Preset saved: myconfig
+Preset saved: 0
 ```
 
 Load it later:
 
 ```
-> valve_preset myconfig
+> valve_preset 0
 
-Loaded preset: myconfig
+Loaded preset: 0
 ```
 
 ### Viewing All Presets
@@ -522,7 +522,7 @@ odrive_disable         # Disable motor
 valve_damping 0.05     # Set damping
 valve_friction 0.01    # Set friction
 valve_torquelimit 0.5  # Set safety limit
-valve_preset default   # Load preset
+valve_preset 0         # Load preset
 ```
 
 ### Monitoring

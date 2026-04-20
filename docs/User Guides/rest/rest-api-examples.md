@@ -123,12 +123,12 @@ class SteveClient:
         """
         return self._request("POST", "config", params)
     
-    def start(self, preset: Optional[str] = None) -> Dict:
+    def start(self, preset: Optional[int] = None) -> Dict:
         """
         Start valve control.
         
         Args:
-            preset: Optional preset name to load
+            preset: Optional preset index to load (0-3)
         """
         data = {"action": "start"}
         if preset:
@@ -184,7 +184,7 @@ class SteveClient:
     def get_performance(self) -> Dict:
         """Get performance statistics."""
         return self._request("GET", "performance")
-    
+
     def start_streaming(self, interval_ms: int = 100) -> Dict:
         """Start data streaming server."""
         return self._request("POST", "stream", 
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     
     # Start with smooth preset
     print("Starting valve control with 'smooth' preset...")
-    steve.start(preset="smooth")
+    steve.start(preset=1)
     
     # Monitor for 10 seconds
     print("\nMonitoring valve status:")
@@ -440,7 +440,7 @@ async function main() {
     try {
         // Enable and start
         await steve.odriveEnable();
-        await steve.start('smooth');
+        await steve.start(1);
         
         // Monitor for 10 seconds
         for (let i = 0; i < 10; i++) {
@@ -517,7 +517,7 @@ main();
         async function startValve() {
             try {
                 await apiRequest('odrive', 'POST', { action: 'enable' });
-                await apiRequest('control', 'POST', { action: 'start', preset: 'smooth' });
+                await apiRequest('control', 'POST', { action: 'start', preset: 1 });
                 alert('Valve started');
             } catch (error) {
                 alert('Failed to start: ' + error.message);
@@ -585,7 +585,7 @@ curl -X POST \
 curl -X POST \
      -H "X-API-Key: steve-valve-2025" \
      -H "Content-Type: application/json" \
-     -d '{"action": "start", "preset": "smooth"}' \
+     -d '{"action": "start", "preset": 1}' \
      http://192.168.1.100:8080/api/v1/control
 ```
 
@@ -735,9 +735,9 @@ public:
         return request("POST", "config", params);
     }
     
-    json start(const std::string& preset = "") {
+    json start(int preset = -1) {
         json data = {{"action", "start"}};
-        if (!preset.empty()) {
+        if (preset >= 0) {
             data["preset"] = preset;
         }
         return request("POST", "control", data);
@@ -767,7 +767,7 @@ int main() {
         
         // Start with smooth preset
         std::cout << "Starting valve..." << std::endl;
-        steve.start("smooth");
+        steve.start(1);
         
         // Monitor for 10 seconds
         for (int i = 0; i < 10; i++) {
