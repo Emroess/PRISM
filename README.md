@@ -12,15 +12,6 @@ Train robotic policies on physical rotational tasks — fully automated, self-re
 [![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/PRISM)
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/PRISM)
 
-## Table of Contents
-
-- [About](#What-is-This)
-- [Features](#What-Can-it-Do)
-- [Build One](#build-one-or-two-for-your-lab)
-- [User Guides](#user-guides)
-- [Rotation Library](#rotation-library)
-- [License](#license)
-
 ## What is PRISM?
 
 PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hardware-based haptic control system designed to help practitioners train policies on real-world rotational tasks. Unlike purely virtual simulations, PRISM can replicate the tactile force feedback of valves, handles, knobs, and fasteners. It delivers realistic physical-world force feedback to the policy through a modular, motor-driven interface.
@@ -62,7 +53,14 @@ PRISM has a CLI, Web-GUI, REST API, Data Streaming interfaces. Each interface le
 Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo).
 </details>
 
-## Build One For Your Lab
+## In This Repo
+- `firmware/` —
+- `docs/hardware/` — BOM, dimensions, renders
+- `docs/build/` —
+- `docs/user_guides` —
+- `docs/rotational_library` —
+
+
 
 ### Prerequisites
 
