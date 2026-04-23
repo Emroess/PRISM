@@ -1,6 +1,7 @@
 # **PRISM Bill of Materials**
 
-This Bill of Materials (BOM) consolidates key procurement items to build one PRISM unit. Links point to common suppliers (Digi-Key, ST, Amazon).   
+This Bill of Materials (BOM) consolidates key procurement items to build one PRISM unit. 
+Links point to common suppliers (Digi-Key, ST, Mouser, Amazon).   
 Prices are approximate and may vary.
 
 | Item | Description | Supplier / Link | Cost (USD) |
