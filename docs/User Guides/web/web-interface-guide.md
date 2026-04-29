@@ -146,7 +146,7 @@ Complete preset editing interface:
 
 1. Open web interface
 2. Select preset from **Load Preset** dropdown (e.g., "Preset 1 (smooth)")
-3. Click **Apply** button
+3. Click **Apply Configuration** button
 4. Valve starts with preset configuration
 5. Monitor behavior on sparkline graphs
 6. Click **Stop** when complete
@@ -159,19 +159,18 @@ Complete preset editing interface:
    - Increase **Viscous** to add damping
    - Adjust **Coulomb** to change friction feel
    - Modify **Wall Stiff** to change detent strength
-3. Click **Update Configuration**
+3. Click **Apply Configuration**
 4. Changes apply immediately to running valve
 5. Observe effect on torque and velocity graphs
 
 ### Save Custom Preset
 
-1. Configure valve parameters in **Configuration Editor**
-2. Click **Update Configuration** to apply
-3. Test valve behavior
-4. In **Manage Presets** section, select preset slot (0-3)
-5. Enter descriptive **Name** for preset
-6. Click **Save Current Config to Preset**
-7. Preset now saved in flash memory
+1. Configure valve parameters in **Manage Presets**
+2. Click **Save Preset Changes** to apply to current Preset
+3. Preset now saved in flash memory
+4. Test valve behavior TODO: what is Save Preset Changes button vs Save Current Config to Preset
+
+TODO: Save Custom Preset vs Edit Existing Preset --> what is the difference?
 
 ### Edit Existing Preset
 
@@ -256,7 +255,7 @@ The web interface works on all modern browsers:
 - **Chrome/Edge** - Tested, fully supported
 - **Firefox** - Tested, fully supported
 - **Safari** - Tested, fully supported
-- **Mobile browsers** - Responsive design supports phones/tablets
+- **Mobile browsers** - Untested
 
 ### Mobile Access
 
@@ -282,7 +281,7 @@ Access from mobile device:
 **Solutions:**
 
 1. Verify PRISM Ethernet connection (check link LED)
-2. Confirm IP address with `ip_info` CLI command
+2. Confirm IP address with `ethstatus` CLI command inside of PRISM hardware
 3. Check same network/subnet (ping device IP)
 4. Verify port 8080 not blocked by firewall
 5. Try different browser or clear browser cache
@@ -297,7 +296,7 @@ Access from mobile device:
 2. Verify ODrive enabled and calibrated
 3. Check browser console (F12) for JavaScript errors
 4. Refresh page (Ctrl+R or Cmd+R)
-5. Verify REST API working: `curl http://<ip>:8080/api/v1/status`
+5. Verify REST API working: `curl http://<ip>:8080/api/v1/status` TODO: you can't do this because you get  {"status":"error","error":"unauthorized"}
 
 ### Sparklines Not Drawing
 
@@ -333,7 +332,6 @@ Access from mobile device:
 2. Verify all preset parameters within valid ranges
 3. Check browser console for 4xx/5xx HTTP errors
 4. Ensure preset name is 15 characters or less
-5. Try using REST API directly to verify: `POST /api/v1/presets`
 
 ### Page Becomes Unresponsive
 
