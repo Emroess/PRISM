@@ -47,15 +47,20 @@ PRISM includes an embedded HTML control panel accessible via any web browser on 
 ### Connection Steps
 
 1. **Power on PRISM** and connect Ethernet cable
-2. **Obtain IP address** using CLI or check your DHCP server/router
-3. **Open web browser** and navigate to:
+2. **Obtain IP address** using CLI with `ethstatus` or check your DHCP server/router
+3. **Set computer ethernet settings (IPv4 or IPv6, below is for IPv4)**: 
+    1. Change IPv4 Method to `Manual`
+    2. Set Address to `10.0.1.17` (This puts your computer on the same subnet as the PRISM device. The last number, `17`, is arbitrary but must be different from both the PRISM device's IP and the gateway to avoid IP conflicts.)
+    3. Set Netmask to `255.255.255.0` (default) or whatever you saw in `ethstatus`
+    4. Set Gateway to `10.0.0.1` (default) or whatever you saw in `ethstatus`
+4. **Open web browser** and navigate to:
 
    ```
    http://<device-ip>:8080
    ```
 
-   Example: `http://192.168.1.100:8080`
-4. **Page loads automatically** with live data streaming
+   Example: `http://192.168.1.100:8080` or `http://10.0.1.15:8080`
+5. **Page loads automatically** with live data streaming
 
 ### Default Network Configuration
 
