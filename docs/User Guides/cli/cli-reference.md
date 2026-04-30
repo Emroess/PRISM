@@ -108,14 +108,19 @@ valve_status
 ```
 > valve_status
 Valve Status:
-Position:    1234 counts (45.2 deg)
-Velocity:    567 counts/s (20.8 deg/s)
-Torque:      0.123 N·m
-State:       RUNNING
-Damping:     0.050 N·m·s/rad
-Friction:    0.010 N·m
-Wall K:      1.000 N·m/turn
-Wall C:      0.100 N·m·s/turn
+State:    	 					IDLE​
+Position:    					45.2 deg
+Velocity:    					0.078 rad/s
+Torque:      					0.123 N·m
+Torque limit:					0.01 N·m·s
+Viscous Damping:      0.050 N·m·s/rad
+Coulomb Friction:    	0.010 N·m
+Wall stiffness:				1.000 N·m/turn
+Wall damping:      		0.000 N·m·s/turn
+Scale: 								360.000 deg/turn
+Epsilon: 							10.000000
+Energy tank: 					-0.341437 J
+Loop time: 						4 us
 ```
 
 **Information Provided:**
@@ -125,6 +130,7 @@ Wall C:      0.100 N·m·s/turn
 - Current applied torque
 - Control system state (IDLE, RUNNING, ERROR)
 - Active haptic parameters
+- ...and more
 
 ### `valve_energy`
 
@@ -164,10 +170,11 @@ valve_timing
 ```
 > valve_timing
 Loop Timing Diagnostics:
-Loop frequency:     1000 Hz
-Avg execution:      234 μs
-Max execution:      456 μs
-Overruns:           0
+Loop count:     		26105
+Min loop time:      4 μs
+Max loop time:      5 μs
+Avg loop time:			4 μs
+Timing samples:			35212
 ```
 
 **Information Provided:**
@@ -408,11 +415,10 @@ Loaded preset: 0
 
 **Available Presets:**
 
-- `default` - Standard configuration for general use
-- `smooth` - Low friction, light damping for smooth feel
-- `stiff` - High stiffness for precise positioning
-- `heavy` - High damping for sluggish, heavy feel
-- Custom presets you've created
+- `90-valve` - 90-degree limited travel valve feel
+- `h-wrench` - Heavy wrench with high resistance
+- `doorhandle` - Spring-return doorhandle feel
+- `turnwheel` - Continuous turnwheel with low resistance
 
 **Notes:**
 
@@ -463,15 +469,17 @@ valve_preset_show
 ```
 > valve_preset_show
 Available Presets:
-[default]
-  damping: 0.050
-  friction: 0.010
-  wall_k: 1.000
-  wall_c: 0.100
+Preset 0: 90-valve
+  Torque limit:     8.000 Nm
+  Default travel:   90.0 deg
+  Viscous damping:  0.010 Nms/rad
+  Coulomb friction: 0.800 Nm
+  Wall stiffness:   100.000 Nm/turn
+  Wall damping:     0.000 Nms/rad 
+  Smoothing eps:    10.000000
   ...
-[smooth]
-  damping: 0.020
-  friction: 0.005
+Prset 1: h-wrench
+  Torque limit:     10.000 Nm
   ...
 ```
 
@@ -488,7 +496,7 @@ Available Presets:
 These commands control the ODrive motor controller that drives the valve's haptic feedback motor.
 
 ### `odrive_ping`
-
+TODO: does not work in CLI (returns: Unknown command: odrive_ping) (Also shows up in the `help` call)
 Test connectivity with the ODrive motor controller over CAN bus.
 
 **Usage:**
@@ -528,13 +536,11 @@ odrive_status
 ```
 > odrive_status
 ODrive Status:
-Axis State:    CLOSED_LOOP_CONTROL
-Position:      1234.5 counts
-Velocity:      56.7 counts/s
-Torque:        0.123 N·m
-Bus Voltage:   24.1 V
-Bus Current:   1.45 A
-Errors:        None
+Axis error:         0x00000000
+Axis state:         0x01
+Motor flags:        0x00
+Encoder flags:      0x00
+Controller status:  0x00
 ```
 
 **Information Provided:**
@@ -849,7 +855,7 @@ Position gain set: Kp=20.000
 - Should be tuned for your specific setup
 
 ### `odrive_vel_gains`
-
+TODO: command results in error: Unknown command: odrive_vel_gains. odrive_vel_gain also doesn't exist. (Both show up in the `help` call though)
 Set the proportional and integral gains (Kp, Ki) for velocity control mode.
 
 **Usage:**
@@ -900,8 +906,8 @@ can_encoder
 ```
 > can_encoder
 Encoder feedback:
-Position: 1234.56 counts
-Velocity: 78.90 counts/s
+Position: 1234.56 turns
+Velocity: 78.90 turns/s
 ```
 
 **Notes:**
@@ -912,7 +918,7 @@ Velocity: 78.90 counts/s
 - Compare with valve_status for consistency
 
 ### `can_telemetry`
-
+TODO: this command works, but gives weird response: "Failed to read Telemetry" \n "Error: Buffer empty"
 Read bus voltage, current, and temperature data from the ODrive.
 
 **Usage:**
@@ -955,11 +961,10 @@ can_status
 ```
 > can_status
 CAN Bus Status:
-Bitrate:        1 Mbps
-Messages TX:    12345
-Messages RX:    12340
-Errors:         0
-Bus state:      ACTIVE
+TX count:         0
+RX count:         0
+Error count:      0
+Last error code:  0x000000
 ```
 
 **Information Provided:**
@@ -1041,6 +1046,7 @@ New Gateway: 192.168.1.1
 - May briefly interrupt network connections
 
 ### `ping`
+TODO: does not return any results, i.e. just says "Ping initiated" but doesn't give info like regular terminals do.
 
 Send ICMP ping packets to test network connectivity to a remote host.
 
@@ -1091,6 +1097,11 @@ Magic: 0xABCD1234
 Version: 1
 Checksum: 0x12345678
 IP: 192.168.1.100
+Netmask: 255.255.255.0
+Gateway: 10.0.0.1
+
+Loaded Config:
+Magic: 0x4E455457 (expected 0x4E455457)
 ...
 ```
 
@@ -1118,6 +1129,8 @@ http start | stop | status | log on|off
 - `stop` - Stop HTTP server
 - `status` - Show if server is running
 - `log on|off` - Enable/disable HTTP request logging
+
+Note: After `stop`, you can do `http start` until you have closed the HTTP webpage
 
 **Examples:**
 
@@ -1186,6 +1199,7 @@ Ethernet streaming stopped
 These commands provide detailed performance metrics and data logging capabilities.
 
 ### `perf_stats`
+TODO: doesn't exist in the CLI: "Unknown command: perf_stats". Also doesn't exist when doing `help`
 
 Display comprehensive performance statistics including min/max/mean values for key measurements.
 
@@ -1224,6 +1238,7 @@ Samples:   10000
 - Reset when control restarts
 
 ### `perf_rms`
+TODO: same as `perf_stats`
 
 Display root-mean-square (RMS) values for position, velocity, and torque. RMS provides a measure of signal magnitude over time.
 
@@ -1252,7 +1267,7 @@ Torque:      0.089 N·m
 - Computed over recent time window
 
 ### `perf_dump`
-
+TODO: same as `perf_stats`
 Export recorded performance data in CSV format for offline analysis.
 
 **Usage:**
@@ -1360,6 +1375,7 @@ Common error causes:
 
 ## Quick Reference Table
 
+TODO: clear out the Monitoring row (since `perf_*` don't exist...). Also clear out other things that don't exist that we have confirmed shouldn't be there
 | Command Category | Key Commands                                             |
 | ---------------- | -------------------------------------------------------- |
 | Basic Control    | `valve_start`, `valve_stop`, `valve_status`              |
