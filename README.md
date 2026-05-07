@@ -72,54 +72,58 @@ Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo)
 | Software | Python 3.10+, GNU ARM Toolchain |
 | License | MIT |
 
+## Architecture
+
 ```mermaid
 graph LR
-    A[ Robot Arm] -->|Grasps| B[ PRISM Handle]
-    B -->|Shaft Encoder + Motor| C[ STM32H7]
+    A[Robot Arm] -->|Grasps| B[PRISM Handle]
+    B -->|Shaft Encoder + Motor| C[STM32H7]
     C -->|1 kHz TCP| D[Host PC]
-    D -->|PyPRISM API| E[ Policy Training]
+    D -->|PyPRISM API| E[Policy Training]
     D -->|REST / CLI / Web| C
     C -->|Haptic Feedback| B
 ```
 
+---
 
 ## Explore PRISM
+
 <table>
   <tr>
-    <td align="center" width="40%">
+    <td align="center" width="33%">
       <a href="docs/Build%20Guide/">
         <img src="https://img.shields.io/badge/-Build_Guide-2ea44f?style=for-the-badge" alt="Build Guide">
       </a>
       <br><sub>BOM, assembly, CAD files</sub>
     </td>
-    <td align="center" width="40%">
+    <td align="center" width="33%">
       <a href="docs/User%20Guides/">
         <img src="https://img.shields.io/badge/-User_Guides-0969da?style=for-the-badge" alt="User Guides">
       </a>
       <br><sub>CLI, REST API, Web GUI, Streaming</sub>
     </td>
-    <td align="center" width="40%">
+    <td align="center" width="33%">
       <a href="docs/Rotation%20Library/">
         <img src="https://img.shields.io/badge/-Rotation_Library-8250df?style=for-the-badge" alt="Rotation Library">
       </a>
-      <br><sub>Printable handles & haptic profiles</sub>
+      <br><sub>Printable handles and haptic profiles</sub>
     </td>
   </tr>
   <tr>
-    <td align="center" width="40%">
+    <td align="center" width="33%">
       <a href="firmware/">
         <img src="https://img.shields.io/badge/-Firmware-e8590c?style=for-the-badge" alt="Firmware">
       </a>
       <br><sub>STM32H7 open-source firmware</sub>
     </td>
-    <td align="center" width="40%">
+    <td align="center" width="33%">
       <a href="client/">
         <img src="https://img.shields.io/badge/-Python_Client-ffd43b?style=for-the-badge" alt="Python Client">
       </a>
-      <br><sub>PyPRISM API & examples</sub>
+      <br><sub>PyPRISM API and examples</sub>
     </td>
-    <td align="center" width="40%">
-      <a href="#ready-to-build-prism">
+    <td align="center" width="33%">
+      <a href="#quick-start">
         <img src="https://img.shields.io/badge/-Quick_Start-e34c26?style=for-the-badge" alt="Quick Start">
       </a>
       <br><sub>Get building in 5 steps</sub>
@@ -127,40 +131,62 @@ graph LR
   </tr>
 </table>
 
+---
+
 ## Quick Start
 
-> **Total build time:** ~15-20 hours  •  **Cost:** ~$300-400  •  **Difficulty:** Intermediate
+> **Total build time:** ~15-20 hours  |  **Cost:** ~$400-500  |  **Difficulty:** Intermediate
 
 | Step | Action | Link |
 |:---:|---|---|
-| **1** |  **Order** the Bill of Materials | [BOM](docs/Build%20Guide/BOM/BOM.md) |
-| **2** |  **Print** structural mounts and handles | [CAD Files](docs/Build%20Guide/CAD%20%26%20Assembly%20Files) |
-| **3** |  **Assemble** the mechanical and electrical system | [Assembly Guide](docs/Build%20Guide/Assembly%20Guide.md) |
-| **4** |  **Flash** firmware onto the STM32 | [Firmware Guide](docs/User%20Guides/firmware/firmware-installation.md) |
-| **5** |  **Verify** via the onboard CLI | [CLI Guide](docs/User%20Guides/cli/connecting-to-onboard-cli.md) |
+| **1** | **Order** the Bill of Materials | [BOM](docs/Build%20Guide/BOM/BOM.md) |
+| **2** | **Print** structural mounts and handles | [CAD Files](docs/Build%20Guide/CAD%20%26%20Assembly%20Files), [Handles](docs/Rotation%20Library/Rotation%20Library.md) |
+| **3** | **Assemble** the mechanical and electrical system | [Assembly Guide](docs/Build%20Guide/Assembly%20Guide.md) |
+| **4** | **Flash** firmware onto the STM32 | [Firmware Guide](docs/User%20Guides/firmware/firmware-installation.md) |
+| **5** | **Verify** haptic response via the onboard CLI | [CLI Guide](docs/User%20Guides/cli/connecting-to-onboard-cli.md) |
 
-
-## Ready to Build PRISM?
-
-All CAD files, assembly guides, and firmware are open-sourced. So start building and make it your own. 
-
-1. **Order the Bill of Materials ([BOM](docs/Build%20Guide/BOM/BOM.md)):** (~$300.00 - $400.00)
-2. **Print the STLs:** 3D print the [structural mounts](docs/Build%20Guide/CAD%20&%20Assembly%20Files) and desired [interface handles](docs/Rotation%20Library/Rotation%20Library.md).
-3. **Assembly:** Follow the [assembly guide](docs/Build%20Guide/Assembly%20Guide.md) to put the pieces together.
-4. **Install the Firmware:** Install the PRISM [firmware](docs/User%20Guides/firmware/firmware-installation.md) onto the STM32 microcontroller.
-5. **First Use:** Follow the [connecting to onboard cli guide](docs/User%20Guides/cli/connecting-to-onboard-cli.md) to verify the haptic response and learn how to use the CLI.
+---
 
 ## Rotation Library
 
-PRISM's modular handle system allows for custom haptic emulations. See the [**Rotation Library Docs**](docs/Rotation%20Library/Rotation%20Library.md) for 3D printable designs and parameter configurations.
+PRISM's modular handle system allows for custom haptic emulations. Each attachment mounts to the same motor shaft interface, letting practitioners swap between task types in seconds.
 
-Attachments:
+See the [**Rotation Library**](docs/Rotation%20Library/Rotation%20Library.md) for 3D-printable designs and parameter configurations.
 
-- Hydrant Handwheel (4-turn)
-- Quarter-turn Valve (90°)
-- Door Handle (+/- 45°)
-- Wrench Tightening
-- More to come!
+| Handle | Range of Motion |
+|---|---|
+| Hydrant Handwheel | 4-turn |
+| Quarter-turn Valve | 90 degrees |
+| Door Handle | +/- 45 degrees |
+| Wrench Tightening | Continuous |
+| More to come | -- |
+
+---
+
+## Contributing
+
+PRISM is open source and contributions are welcome.
+
+- [Report a Bug]()
+- [Request a Feature]()
+- [Submit a Pull Request]()
+
+---
+
+## Citation
+
+If you use PRISM in your research, please cite:
+
+```bibtex
+@misc{prism2026,
+  title={PRISM: Programmable Rotary Impedance Suite for Manipulation},
+  author={},
+  year={2026},
+  url={https://github.com/Emroess/PRISM}
+}
+```
+
+---
 
 ## License
 
