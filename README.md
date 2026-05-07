@@ -48,11 +48,11 @@ Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo)
 </details>
 
 ## In This Repo
-- [`user_guides`] — Guides for the 
-- `docs/hardware/` — BOM, dimensions, renders
-- `docs/build/` —
-- `docs/` —
-- `docs/rotational_library` —
+- [`user_guides`](docs/User%20Guides/) —User guides for all interfaces and firmware installation.
+- [`build_guide`](docs/Build%20Guide/) —User guides for hardware assembly, BOM, and mechanical design files.
+- [`rotational_library`](docs/Rotation%20Library/) —Rotational library for different types of handles and knobs robotic policies can interact with.
+- [`firmware`](firmware) — Open-source STM32H7 micro-controller firmware.
+- [`client`](client) —User guides and examples for PRISM's Python client. 
 
 
 
@@ -60,13 +60,12 @@ Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo)
 
 - A PC running Linux, Windows, or MacOS
 - A 180 x 180 x 180 mm or larger 3D printer
-- [BOM](docs/Build%20Guide/BOM/BOM.md)
 - Python 3.10+
 - GNU ARM Embedded Toolchain & Make
 - IssacSim, MuJoCo, ect (optional, For RL training)
 - A cool robot to train (optional)
 
-### Steps
+### Ready to Build PRISM?
 
 All CAD files, assembly guides, and firmware are open-sourced. So start building and make it your own. 
 
@@ -75,16 +74,6 @@ All CAD files, assembly guides, and firmware are open-sourced. So start building
 3. **Assembly:** Follow the [assembly guide](docs/Build%20Guide/Assembly%20Guide.md) to put the pieces together.
 4. **Install the Firmware:** Install the PRISM [firmware](docs/User%20Guides/firmware/firmware-installation.md) onto the STM32 microcontroller.
 5. **First Use:** Follow the [connecting to onboard cli guide](docs/User%20Guides/cli/connecting-to-onboard-cli.md) to verify the haptic response and learn how to use the CLI.
-
-## User Guides
-
-Control PRISM via the Command Line, REST API, Web Interface, or Python Client. See the [**Usage Docs Folder**](docs/User%20Guides/) for full references.
-
-- [Onboard CLI Reference](docs/User%20Guides/cli/cli-reference.md)
-- [PyPRISM (Python Scripting Client)](client/PyPRISM.md)
-- [REST API Reference](docs/User%20Guides/rest/rest-api.md)
-- [Web Interface](docs/User%20Guides/web/web-interface-guide.md)
-- [Streaming Data Guide](docs/User%20Guides/stream/streaming-guide.md)
 
 ## Rotation Library
 
