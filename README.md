@@ -65,7 +65,7 @@ Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo)
 - IssacSim, MuJoCo, ect (optional, For RL training)
 - A cool robot to train (optional)
 
-### Ready to Build PRISM?
+## Ready to Build PRISM?
 
 All CAD files, assembly guides, and firmware are open-sourced. So start building and make it your own. 
 
