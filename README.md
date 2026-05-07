@@ -1,16 +1,10 @@
-# PRISM
-
-Train robotic policies on physical rotational tasks. 
-
-
-
-<div align="left">
-  <img src="docs/assets/images/PRISMlogo.png" width="400" alt="PRISM Logo">
-</div>
+<div align="center">
+   <img src="docs/assets/images/PRISMlogo.png" width="700" alt="PRISM Logo">
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/PRISM)
 [![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/PRISM)
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/PRISM)
+</div>
 
 ## What is PRISM?
 
@@ -20,7 +14,7 @@ PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hard
 The core value of PRISM lies in helping the practitioner **automate robotic policy training**. 
 
 <details>
-<summary>Real-time Task Telemetry</summary>
+<summary>Real-time Task Telemetry </summary>
 <br>
 PRISM streams (1 kHz) real-time TCP telemetry about the task over ethernet. This enables robotic policies to autonomously monitor task progress in real time. Practitioner-written scripts can also determine task success or failure by reading theta_on, theta_off, torque, or velocity thresholds.
 </details>
@@ -54,10 +48,10 @@ Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo)
 </details>
 
 ## In This Repo
-- `firmware/` —
+- [`user_guides`] — Guides for the 
 - `docs/hardware/` — BOM, dimensions, renders
 - `docs/build/` —
-- `docs/user_guides` —
+- `docs/` —
 - `docs/rotational_library` —
 
 
