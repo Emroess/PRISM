@@ -4,14 +4,26 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/PRISM)
 [![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/PRISM)
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/PRISM)
+[![GitHub Stars](https://img.shields.io/github/stars/Emroess/PRISM?style=social)](https://github.com/Emroess/PRISM)
+</div>
+
+<div align="center">
+<h3>Train robot policies on real-world rotational tasks — with real force feedback.</h3>
 </div>
 
 ## What is PRISM?
 
 PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hardware-based haptic control system designed to help practitioners train policies on real-world rotational tasks. Unlike purely virtual simulations, PRISM can replicate the tactile force feedback of valves, handles, knobs, and fasteners. It delivers realistic physical-world force feedback to the policy through a modular, motor-driven interface.
 
-## What Can it Do?
-The core value of PRISM lies in helping the practitioner **automate robotic policy training**. 
+## Key Capabilities
+| Feature | Description |
+|---|---|
+| **1 kHz Task Telemetry** | Real-time TCP streaming of θ, τ, and velocity for policy training |
+| **Self-Resetting Tasks** | Automated return-to-start for continuous training loops |
+| **Programmable Haptics** | Tune damping, friction, stiffness, and torque per-episode |
+| **Multi-Interface** | CLI, Web GUI, REST API, and data streaming — all on-device |
+| **Sim Integration** | Experimental Isaac Sim & MuJoCo support *(in development)* |
+| **Modular Handles** | Swap 3D-printed attachments to emulate any rotational task |
 
 <details>
 <summary>Real-time Task Telemetry </summary>
@@ -47,23 +59,86 @@ PRISM has a CLI, Web-GUI, REST API, Data Streaming interfaces. Each interface le
 Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo) and sim2real transfer.
 </details>
 
-## In This Repo
-- [`user_guides`](docs/User%20Guides/) -User guides for all interfaces and firmware installation.
-- [`build_guide`](docs/Build%20Guide/) -User guides for hardware assembly, BOM, and mechanical design files.
-- [`rotational_library`](docs/Rotation%20Library/) -Rotational library for different types of handles and knobs robotic policies can interact with.
-- [`firmware`](firmware) -Open-source STM32H7 micro-controller firmware.
-- [`client`](client) -User guides and examples for PRISM's Python client. 
+## Specifications
+
+| Spec | Value |
+|---|---|
+| Controller | STM32H7 microcontroller |
+| Motor Driver | ODrive S1 |
+| Telemetry Rate | 1 kHz over TCP/Ethernet |
+| Interfaces | CLI, Web GUI, REST API, Data Stream |
+| Build Cost | ~$400 – $500 |
+| Print Volume | ≥ 180 × 180 × 180 mm |
+| Software | Python 3.10+, GNU ARM Toolchain |
+| License | MIT |
+
+```mermaid
+graph LR
+    A[ Robot Arm] -->|Grasps| B[ PRISM Handle]
+    B -->|Shaft Encoder + Motor| C[ STM32H7]
+    C -->|1 kHz TCP| D[Host PC]
+    D -->|PyPRISM API| E[ Policy Training]
+    D -->|REST / CLI / Web| C
+    C -->|Haptic Feedback| B
+```
 
 
+## Explore PRISM
+<table>
+  <tr>
+    <td align="center" width="40%">
+      <a href="docs/Build%20Guide/">
+        <img src="https://img.shields.io/badge/-Build_Guide-2ea44f?style=for-the-badge" alt="Build Guide">
+      </a>
+      <br><sub>BOM, assembly, CAD files</sub>
+    </td>
+    <td align="center" width="40%">
+      <a href="docs/User%20Guides/">
+        <img src="https://img.shields.io/badge/-User_Guides-0969da?style=for-the-badge" alt="User Guides">
+      </a>
+      <br><sub>CLI, REST API, Web GUI, Streaming</sub>
+    </td>
+    <td align="center" width="40%">
+      <a href="docs/Rotation%20Library/">
+        <img src="https://img.shields.io/badge/-Rotation_Library-8250df?style=for-the-badge" alt="Rotation Library">
+      </a>
+      <br><sub>Printable handles & haptic profiles</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="40%">
+      <a href="firmware/">
+        <img src="https://img.shields.io/badge/-Firmware-e8590c?style=for-the-badge" alt="Firmware">
+      </a>
+      <br><sub>STM32H7 open-source firmware</sub>
+    </td>
+    <td align="center" width="40%">
+      <a href="client/">
+        <img src="https://img.shields.io/badge/-Python_Client-ffd43b?style=for-the-badge" alt="Python Client">
+      </a>
+      <br><sub>PyPRISM API & examples</sub>
+    </td>
+    <td align="center" width="40%">
+      <a href="#ready-to-build-prism">
+        <img src="https://img.shields.io/badge/-Quick_Start-e34c26?style=for-the-badge" alt="Quick Start">
+      </a>
+      <br><sub>Get building in 5 steps</sub>
+    </td>
+  </tr>
+</table>
 
-### Prerequisites
+## Quick Start
 
-- A PC running Linux, Windows, or MacOS
-- A 180 x 180 x 180 mm or larger 3D printer
-- Python 3.10+
-- GNU ARM Embedded Toolchain & Make
-- IssacSim, MuJoCo, ect (optional, For RL training)
-- A cool robot to train (optional)
+> **Total build time:** ~15-20 hours  •  **Cost:** ~$300-400  •  **Difficulty:** Intermediate
+
+| Step | Action | Link |
+|:---:|---|---|
+| **1** |  **Order** the Bill of Materials | [BOM](docs/Build%20Guide/BOM/BOM.md) |
+| **2** |  **Print** structural mounts and handles | [CAD Files](docs/Build%20Guide/CAD%20%26%20Assembly%20Files) |
+| **3** |  **Assemble** the mechanical and electrical system | [Assembly Guide](docs/Build%20Guide/Assembly%20Guide.md) |
+| **4** |  **Flash** firmware onto the STM32 | [Firmware Guide](docs/User%20Guides/firmware/firmware-installation.md) |
+| **5** |  **Verify** via the onboard CLI | [CLI Guide](docs/User%20Guides/cli/connecting-to-onboard-cli.md) |
+
 
 ## Ready to Build PRISM?
 
