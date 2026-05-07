@@ -15,6 +15,57 @@
 
 PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hardware-based haptic control system designed to help practitioners train policies on real-world rotational tasks. Unlike purely virtual simulations, PRISM can replicate the tactile force feedback of valves, handles, knobs, and fasteners. It delivers realistic physical-world force feedback to the policy through a modular, motor-driven interface.
 
+---
+
+## Explore PRISM
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="docs/Build%20Guide/">
+        <img src="https://img.shields.io/badge/-Build_Guide-2ea44f?style=for-the-badge" alt="Build Guide">
+      </a>
+      <br><sub>BOM, assembly, CAD files</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/User%20Guides/">
+        <img src="https://img.shields.io/badge/-User_Guides-0969da?style=for-the-badge" alt="User Guides">
+      </a>
+      <br><sub>CLI, REST API, Web GUI, Streaming</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/Rotation%20Library/">
+        <img src="https://img.shields.io/badge/-Rotation_Library-8250df?style=for-the-badge" alt="Rotation Library">
+      </a>
+      <br><sub>Printable handles and haptic profiles</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="firmware/">
+        <img src="https://img.shields.io/badge/-Firmware-e8590c?style=for-the-badge" alt="Firmware">
+      </a>
+      <br><sub>STM32H7 open-source firmware</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="client/">
+        <img src="https://img.shields.io/badge/-Python_Client-ffd43b?style=for-the-badge" alt="Python Client">
+      </a>
+      <br><sub>PyPRISM API and examples</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="#quick-start">
+        <img src="https://img.shields.io/badge/-Quick_Start-e34c26?style=for-the-badge" alt="Quick Start">
+      </a>
+      <br><sub>Get building in 5 steps</sub>
+    </td>
+  </tr>
+</table>
+</div>
+
+---
+
 ## Key Capabilities
 | Feature | Description |
 |---|---|
@@ -83,53 +134,6 @@ graph LR
     D -->|REST / CLI / Web| C
     C -->|Haptic Feedback| B
 ```
-
----
-
-## Explore PRISM
-
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <a href="docs/Build%20Guide/">
-        <img src="https://img.shields.io/badge/-Build_Guide-2ea44f?style=for-the-badge" alt="Build Guide">
-      </a>
-      <br><sub>BOM, assembly, CAD files</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="docs/User%20Guides/">
-        <img src="https://img.shields.io/badge/-User_Guides-0969da?style=for-the-badge" alt="User Guides">
-      </a>
-      <br><sub>CLI, REST API, Web GUI, Streaming</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="docs/Rotation%20Library/">
-        <img src="https://img.shields.io/badge/-Rotation_Library-8250df?style=for-the-badge" alt="Rotation Library">
-      </a>
-      <br><sub>Printable handles and haptic profiles</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="33%">
-      <a href="firmware/">
-        <img src="https://img.shields.io/badge/-Firmware-e8590c?style=for-the-badge" alt="Firmware">
-      </a>
-      <br><sub>STM32H7 open-source firmware</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="client/">
-        <img src="https://img.shields.io/badge/-Python_Client-ffd43b?style=for-the-badge" alt="Python Client">
-      </a>
-      <br><sub>PyPRISM API and examples</sub>
-    </td>
-    <td align="center" width="33%">
-      <a href="#quick-start">
-        <img src="https://img.shields.io/badge/-Quick_Start-e34c26?style=for-the-badge" alt="Quick Start">
-      </a>
-      <br><sub>Get building in 5 steps</sub>
-    </td>
-  </tr>
-</table>
 
 ---
 
