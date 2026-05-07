@@ -1,6 +1,6 @@
 # PRISM
 
-Train robotic policies on physical rotational tasks — fully automated, self-resetting, zero human intervention.
+Train robotic policies on physical rotational tasks. 
 
 
 
@@ -50,7 +50,7 @@ PRISM has a CLI, Web-GUI, REST API, Data Streaming interfaces. Each interface le
 <details>
 <summary>Simulation Integration (Under Development)</summary>
 <br>
-Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo).
+Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo) and sim2real transfer.
 </details>
 
 ## In This Repo
