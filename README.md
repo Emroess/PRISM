@@ -48,11 +48,11 @@ Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo)
 </details>
 
 ## In This Repo
-- [`user_guides`](docs/User%20Guides/) —User guides for all interfaces and firmware installation.
-- [`build_guide`](docs/Build%20Guide/) —User guides for hardware assembly, BOM, and mechanical design files.
-- [`rotational_library`](docs/Rotation%20Library/) —Rotational library for different types of handles and knobs robotic policies can interact with.
-- [`firmware`](firmware) — Open-source STM32H7 micro-controller firmware.
-- [`client`](client) —User guides and examples for PRISM's Python client. 
+- [`user_guides`](docs/User%20Guides/) -User guides for all interfaces and firmware installation.
+- [`build_guide`](docs/Build%20Guide/) -User guides for hardware assembly, BOM, and mechanical design files.
+- [`rotational_library`](docs/Rotation%20Library/) -Rotational library for different types of handles and knobs robotic policies can interact with.
+- [`firmware`](firmware) -Open-source STM32H7 micro-controller firmware.
+- [`client`](client) -User guides and examples for PRISM's Python client. 
 
 
 
