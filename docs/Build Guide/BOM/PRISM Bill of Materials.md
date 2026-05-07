@@ -2,7 +2,7 @@
 
 This Bill of Materials (BOM) consolidates key procurement items to build one PRISM unit. 
 Links point to common suppliers (Digi-Key, ST, Mouser, Amazon).   
-Prices are approximate and may vary.
+> Prices are approximate and may vary.
 
 | Item | Description | Supplier / Link | Cost (USD) |
 | :---- | :---- | :---- | :---- |
@@ -17,7 +17,5 @@ Prices are approximate and may vary.
 | 12 AWG Stranded Wire | PSU and Odrive Main AC-DC wiring *(Configurable Length)* | [Amazon](https://www.amazon.com/dp/B0CMLBVGT7?ref_=cm_sw_r_cp_ud_dp_K2WV502HP5G05N40S2QZ_1) | \*$28.49 |
 | 8mm REX®  | Output Shaft (40mm recommended) | [ServoCity](https://www.servocity.com/gobilda-rex-shafting/), [GoBilda](https://www.gobilda.com/stainless-steel-rex-shafting/) | \*$4.09 |
 | Cat6 Patch Cables | Ethernet Pass-Through | [Amazon](https://a.co/d/058uAgds) | $7.99 |
-|  |  |  |  |
-|  |  |  |  |
 |  |  |  | **Total: $522.78** |
 
