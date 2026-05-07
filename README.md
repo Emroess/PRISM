@@ -140,7 +140,7 @@ graph LR
 
 | Step | Action | Link |
 |:---:|---|---|
-| **1** | **Order** the Bill of Materials | [BOM](docs/Build%20Guide/BOM/BOM.md) |
+| **1** | **Order** the Bill of Materials | [BOM](docs/Build%20Guide/PRISM_Bill_of_Materials.md) |
 | **2** | **Print** structural mounts and handles | [CAD Files](docs/Build%20Guide/CAD%20%26%20Assembly%20Files), [Handles](docs/Rotation%20Library/Rotation%20Library.md) |
 | **3** | **Assemble** the mechanical and electrical system | [Assembly Guide](docs/Build%20Guide/Assembly%20Guide.md) |
 | **4** | **Flash** firmware onto the STM32 | [Firmware Guide](docs/User%20Guides/firmware/firmware-installation.md) |
