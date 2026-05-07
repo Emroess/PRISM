@@ -135,7 +135,7 @@ graph LR
 
 ## Quick Start
 
-> **Total build time:** ~15-20 hours  |  **Cost:** ~$400-500  |  **Difficulty:** Intermediate
+> **Total build time:** ~2-5 hours  |  **Cost:** ~$400-500  |  **Difficulty:** Intermediate
 
 | Step | Action | Link |
 |:---:|---|---|
