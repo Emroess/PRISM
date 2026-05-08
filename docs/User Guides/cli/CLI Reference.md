@@ -600,7 +600,7 @@ These commands control the ODrive motor controller that drives PRISM's haptic fe
 <summary><code>odrive_ping</code></summary>
 <br>
 
-> [!WARNING]
+>   
 > TODO: does not work in CLI (returns: Unknown command: odrive_ping) (Also shows up in the `help` call)
 
 Test connectivity with the ODrive motor controller over CAN bus.
@@ -1024,7 +1024,7 @@ Position gain set: Kp=20.000
 <summary><code>odrive_vel_gains</code></summary>
 <br>
 
-> [!WARNING]
+
 > TODO: command results in error: Unknown command: odrive_vel_gains. odrive_vel_gain also doesn't exist. (Both show up in the `help` call though)
 
 Set the proportional and integral gains (Kp, Ki) for velocity control mode.
@@ -1107,7 +1107,7 @@ Velocity: 78.90 turns/s
 <summary><code>can_telemetry</code></summary>
 <br>
 
-> [!WARNING]
+>   
 > TODO: this command works, but gives weird response: "Failed to read Telemetry" \n "Error: Buffer empty"
 
 Read bus voltage, current, and temperature data from the ODrive.
@@ -1266,7 +1266,7 @@ New Gateway: 192.168.1.1
 <summary><code>ping</code></summary>
 <br>
 
-> [!WARNING]
+>   
 > TODO: does not return any results, i.e. just says "Ping initiated" but doesn't give info like regular terminals do.
 
 Send ICMP ping packets to test network connectivity to a remote host.
@@ -1436,7 +1436,7 @@ Ethernet streaming stopped
 
 Detailed performance metrics and data logging.
 
-> [!WARNING]
+>   
 > TODO: `perf_stats`, `perf_rms`, and `perf_dump` do not exist in the CLI — "Unknown command". They also don't appear in the `help` output.
 
 | Command | Description |
@@ -1449,7 +1449,7 @@ Detailed performance metrics and data logging.
 <summary><code>perf_stats</code></summary>
 <br>
 
-> [!WARNING]
+>   
 > TODO: doesn't exist in the CLI: "Unknown command: perf_stats". Also doesn't exist when doing `help`
 
 Display comprehensive performance statistics including min/max/mean values for key measurements.
@@ -1494,7 +1494,7 @@ Samples:   10000
 <summary><code>perf_rms</code></summary>
 <br>
 
-> [!WARNING]
+>   
 > TODO: same as `perf_stats`
 
 Display root-mean-square (RMS) values for position, velocity, and torque. RMS provides a measure of signal magnitude over time.
@@ -1529,7 +1529,7 @@ Torque:      0.089 N·m
 <summary><code>perf_dump</code></summary>
 <br>
 
-> [!WARNING]
+>   
 > TODO: same as `perf_stats`
 
 Export recorded performance data in CSV format for offline analysis.
@@ -1641,7 +1641,7 @@ Error: Invalid parameter
 
 ## Quick Reference
 
-> [!WARNING]
+>   
 > TODO: clear out the Monitoring row (since `perf_*` don't exist). Also clear out other commands confirmed to not work.
 
 | Category | Key Commands |
