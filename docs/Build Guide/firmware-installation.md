@@ -12,39 +12,39 @@
    </a>
 </div>
 
-# Firmware Installation Guide
+---
 
-This guide walks you through installing the PRISM firmware onto a Nucleo-H753ZI development board using the onboard ST-LINK debugger/programmer.
+> [!NOTE]
+> This guide walks you through installing the PRISM firmware onto a Nucleo-H753ZI development board using the onboard ST-LINK debugger/programmer.
+
+---
 
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Hardware Setup](#hardware-setup)
-- [Software Requirements](#software-requirements)
-- [Building the Firmware](#building-the-firmware)
-- [Flashing the Firmware](#flashing-the-firmware)
-- [Verification](#verification)
-- [Troubleshooting](#troubleshooting)
-- [Advanced Options](#advanced-options)
+| Section | Description |
+|:--------|:------------|
+| [Prerequisites](#prerequisites) | Hardware and knowledge requirements |
+| [Hardware Setup](#hardware-setup) | Board inspection, connection, verification |
+| [Software Requirements](#software-requirements) | ARM GCC, OpenOCD, Make |
+| [Building the Firmware](#building-the-firmware) | Clone, compile, verify build |
+| [Flashing the Firmware](#flashing-the-firmware) | Program the board via ST-LINK |
+| [Verification](#verification) | Confirm firmware is running |
+| [Troubleshooting](#troubleshooting) | Common issues and fixes |
+| [Advanced Options](#advanced-options) | Debug builds, GDB, Windows tools |
 
 ---
 
 ## Prerequisites
 
-### Required Hardware
+| Item | Required |
+|:-----|:---------|
+| **Nucleo-H753ZI** development board | Yes |
+| **USB Type-A to Micro-USB cable** (for ST-LINK) | Yes |
+| **Host computer** — Linux, macOS, or Windows | Yes |
+| ODrive motor controller + brushless motor | Optional (for full system testing) |
 
-- **Nucleo-H753ZI** development board
-- **USB Type-A to Micro-USB cable** (for ST-LINK connection)
-- **Host computer** running Linux, macOS, or Windows
-- *Optional*: ODrive motor controller and brushless motor for full system testing
-
-### Knowledge Requirements
-
-Basic familiarity with:
-
-- Command-line terminal usage
-- Embedded systems concepts
-- Make build system
+> [!TIP]
+> Basic familiarity with command-line terminal usage, embedded systems concepts, and the Make build system is helpful.
 
 ---
 
@@ -54,8 +54,10 @@ Basic familiarity with:
 
 The Nucleo-H753ZI has two USB connectors:
 
-- **CN1 (USB ST-LINK)**: Micro-USB connector at the top of the board - **Use this one for programming**
-- **CN13 (USB USER)**: Micro-USB connector close to RJ45 network port- This is for the target MCU, not for programming
+| Connector | Location | Purpose |
+|:----------|:---------|:--------|
+| **CN1 (USB ST-LINK)** | Top of board | **Use this one for programming** |
+| **CN13 (USB USER)** | Near RJ45 port | Target MCU — not for programming |
 
 ### 2. Connect the Board
 
@@ -95,7 +97,8 @@ Expected output:
 crw-rw---- 1 root dialout 166, 0 Nov 21 10:30 /dev/ttyACM0
 ```
 
-**Note**: You may need to add your user to the `dialout` group to access the serial port:
+> [!TIP]
+> You may need to add your user to the `dialout` group to access the serial port:
 
 ```bash
 sudo usermod -aG dialout $USER
@@ -111,24 +114,36 @@ Then log out and log back in for the changes to take effect.
 
 The firmware is built using the ARM GCC compiler. Install it using your package manager:
 
-**Ubuntu/Debian:**
+<details>
+<summary><strong>Ubuntu / Debian</strong></summary>
+<br>
 
 ```bash
 sudo apt-get update
 sudo apt-get install gcc-arm-none-eabi binutils-arm-none-eabi
 ```
 
-**Fedora/RHEL:**
+</details>
+
+<details>
+<summary><strong>Fedora / RHEL</strong></summary>
+<br>
 
 ```bash
 sudo dnf install arm-none-eabi-gcc-cs arm-none-eabi-binutils
 ```
 
-**macOS (Homebrew):**
+</details>
+
+<details>
+<summary><strong>macOS (Homebrew)</strong></summary>
+<br>
 
 ```bash
 brew install --cask gcc-arm-embedded
 ```
+
+</details>
 
 Verify installation:
 
@@ -140,23 +155,35 @@ arm-none-eabi-gcc --version
 
 OpenOCD (Open On-Chip Debugger) is used to program and debug the microcontroller via ST-LINK.
 
-**Ubuntu/Debian:**
+<details>
+<summary><strong>Ubuntu / Debian</strong></summary>
+<br>
 
 ```bash
 sudo apt-get install openocd
 ```
 
-**Fedora/RHEL:**
+</details>
+
+<details>
+<summary><strong>Fedora / RHEL</strong></summary>
+<br>
 
 ```bash
 sudo dnf install openocd
 ```
 
-**macOS (Homebrew):**
+</details>
+
+<details>
+<summary><strong>macOS (Homebrew)</strong></summary>
+<br>
 
 ```bash
 brew install openocd
 ```
+
+</details>
 
 Verify installation:
 
@@ -164,59 +191,55 @@ Verify installation:
 openocd --version
 ```
 
-Expected output should show version 0.11.0 or newer.
+> [!NOTE]
+> Expected output should show version 0.11.0 or newer.
 
 ### 3. Make
 
 The build system uses GNU Make:
 
-**Ubuntu/Debian:**
+<details>
+<summary><strong>Ubuntu / Debian</strong></summary>
+<br>
 
 ```bash
 sudo apt-get install build-essential
 ```
 
-**Fedora/RHEL:**
+</details>
+
+<details>
+<summary><strong>Fedora / RHEL</strong></summary>
+<br>
 
 ```bash
 sudo dnf groupinstall "Development Tools"
 ```
 
-**macOS:**
+</details>
+
+<details>
+<summary><strong>macOS</strong></summary>
+<br>
+
 Make is included with Xcode Command Line Tools:
 
 ```bash
 xcode-select --install
 ```
 
+</details>
+
 ### 4. Optional: Serial Monitor
 
 To interact with the firmware via UART, install a serial terminal:
 
-**Option A: screen** (usually pre-installed)
-
-```bash
-screen /dev/ttyACM0 115200
-```
-
-**Option B: picocom** 
-
-```bash
-picocom -b 115200 /dev/ttyACM0 
-```
-
-**Option C: minicom**
-
-```bash
-sudo apt-get install minicom
-minicom -D /dev/ttyACM0 -b 115200
-```
-
-**Option D: PuTTY** (GUI option)
-
-```bash
-sudo apt-get install putty
-```
+| Tool | Command |
+|:-----|:--------|
+| `screen` | `screen /dev/ttyACM0 115200` |
+| `picocom` | `picocom -b 115200 /dev/ttyACM0` |
+| `minicom` | `minicom -D /dev/ttyACM0 -b 115200` |
+| PuTTY (GUI) | `sudo apt-get install putty` |
 
 ---
 
@@ -304,7 +327,8 @@ You should see:
 
 ## Flashing the Firmware
 
-> **_NOTE:_** Flashing the firmware to the Nucleo-STM32H7ZI while a CAN transceiver is connected might result in a OpenOCD core timeout error.
+> [!WARNING]
+> Flashing the firmware to the Nucleo-STM32H7ZI while a CAN transceiver is connected may result in an OpenOCD core timeout error. Disconnect the transceiver before flashing.
 
 The simplest way to flash the firmware is using the provided Makefile target:
 
@@ -341,7 +365,9 @@ Warn : Adding extra erase range, 0x08024000 .. 0x0803ffff
 shutdown command invoked
 ```
 
-### Method 2: Manual OpenOCD Command
+<details>
+<summary><strong>Method 2 — Manual OpenOCD Command</strong></summary>
+<br>
 
 If you want more control, you can run OpenOCD directly:
 
@@ -350,7 +376,11 @@ openocd -f interface/stlink.cfg -f target/stm32h7x.cfg \
     -c "program build/firmware.elf verify reset exit"
 ```
 
-### Method 3: Interactive OpenOCD Session
+</details>
+
+<details>
+<summary><strong>Method 3 — Interactive OpenOCD Session</strong></summary>
+<br>
 
 For debugging or manual control:
 
@@ -358,7 +388,7 @@ For debugging or manual control:
 openocd -f interface/stlink.cfg -f target/stm32h7x.cfg
 ```
 
-This starts an interactive OpenOCD session. In another terminal, connect via telnet:
+In another terminal, connect via telnet:
 
 ```bash
 telnet localhost 4444
@@ -374,69 +404,33 @@ Then manually program:
 > exit
 ```
 
+</details>
+
 ---
 
 ## Verification
 
-### 1. Check LED Behavior
+After flashing and reset, run through this checklist:
 
-After flashing and reset, observe the board LEDs:
+| Step | Action | Expected Result |
+|:----:|:-------|:----------------|
+| 1 | Observe board LEDs | LD1 blinks (activity), LD2 solid green (power) |
+| 2 | Connect serial terminal | `screen /dev/ttyACM0 115200` |
+| 3 | Press **Enter** | You see `PRISM>` prompt |
+| 4 | Type `help` | Full command list displays |
+| 5 | Type `version` | Firmware version string |
+| 6 | Type `status` | CPU, memory, network, motor controller status |
 
-- **LD1 (Green/User LED)**: Should blink or show activity patterns defined in the firmware
-- **LD2 (Power)**: Should remain solid green
-
-### 2. Connect via Serial Terminal
-
-Connect to the UART console to verify firmware is running:
-
-```bash
-screen /dev/ttyACM0 115200
-```
-
-Press Enter - you should see the CLI prompt:
-
-```
-PRISM> 
-```
-
-Type `help` to see available commands:
-
-```
-PRISM> help
-```
-
-### 3. Check Firmware Version
-
-Query the firmware version:
-
-```
-PRISM> version
-```
-
-### 4. Check System Status
-
-View system status:
-
-```
-PRISM> status
-```
-
-This should display:
-
-- CPU usage
-- Memory usage
-- Network status
-- Motor controller status
-
-### 5. Exit Serial Monitor
-
-To exit `screen`: Press `Ctrl+A`, then `K`, then `Y`
+> [!TIP]
+> To exit `screen`: Press `Ctrl+A`, then `K`, then `Y`.
 
 ---
 
 ## Troubleshooting
 
-### Problem: OpenOCD Can't Find ST-LINK
+<details>
+<summary><strong>OpenOCD Can't Find ST-LINK</strong> — <code>Error: open failed</code></summary>
+<br>
 
 **Error:**
 
@@ -457,7 +451,11 @@ Error: open failed
    ```
 4. Try running with sudo: `sudo make flash`
 
-### Problem: Permission Denied on /dev/ttyACM0
+</details>
+
+<details>
+<summary><strong>Permission Denied on /dev/ttyACM0</strong> — <code>/dev/ttyACM0: Permission denied</code></summary>
+<br>
 
 **Error:**
 
@@ -474,7 +472,11 @@ sudo usermod -aG dialout $USER
 
 Then log out and back in.
 
-### Problem: Target Voltage Detected as 0V
+</details>
+
+<details>
+<summary><strong>Target Voltage Detected as 0V</strong> — <code>Error: Target voltage may be too low for reliable debugging</code></summary>
+<br>
 
 **Error:**
 
@@ -489,7 +491,11 @@ Error: Target voltage may be too low for reliable debugging
 3. Try a different USB port or cable
 4. Check if JP5 jumper is set correctly (should connect ST-LINK MCU to target)
 
-### Problem: Build Fails - Command Not Found
+</details>
+
+<details>
+<summary><strong>Build Fails - Command Not Found</strong> — <code>arm-none-eabi-gcc: command not found</code></summary>
+<br>
 
 **Error:**
 
@@ -500,7 +506,11 @@ arm-none-eabi-gcc: command not found
 **Solution:**
 Install ARM GCC toolchain (see [Software Requirements](#software-requirements))
 
-### Problem: OpenOCD Times Out
+</details>
+
+<details>
+<summary><strong>OpenOCD Times Out</strong> — <code>Error: timed out while waiting for target halted</code></summary>
+<br>
 
 **Error:**
 
@@ -520,7 +530,11 @@ Error: timed out while waiting for target halted
        -c "program build/firmware.elf verify reset exit"
    ```
 
-### Problem: Verification Failed
+</details>
+
+<details>
+<summary><strong>Verification Failed</strong> — <code>Error: verification failed</code></summary>
+<br>
 
 **Error:**
 
@@ -539,7 +553,11 @@ Error: verification failed
    ```
 1. Then reflash: `make flash`
 
-### Problem: No Serial Port Appears
+</details>
+
+<details>
+<summary><strong>No Serial Port Appears</strong></summary>
+<br>
 
 **Problem:**
 The `/dev/ttyACM0` device doesn't appear after flashing.
@@ -551,11 +569,16 @@ The `/dev/ttyACM0` device doesn't appear after flashing.
 3. Check dmesg for errors: `dmesg | tail -20`
 4. Verify CDC-ACM driver is loaded: `lsmod | grep cdc_acm`
 
+</details>
+
+
 ---
 
 ## Advanced Options
 
-### Building with Different Optimization Levels
+<details>
+<summary><strong>Building with Different Optimization Levels</strong></summary>
+<br>
 
 **Debug build (no optimization):**
 
@@ -578,7 +601,11 @@ make clean
 make CFLAGS_OPT=-O2
 ```
 
-### Running Validation Checks
+</details>
+
+<details>
+<summary><strong>Running Validation Checks</strong></summary>
+<br>
 
 Before committing changes, run the full validation suite:
 
@@ -592,7 +619,11 @@ This runs:
 - MISRA-C compliance checks (requires cppcheck)
 - Hardware access layering validation
 
-### Checking Memory Usage
+</details>
+
+<details>
+<summary><strong>Checking Memory Usage</strong></summary>
+<br>
 
 View detailed memory usage:
 
@@ -606,7 +637,11 @@ This displays:
 - RAM usage (data + bss sections)
 - Breakdown by section
 
-### Starting Debug Session
+</details>
+
+<details>
+<summary><strong>Starting Debug Session</strong></summary>
+<br>
 
 Launch GDB debugging session:
 
@@ -628,7 +663,11 @@ In GDB, you can:
 - Inspect variables: `print variable_name`
 - View backtrace: `backtrace`
 
-### Using ST-LINK Utility (Windows)
+</details>
+
+<details>
+<summary><strong>Using ST-LINK Utility (Windows)</strong></summary>
+<br>
 
 On Windows, you can use STM32CubeProgrammer instead of OpenOCD:
 
@@ -638,28 +677,21 @@ On Windows, you can use STM32CubeProgrammer instead of OpenOCD:
 4. Load `build/firmware.hex` or `build/firmware.elf`
 5. Click "Download"
 
----
+</details>
 
-## Next Steps
-
-After successfully installing the firmware:
-
-1. **Explore the CLI**: Connect via serial and run `help` to see available commands
-2. **Configure Network**: Set up Ethernet connection for REST API access (see [Network Configuration](../rest/rest-api.md))
-3. **Connect Motor Controller**: Wire up the ODrive and configure CAN bus
-4. **Test Haptic Control**: Try different valve presets and feel characteristics
-5. **Review Documentation**: Read the full [documentation](../README.md) for detailed usage
 
 ---
 
 ## Additional Resources
 
-- **Firmware README**: `firmware/README.md` - Architecture overview
-- **Makefile**: `firmware/Makefile` - Build system details
-- **CLI Reference**: [CLI Reference Guide](../cli/CLI%20Reference.md)
-- **REST API**: [REST API Documentation](../rest/rest-api.md)
-- **Hardware**: [Nucleo-H753ZI User Manual](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf)
-- **OpenOCD Manual**: [OpenOCD Documentation](http://openocd.org/doc/html/index.html)
+| Resource | Link |
+|:---------|:-----|
+| Firmware README | `firmware/README.md` |
+| Makefile | `firmware/Makefile` |
+| CLI Reference | [CLI Reference](../User%20Guides/cli/CLI%20Reference.md) |
+| REST API | [REST API](../User%20Guides/rest/rest-api.md) |
+| Nucleo-H753ZI User Manual | [ST Documentation](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf) |
+| OpenOCD Manual | [OpenOCD Docs](http://openocd.org/doc/html/index.html) |
 
 ---
 
@@ -692,26 +724,23 @@ make help
 
 ### File Locations
 
-- Firmware source: `firmware/src/`
-- Build outputs: `firmware/build/`
-- Linker script: `firmware/ld/STM32H753ZITx_FLASH.ld`
-- Makefile: `firmware/Makefile`
+| Item | Path |
+|:-----|:-----|
+| Firmware source | `firmware/src/` |
+| Build outputs | `firmware/build/` |
+| Linker script | `firmware/ld/STM32H753ZITx_FLASH.ld` |
+| Makefile | `firmware/Makefile` |
 
 ### Board Connectors
 
-- **CN1**: ST-LINK USB (Micro-USB) - **Use for programming**
-- **CN13**: User USB (Type-C) - Target MCU USB
-- **CN11/CN12**: Arduino connectors
-- **CN7/CN8/CN9/CN10**: Morpho headers
-- **B1**: USER button (blue)
-- **B2**: RESET button (black)
-
----
-
-**Document Version**: 1.0  
-**Last Updated**: November 21, 2025  
-**Target Hardware**: Nucleo-H753ZI (MB1364)  
-**Firmware Version**: Compatible with PRISM firmware v1.x
+| Connector | Purpose |
+|:----------|:--------|
+| **CN1** | ST-LINK USB (Micro-USB) — **Use for programming** |
+| **CN13** | User USB (Type-C) — Target MCU USB |
+| **CN11/CN12** | Arduino connectors |
+| **CN7–CN10** | Morpho headers |
+| **B1** | USER button (blue) |
+| **B2** | RESET button (black) |
 
 ---
 
