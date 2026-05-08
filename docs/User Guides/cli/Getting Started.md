@@ -55,8 +55,8 @@
    - This is typically the USB connection farthest from the Ethernet port
    - Labeled "USB ST-LINK" or "CN1" on the board
 
-   > [!TIP]
-   > If the 3D-printed enclosure and USB extension is installed, this connection will be to the side of the AC power input cable.
+> [!TIP]
+> If the 3D-printed enclosure is installed, this connection will be to the side of the RJ45 ethernet input.
 
 2. **Connect the USB cable** between your computer and the ST-LINK port
 3. **Power up the board**
