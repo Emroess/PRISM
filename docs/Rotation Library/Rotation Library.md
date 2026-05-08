@@ -18,11 +18,11 @@
 ---
 
 > [!NOTE]
-> The PRISM system relies on interchangeable physical handles combined with software "Presets" to accurately emulate real-world rotational environments. Swap handles in seconds — switch presets instantly via the CLI.
+> The PRISM system relies on interchangeable physical handles combined with software "Presets" to accurately emulate real-world rotational environments. Swap handles in seconds — switch presets instantly via the user interfaces.
 
 ---
 
-## 🎛️ Emulation Profiles (Haptic Presets)
+## Emulation Profiles (Haptic Presets)
 
 Profiles control the resistance, stiffness, and feel of the main drive shaft. These parameters correspond precisely to real forces and can be recalled instantaneously on the hardware.
 
@@ -39,7 +39,7 @@ Profiles control the resistance, stiffness, and feel of the main drive shaft. Th
 
 ---
 
-## 🔄 Physical Handle Library
+## Physical Handle Library
 
 Attaching 3D-printed and COTS (Commercial Off-The-Shelf) parts allows the robotic policy to interact with real geometry. Handle metadata is stored in [`handles.json`](Handles/handles.json) for programmatic extension.
 
@@ -133,7 +133,7 @@ The "REX" drive shaft is an 8 mm hex and can be turned directly with an 8 mm wre
 
 ---
 
-## 🤝 Contributing a New Handle
+## Contributing a New Handle
 
 You can construct your own handle adapters and submit them. Each new handle requires a JSON schema entry in [`handles.json`](Handles/handles.json) specifying images, purchased BOM objects, printed parts, and CAD/Sim files.
 
