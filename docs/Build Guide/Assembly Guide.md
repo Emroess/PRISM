@@ -89,4 +89,4 @@ Next up: Component Assembly
 ### 3. Motor Unit Assembly
 
 
-### Next: [Firmware Installation](../User%20Guides/firmware/firmware-installation.md)
+### Next: [Firmware Installation](firmware-installation.md)
