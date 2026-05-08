@@ -73,39 +73,24 @@ PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hard
 | **Sim Integration** | Experimental Isaac Sim & MuJoCo support *(in development)* |
 | **Modular Handles** | Swap 3D-printed attachments to emulate any rotational task |
 
-<details>
-<summary>Real-time Task Telemetry </summary>
-<br>
+### Real-time Task Telemetry
 PRISM streams (1 kHz) real-time TCP telemetry about the task over ethernet. This enables robotic policies to autonomously monitor task progress in real time. Practitioner-written scripts can also determine task success or failure by reading theta_on, theta_off, torque, or velocity thresholds.
-</details>
 
-<details>
-<summary>Task Self-Resetting</summary>
-<br>
-PRISM’s fully programmable API allows the rotational task to automatically reset to its starting state or other programmed positions. Practitioners can use this feature to fast track expert demonstrations or make a continuous policy training loop with PRISM API control scripts.
-</details>
+### Task Self-Resetting
+PRISM's fully programmable API allows the rotational task to automatically reset to its starting state or other programmed positions. Practitioners can use this feature to fast track expert demonstrations or make a continuous policy training loop with PRISM API control scripts.
 
-<details>
-<summary>Programmable Characteristics</summary>
-<br>
-Practitioners define a software “profile” by configuring physically meaningful parameters such as viscous damping, Coulomb friction coefficient, smoothing parameter ϵ, virtual wall stiffness, torque limits, and others. These parameters define how each rotational task will "feel" and lets PRISM emulate the spring-back of a lever door handle to the hard to turn quarter-turn valve found in naval ships. 
+### Programmable Characteristics
+Practitioners define a software "profile" by configuring physically meaningful parameters such as viscous damping, Coulomb friction coefficient, smoothing parameter ϵ, virtual wall stiffness, torque limits, and others. These parameters define how each rotational task will "feel" and lets PRISM emulate the spring-back of a lever door handle to the hard to turn quarter-turn valve found in naval ships. 
   
   > Practitioners can also instantly randomize these parameters for the next episode to train ML polices to adapt to task changes. 
-</details>
 
-<details>
-<summary>Multi-interface Support</summary>
-<br>
+### Multi-interface Support
 PRISM has a CLI, Web-GUI, REST API, Data Streaming interfaces. Each interface lets the practitioner configure or use certain features. 
   
   > Every user-interface is locally hosted by the main micro-controller. 
-</details>
 
-<details>
-<summary>Simulation Integration (Under Development)</summary>
-<br>
+### Simulation Integration (Under Development)
 Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo) and sim2real transfer.
-</details>
 
 ## Specifications
 
