@@ -19,7 +19,7 @@
 
 ---
 
-## 🔌 Core Electronics
+## Core Electronics
 
 | Qty | Item | Description | Supplier / Link | Cost (USD) |
 |:---:|:-----|:------------|:----------------|:----------:|
@@ -29,7 +29,7 @@
 
 ---
 
-## ⚡ Power & Wiring
+## Power & Wiring
 
 | Qty | Item | Description | Supplier / Link | Cost (USD) |
 |:---:|:-----|:------------|:----------------|:----------:|
@@ -40,7 +40,7 @@
 
 ---
 
-## 🔩 Connectors & Mechanical
+## Connectors & Mechanical
 
 | Qty | Item | Description | Supplier / Link | Cost (USD) |
 |:---:|:-----|:------------|:----------------|:----------:|
@@ -51,7 +51,7 @@
 
 ---
 
-## 🔄 Emulation Handles
+## Emulation Handles
 
 Select one or more handles depending on the tasks you want to train on.  
 *See the [Rotation Library](../Rotation%20Library/Rotation%20Library.md) for full details, printable CAD files, and haptic profile configurations.*
@@ -65,7 +65,7 @@ Select one or more handles depending on the tasks you want to train on.
 
 ---
 
-## 🧰 Recommended Tools
+## Recommended Tools
 
 <details>
 <summary>Tools & consumables you may need (click to expand)</summary>
@@ -86,7 +86,7 @@ Select one or more handles depending on the tasks you want to train on.
 
 <div align="center">
 
-### 💰 Estimated Total: **$523 – $600**
+### Estimated Total: **$523 – $600**
 
 *Depending on handle selection, shipping, and existing equipment.*
 
