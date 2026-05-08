@@ -14,7 +14,7 @@
 
 # Build Guide
 
-Welcome to the PRISM Build Guide. Here you will find all the resources required to source components, print and assemble your parts, and flash the necessary firmware to get your system ready.
+Welcome to the PRISM Build Guide. Here you will find intructions for printing and assembling the componets that make PRISM.
 
 ## Table of Contents
 
