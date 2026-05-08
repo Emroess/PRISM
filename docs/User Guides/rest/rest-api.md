@@ -1,45 +1,57 @@
-[⬅ Back to Main README](../../../README.md#user-guides)
+<div align="center">
+   <img src="../../assets/images/PRISMlogo.png" width="500" alt="PRISM Logo">
 
-# PRISM REST API Reference
+   <h3>REST API Reference</h3>
 
-This document provides complete reference documentation for the PRISM (Simulated Task Exploration | Valve Emulation) REST API. The API enables remote control, configuration, and monitoring of the valve haptic system over HTTP.
+   <p>Complete reference for the PRISM HTTP API — remote control, configuration, and monitoring.</p>
+
+   <a href="../../../README.md">
+      <img src="https://img.shields.io/badge/⬅_Back_to_README-e34c26?style=for-the-badge" alt="Back to README">
+   </a>
+   &nbsp;
+   <a href="rest-api-examples.md">
+      <img src="https://img.shields.io/badge/API_Examples-0969da?style=for-the-badge" alt="API Examples">
+   </a>
+</div>
+
+---
+
+> [!NOTE]
+> The PRISM REST API provides programmatic access to all valve control, configuration, and monitoring functions over HTTP/JSON.
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Authentication](#authentication)
-- [Base URL and Port](#base-url-and-port)
-- [Response Format](#response-format)
-- [Error Handling](#error-handling)
-- [API Endpoints](#api-endpoints)
-    - [Status and Configuration](#status-and-configuration)
-    - [Control](#control)
-    - [Presets](#presets)
-    - [ODrive Motor Controller](#odrive-motor-controller)
-    - [CAN Bus](#can-bus)
-    - [Performance Metrics](#performance-metrics)
-    - [Data Streaming](#data-streaming)
-- [Complete Endpoint Reference](#complete-endpoint-reference)
+| Section | Description |
+|:--------|:------------|
+| [Overview](#overview) | Design goals and key features |
+| [Authentication](#authentication) | API key setup and usage |
+| [Base URL and Port](#base-url-and-port) | Connection details |
+| [Response Format](#response-format) | JSON response structure |
+| [Error Handling](#error-handling) | Status codes and error messages |
+| [API Endpoints](#api-endpoints) | Config, Control, Presets, ODrive, CAN, Perf, Streaming |
+| [Complete Endpoint Reference](#complete-endpoint-reference) | Quick-reference table |
 
 ---
 
 ## Overview
 
-The PRISM REST API provides programmatic access to all valve control, configuration, and monitoring functions. It is designed for:
-
-- **Robotics Integration** - Control PRISM from your robot control system
-- **Automated Testing** - Script test sequences and data collection
-- **Remote Monitoring** - Monitor valve status and performance over network
-- **Custom Applications** - Build custom interfaces and control logic
-- **Research Tools** - Integrate with data analysis pipelines
+| Use Case | Description |
+|:---------|:------------|
+| **Robotics Integration** | Control PRISM from your robot control system |
+| **Automated Testing** | Script test sequences and data collection |
+| **Remote Monitoring** | Monitor valve status and performance over network |
+| **Custom Applications** | Build custom interfaces and control logic |
+| **Research Tools** | Integrate with data analysis pipelines |
 
 ### Key Features
 
-- **JSON-based** - All requests and responses use JSON format
-- **RESTful design** - Standard HTTP methods (GET, POST)
-- **Lightweight** - Minimal overhead for embedded system
-- **Real-time** - Low-latency updates (sub-100ms typical)
-- **Secure** - API key authentication required
+| Feature | Detail |
+|:--------|:-------|
+| JSON-based | All requests and responses use JSON format |
+| RESTful design | Standard HTTP methods (GET, POST) |
+| Lightweight | Minimal overhead for embedded system |
+| Real-time | Low-latency updates (sub-100ms typical) |
+| Secure | API key authentication required |
 
 ---
 
@@ -57,7 +69,8 @@ X-API-Key: steve-valve-2025
 
 ### Default API Key
 
-The default API key is: `steve-valve-2025`
+> [!IMPORTANT]
+> The default API key is: `steve-valve-2025`
 
 This key is defined at compile time in the firmware Makefile and can be changed by modifying:
 
@@ -93,9 +106,11 @@ curl -H "X-API-Key: steve-valve-2025" \
 
 ### Default Configuration
 
-- **Protocol:** HTTP
-- **Port:** 8080
-- **Base Path:** `/api/v1`
+| Setting | Value |
+|:--------|:------|
+| Protocol | HTTP |
+| Port | `8080` |
+| Base Path | `/api/v1` |
 
 ### Full Base URL
 
@@ -383,10 +398,12 @@ Content-Type: application/json
 
 **Available Presets:**
 
-- `0` - Light (butterfly/faucet)
-- `1` - Medium (ball valve)
-- `2` - Heavy (gate valve)
-- `3` - Industrial (globe/gas)
+| Index | Feel |
+|:-----:|:-----|
+| `0` | Light (butterfly/faucet) |
+| `1` | Medium (ball valve) |
+| `2` | Heavy (gate valve) |
+| `3` | Industrial (globe/gas) |
 
 **Response:**
 
@@ -605,9 +622,11 @@ X-API-Key: steve-valve-2025
 
 **Axis States:**
 
-- `1` = IDLE
-- `8` = CLOSED_LOOP_CONTROL
-- Others indicate calibration or error states
+| Code | State |
+|:----:|:------|
+| `1` | IDLE |
+| `8` | CLOSED_LOOP_CONTROL |
+| Other | Calibration or error states |
 
 ---
 
@@ -663,10 +682,12 @@ Content-Type: application/json
 
 **Control Modes:**
 
-- `0` = Voltage control
-- `1` = Torque control (used by valve)
-- `2` = Velocity control
-- `3` = Position control
+| Mode | Type |
+|:----:|:-----|
+| `0` | Voltage control |
+| `1` | Torque control *(used by valve)* |
+| `2` | Velocity control |
+| `3` | Position control |
 
 **Response:**
 
@@ -735,10 +756,12 @@ X-API-Key: steve-valve-2025
 
 **Bus States:**
 
-- `0` = Active (normal operation)
-- `1` = Warning
-- `2` = Passive
-- `3` = Bus-off (disconnected)
+| Code | State |
+|:----:|:------|
+| `0` | Active (normal operation) |
+| `1` | Warning |
+| `2` | Passive |
+| `3` | Bus-off (disconnected) |
 
 ---
 
@@ -1138,7 +1161,9 @@ if data.get("status") == "error":
 - Check Ethernet cable connection
 - Restart HTTP server: CLI `http stop` then `http start`
 
-### Invalid JSON Error
+<details>
+<summary><strong>Invalid JSON Error</strong></summary>
+<br>
 
 **Problem:** 400 error with `json_parse_error`
 
@@ -1149,22 +1174,26 @@ if data.get("status") == "error":
 - Check for trailing commas
 - Use JSON validator
 
+</details>
+
+
 ---
 
 ## See Also
 
-- [REST API Examples](rest-api-examples.md) - Code examples in Python, JavaScript, curl
-- [Web Interface Guide](../html/web-interface-guide.md) - Browser-based control using REST API
-- [Streaming Guide](../stream/streaming-guide.md) - Real-time TCP data streaming
-- [Streaming Examples](../stream/streaming-examples.md) - Streaming integration code
-- [CLI Reference](../cli/CLI%20Reference.md) - Command-line interface documentation
-- [Getting Started Guide](../getting-started/getting-started.md) - Initial setup and configuration
-- [PRISM Project Overview](../README.md) - System architecture and features
+| Resource | Link |
+|:---------|:-----|
+| REST API Examples | [API Examples](rest-api-examples.md) |
+| Web Interface Guide | [Web GUI](../web/web-interface-guide.md) |
+| Streaming Guide | [Streaming](../stream/streaming-guide.md) |
+| Streaming Examples | [Streaming Examples](../stream/streaming-examples.md) |
+| CLI Reference | [CLI Reference](../cli/CLI%20Reference.md) |
+| Getting Started | [Getting Started](../cli/Getting%20Started.md) |
 
 ---
 
-## Version Information
-
-This documentation covers the PRISM REST API as implemented in the current firmware version. All endpoints and features documented here are available in the production firmware.
-
-For the latest updates and firmware downloads, see the project repository.
+<div align="center">
+   <sub>
+      <a href="../../../README.md">Back to Main README</a> · <a href="rest-api-examples.md">API Examples →</a>
+   </sub>
+</div>
