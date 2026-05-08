@@ -333,7 +333,7 @@ Connect with a client application to port `8888` to receive real-time telemetry.
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 <details>
 <summary><strong>Can't connect to serial port</strong> — No response when typing commands</summary>
@@ -424,7 +424,7 @@ Connect with a client application to port `8888` to receive real-time telemetry.
 
 ---
 
-## ⌨️ Quick Command Cheatsheet
+## Quick Command Cheatsheet
 
 | Category | Commands |
 |:---------|:---------|
