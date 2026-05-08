@@ -1,53 +1,58 @@
-[⬅ Back to Main README](../../../README.md#user-guides)
+<div align="center">
+   <img src="../../assets/images/PRISMlogo.png" width="500" alt="PRISM Logo">
 
-# PRISM CLI Reference Guide
+   <h3>CLI Reference</h3>
 
-This document provides a complete reference for all commands available in the PRISM command-line interface.
+   <p>Complete command reference for the PRISM command-line interface.</p>
+
+   <a href="../../../README.md">
+      <img src="https://img.shields.io/badge/⬅_Back_to_README-e34c26?style=for-the-badge" alt="Back to README">
+   </a>
+   &nbsp;
+   <a href="Getting%20Started.md">
+      <img src="https://img.shields.io/badge/Getting_Started-2ea44f?style=for-the-badge" alt="Getting Started">
+   </a>
+</div>
+
+---
+
+> [!NOTE]
+> All commands are **case-sensitive** and **lowercase**. Arguments are separated by spaces. Press Enter to execute.
+> For a walkthrough of connecting and first use, see [Getting Started](Getting%20Started.md).
+
+---
 
 ## Table of Contents
 
-- [Getting Help](#getting-help)
-- [Valve Control Commands](#valve-control-commands)
-- [Valve Configuration Commands](#valve-configuration-commands)
-- [Valve Preset Commands](#valve-preset-commands)
-- [ODrive Motor Control Commands](#odrive-motor-control-commands)
-- [ODrive Configuration Commands](#odrive-configuration-commands)
-- [CAN Bus Commands](#can-bus-commands)
-- [Network Commands](#network-commands)
-- [Performance Monitoring Commands](#performance-monitoring-commands)
-- [Diagnostics Commands](#diagnostics-commands)
+| Section | Commands |
+|:--------|:---------|
+| [Valve Control](#valve-control) | `valve_start` · `valve_stop` · `valve_status` · `valve_energy` · `valve_timing` |
+| [Valve Configuration](#valve-configuration) | `valve_damping` · `valve_friction` · `valve_epsilon` · `valve_torquelimit` · `valve_wall_k` · `valve_wall_c` · `valve_scale` |
+| [Valve Presets](#valve-presets) | `valve_preset` · `valve_preset_save` · `valve_preset_show` |
+| [ODrive Motor Control](#odrive-motor-control) | `odrive_ping` · `odrive_status` · `odrive_enable` · `odrive_disable` · `odrive_estop` · `odrive_clear` · `odrive_calibrate` · `odrive_torque` · `odrive_velocity` · `odrive_position` |
+| [ODrive Configuration](#odrive-configuration) | `odrive_mode` · `odrive_limits` · `odrive_pos_gain` · `odrive_vel_gains` |
+| [CAN Bus](#can-bus) | `can_encoder` · `can_telemetry` · `can_status` |
+| [Network](#network) | `ethstatus` · `setip` · `ping` · `nvm_status` · `http` · `eth_stream` |
+| [Performance Monitoring](#performance-monitoring) | `perf_stats` · `perf_rms` · `perf_dump` |
+| [Diagnostics](#diagnostics) | `fault_last` |
 
 ---
 
-## Getting Help
-
-### `help`
-
-Display a list of all available commands with brief descriptions.
-
-**Usage:**
-
-```
-help
-```
-
-**Example:**
-
-```
-> help
-Available commands:
-  can_encoder - Read CAN encoder position and velocity
-  can_status - Show CAN bus status
-  ...
-```
-
----
-
-## Valve Control Commands
+## Valve Control
 
 These commands control the valve's operational state and provide real-time status information.
 
-### `valve_start`
+| Command | Description |
+|:--------|:------------|
+| `valve_start` | Start the haptic control loop |
+| `valve_stop` | Stop haptic feedback |
+| `valve_status` | Show position, velocity, torque, and parameters |
+| `valve_energy` | Display passivity energy tank level |
+| `valve_timing` | Show control loop timing diagnostics |
+
+<details>
+<summary><code>valve_start</code></summary>
+<br>
 
 Start the valve control system. This command initializes the haptic feedback control loop and begins actively controlling the valve based on the configured parameters.
 
@@ -70,7 +75,11 @@ Valve started
 - Ensure all safety parameters (torque limits, wall boundaries) are properly configured
 - The control loop runs at high frequency (1kHz+) for responsive haptic feedback
 
-### `valve_stop`
+</details>
+
+<details>
+<summary><code>valve_stop</code></summary>
+<br>
 
 Stop the valve control system and disable active haptic feedback control.
 
@@ -93,7 +102,11 @@ Valve stopped
 - The motor remains enabled but torque commands cease
 - Use this before making configuration changes
 
-### `valve_status`
+</details>
+
+<details>
+<summary><code>valve_status</code></summary>
+<br>
 
 Display comprehensive valve system status including current position, velocity, torque, and control parameters.
 
@@ -132,7 +145,11 @@ Loop time: 						4 us
 - Active haptic parameters
 - ...and more
 
-### `valve_energy`
+</details>
+
+<details>
+<summary><code>valve_energy</code></summary>
+<br>
 
 Display the current passivity energy tank level. This value is used to ensure system stability and prevent energy generation that could lead to unstable behavior.
 
@@ -155,7 +172,11 @@ Passivity Energy Tank: 0.000123 J
 - Negative values may indicate parameter tuning issues
 - Energy dissipation should match physical expectations
 
-### `valve_timing`
+</details>
+
+<details>
+<summary><code>valve_timing</code></summary>
+<br>
 
 Show detailed timing diagnostics for the control loop including execution time, cycle period, and timing violations.
 
@@ -186,11 +207,28 @@ Timing samples:			35212
 
 ---
 
-## Valve Configuration Commands
+</details>
+
+
+---
+
+## Valve Configuration
 
 These commands adjust the haptic feedback characteristics and physical parameters of the valve simulation.
 
-### `valve_damping`
+| Command | Parameter | Unit | Typical Range |
+|:--------|:----------|:-----|:--------------|
+| `valve_damping <val>` | Viscous damping | N·m·s/rad | 0.01 – 0.5 |
+| `valve_friction <val>` | Coulomb friction | N·m | 0.005 – 0.05 |
+| `valve_epsilon <val>` | Smoothing parameter | dimensionless | 0.0001 – 0.01 |
+| `valve_torquelimit <val>` | Max torque (safety) | N·m | 0.1 – 2.0 |
+| `valve_wall_k <val>` | Wall stiffness | N·m/turn | 0.5 – 5.0 |
+| `valve_wall_c <val>` | Wall damping | N·m·s/turn | 0.05 – 0.5 |
+| `valve_scale <val>` | Mechanical scale | deg/turn | hardware-dependent |
+
+<details>
+<summary><code>valve_damping</code></summary>
+<br>
 
 Set the viscous damping coefficient for the valve. This parameter controls velocity-dependent resistance.
 
@@ -218,7 +256,11 @@ Viscous damping set
 - Affects feel smoothness and stability
 - Too high can make the valve feel sluggish
 
-### `valve_friction`
+</details>
+
+<details>
+<summary><code>valve_friction</code></summary>
+<br>
 
 Set the Coulomb (static) friction torque for the valve. This parameter simulates friction that opposes motion regardless of velocity.
 
@@ -246,7 +288,11 @@ Coulomb friction set
 - Simulates bearing friction and seal resistance
 - Too high can cause jerky motion
 
-### `valve_epsilon`
+</details>
+
+<details>
+<summary><code>valve_epsilon</code></summary>
+<br>
 
 Set the smoothing epsilon parameter used in friction calculations to prevent discontinuities at zero velocity.
 
@@ -274,7 +320,11 @@ Smoothing epsilon set
 - Affects friction behavior near zero velocity
 - Balance between realism and numerical stability
 
-### `valve_torquelimit`
+</details>
+
+<details>
+<summary><code>valve_torquelimit</code></summary>
+<br>
 
 Set the maximum torque that can be commanded to the motor. This is a critical safety parameter.
 
@@ -302,7 +352,11 @@ Torque limit set
 - Typical range: 0.1 to 2.0 N·m depending on hardware
 - Also limits during testing to prevent accidents
 
-### `valve_wall_k`
+</details>
+
+<details>
+<summary><code>valve_wall_k</code></summary>
+<br>
 
 Set the wall stiffness coefficient. This defines how hard the virtual walls are at the travel limits.
 
@@ -330,7 +384,11 @@ Wall stiffness set
 - Defines end-stop feel
 - Very high values may cause instability
 
-### `valve_wall_c`
+</details>
+
+<details>
+<summary><code>valve_wall_c</code></summary>
+<br>
 
 Set the wall damping coefficient. This controls energy dissipation when hitting virtual walls.
 
@@ -358,7 +416,11 @@ Wall damping set
 - Critical for stability near limits
 - Too low may cause oscillations
 
-### `valve_scale`
+</details>
+
+<details>
+<summary><code>valve_scale</code></summary>
+<br>
 
 Set the mechanical scaling factor that defines how many mechanical degrees correspond to one encoder revolution.
 
@@ -388,11 +450,24 @@ Mechanical scale set
 
 ---
 
-## Valve Preset Commands
+</details>
+
+
+---
+
+## Valve Presets
 
 Presets allow you to save and recall complete valve configurations for different applications or testing scenarios.
 
-### `valve_preset`
+| Command | Description |
+|:--------|:------------|
+| `valve_preset <idx>` | Load a saved preset (0–3) |
+| `valve_preset_save <idx>` | Save current config to a preset slot |
+| `valve_preset_show` | Display all presets and their parameters |
+
+<details>
+<summary><code>valve_preset</code></summary>
+<br>
 
 Load a previously saved valve preset configuration.
 
@@ -426,7 +501,11 @@ Loaded preset: 0
 - Changes take effect on next control cycle
 - Does not require stopping the valve
 
-### `valve_preset_save`
+</details>
+
+<details>
+<summary><code>valve_preset_save</code></summary>
+<br>
 
 Save the current valve configuration as a named preset.
 
@@ -454,7 +533,11 @@ Preset saved: 1
 - Stored in non-volatile memory
 - Survives power cycles
 
-### `valve_preset_show`
+</details>
+
+<details>
+<summary><code>valve_preset_show</code></summary>
+<br>
 
 Display all available presets and their parameter values.
 
@@ -491,12 +574,35 @@ Prset 1: h-wrench
 
 ---
 
-## ODrive Motor Control Commands
+</details>
 
-These commands control the ODrive motor controller that drives the valve's haptic feedback motor.
 
-### `odrive_ping`
-TODO: does not work in CLI (returns: Unknown command: odrive_ping) (Also shows up in the `help` call)
+---
+
+## ODrive Motor Control
+
+These commands control the ODrive motor controller that drives PRISM's haptic feedback motor.
+
+| Command | Description |
+|:--------|:------------|
+| `odrive_ping` | Test CAN connectivity |
+| `odrive_status` | Show comprehensive ODrive status |
+| `odrive_enable` | Enable closed-loop control |
+| `odrive_disable` | Disable motor (coast) |
+| `odrive_estop` | Emergency stop |
+| `odrive_clear` | Clear active errors |
+| `odrive_calibrate` | Run motor + encoder calibration |
+| `odrive_torque <val>` | Direct torque command (N·m) |
+| `odrive_velocity <val>` | Direct velocity command (turns/s) |
+| `odrive_position <val>` | Direct position command (turns) |
+
+<details>
+<summary><code>odrive_ping</code></summary>
+<br>
+
+> [!WARNING]
+> TODO: does not work in CLI (returns: Unknown command: odrive_ping) (Also shows up in the `help` call)
+
 Test connectivity with the ODrive motor controller over CAN bus.
 
 **Usage:**
@@ -521,7 +627,11 @@ Axis state: IDLE
 - Should respond within 100ms
 - Troubleshoot CAN wiring if no response
 
-### `odrive_status`
+</details>
+
+<details>
+<summary><code>odrive_status</code></summary>
+<br>
 
 Display comprehensive ODrive status including state, errors, position, velocity, and current.
 
@@ -551,7 +661,11 @@ Controller status:  0x00
 - Power supply voltage and current
 - Any active errors or warnings
 
-### `odrive_enable`
+</details>
+
+<details>
+<summary><code>odrive_enable</code></summary>
+<br>
 
 Enable the ODrive for closed-loop motor control. This transitions the ODrive from idle to active control mode.
 
@@ -575,7 +689,11 @@ ODrive enabled
 - Motor will actively hold position
 - Draws current even when stationary
 
-### `odrive_disable`
+</details>
+
+<details>
+<summary><code>odrive_disable</code></summary>
+<br>
 
 Disable the ODrive and enter idle mode. The motor will coast freely.
 
@@ -599,7 +717,11 @@ ODrive disabled
 - Safe for making mechanical adjustments
 - Use before valve_stop when shutting down
 
-### `odrive_estop`
+</details>
+
+<details>
+<summary><code>odrive_estop</code></summary>
+<br>
 
 Trigger an emergency stop on the ODrive. This immediately disables the motor.
 
@@ -623,7 +745,11 @@ ODrive emergency stop triggered
 - Requires odrive_clear before re-enabling
 - Does not damage hardware
 
-### `odrive_clear`
+</details>
+
+<details>
+<summary><code>odrive_clear</code></summary>
+<br>
 
 Clear any active errors on the ODrive.
 
@@ -647,7 +773,11 @@ ODrive errors cleared
 - Check odrive_status after clearing
 - May need to recalibrate after some errors
 
-### `odrive_calibrate`
+</details>
+
+<details>
+<summary><code>odrive_calibrate</code></summary>
+<br>
 
 Perform a full calibration sequence for the motor and encoder. This includes offset calibration and index search.
 
@@ -673,7 +803,11 @@ Note: Motor will move during calibration
 - Takes several seconds to complete
 - Can save calibration to skip on subsequent boots
 
-### `odrive_torque`
+</details>
+
+<details>
+<summary><code>odrive_torque</code></summary>
+<br>
 
 Send a direct torque command to the ODrive. ODrive must be in torque control mode.
 
@@ -701,7 +835,11 @@ Torque command sent: 0.100 N·m
 - Use for testing and diagnostics
 - Limited by configured current limits
 
-### `odrive_velocity`
+</details>
+
+<details>
+<summary><code>odrive_velocity</code></summary>
+<br>
 
 Send a velocity command to the ODrive. ODrive must be in velocity control mode.
 
@@ -729,7 +867,11 @@ Velocity command sent: 0.500 turns/s
 - Use for testing motor response
 - Trajectory generation is automatic
 
-### `odrive_position`
+</details>
+
+<details>
+<summary><code>odrive_position</code></summary>
+<br>
 
 Send a position command to the ODrive. ODrive must be in position control mode.
 
@@ -759,11 +901,25 @@ Position command sent: 1.500 turns
 
 ---
 
-## ODrive Configuration Commands
+</details>
+
+
+---
+
+## ODrive Configuration
 
 These commands configure the ODrive's control parameters and operational limits.
 
-### `odrive_mode`
+| Command | Description |
+|:--------|:------------|
+| `odrive_mode <mode>` | Set control mode (0–3) |
+| `odrive_limits <vel> <cur>` | Set velocity and current limits |
+| `odrive_pos_gain <kp>` | Set position Kp |
+| `odrive_vel_gains <kp> <ki>` | Set velocity Kp and Ki |
+
+<details>
+<summary><code>odrive_mode</code></summary>
+<br>
 
 Set the ODrive's control mode (voltage, torque, velocity, or position control).
 
@@ -795,7 +951,11 @@ ODrive mode set to TORQUE_CONTROL
 - Mode must match command type
 - Changing mode doesn't change other settings
 
-### `odrive_limits`
+</details>
+
+<details>
+<summary><code>odrive_limits</code></summary>
+<br>
 
 Set velocity and current limits for the ODrive. These are safety parameters.
 
@@ -825,7 +985,11 @@ Limits set: vel=2.000 turns/s, current=10.000 A
 - Should match motor specifications
 - Lower limits for safer testing
 
-### `odrive_pos_gain`
+</details>
+
+<details>
+<summary><code>odrive_pos_gain</code></summary>
+<br>
 
 Set the proportional gain (Kp) for position control mode.
 
@@ -854,8 +1018,15 @@ Position gain set: Kp=20.000
 - Only affects position control mode
 - Should be tuned for your specific setup
 
-### `odrive_vel_gains`
-TODO: command results in error: Unknown command: odrive_vel_gains. odrive_vel_gain also doesn't exist. (Both show up in the `help` call though)
+</details>
+
+<details>
+<summary><code>odrive_vel_gains</code></summary>
+<br>
+
+> [!WARNING]
+> TODO: command results in error: Unknown command: odrive_vel_gains. odrive_vel_gain also doesn't exist. (Both show up in the `help` call though)
+
 Set the proportional and integral gains (Kp, Ki) for velocity control mode.
 
 **Usage:**
@@ -887,11 +1058,24 @@ Velocity gains set: Kp=0.150, Ki=0.300
 
 ---
 
-## CAN Bus Commands
+</details>
 
-These commands provide diagnostics and monitoring for the CAN bus communication with the ODrive.
 
-### `can_encoder`
+---
+
+## CAN Bus
+
+Diagnostics and monitoring for CAN bus communication with the ODrive.
+
+| Command | Description |
+|:--------|:------------|
+| `can_encoder` | Read encoder position and velocity |
+| `can_telemetry` | Read voltage, current, and temperatures |
+| `can_status` | Show CAN bus statistics |
+
+<details>
+<summary><code>can_encoder</code></summary>
+<br>
 
 Read the current encoder position and velocity from the ODrive over CAN.
 
@@ -917,8 +1101,15 @@ Velocity: 78.90 turns/s
 - Useful for verifying encoder operation
 - Compare with valve_status for consistency
 
-### `can_telemetry`
-TODO: this command works, but gives weird response: "Failed to read Telemetry" \n "Error: Buffer empty"
+</details>
+
+<details>
+<summary><code>can_telemetry</code></summary>
+<br>
+
+> [!WARNING]
+> TODO: this command works, but gives weird response: "Failed to read Telemetry" \n "Error: Buffer empty"
+
 Read bus voltage, current, and temperature data from the ODrive.
 
 **Usage:**
@@ -946,7 +1137,11 @@ Motor Temp:     38.7 °C
 - Motor temp depends on motor specs
 - High current = high force/acceleration
 
-### `can_status`
+</details>
+
+<details>
+<summary><code>can_status</code></summary>
+<br>
 
 Display CAN bus communication statistics and status.
 
@@ -977,11 +1172,27 @@ Last error code:  0x000000
 
 ---
 
-## Network Commands
+</details>
 
-These commands configure and monitor the Ethernet network interface.
 
-### `ethstatus`
+---
+
+## Network
+
+Configure and monitor the Ethernet network interface.
+
+| Command | Description |
+|:--------|:------------|
+| `ethstatus` | Show IP configuration and link status |
+| `setip <ip> <mask> <gw>` | Set static IP address |
+| `ping <ip>` | Test network connectivity |
+| `nvm_status` | Show stored network config from flash |
+| `http start\|stop\|status\|log` | Control the HTTP web server |
+| `eth_stream start [ms]\|stop` | Control real-time TCP data streaming |
+
+<details>
+<summary><code>ethstatus</code></summary>
+<br>
 
 Display current Ethernet interface status and IP configuration.
 
@@ -1011,7 +1222,11 @@ Interface status:  UP
 - Interface status shows if network stack is running
 - MAC address is unique to device
 
-### `setip`
+</details>
+
+<details>
+<summary><code>setip</code></summary>
+<br>
 
 Configure static IP address, subnet mask, and gateway. Changes take effect immediately and are saved to non-volatile memory.
 
@@ -1045,8 +1260,14 @@ New Gateway: 192.168.1.1
 - Changes take effect immediately
 - May briefly interrupt network connections
 
-### `ping`
-TODO: does not return any results, i.e. just says "Ping initiated" but doesn't give info like regular terminals do.
+</details>
+
+<details>
+<summary><code>ping</code></summary>
+<br>
+
+> [!WARNING]
+> TODO: does not return any results, i.e. just says "Ping initiated" but doesn't give info like regular terminals do.
 
 Send ICMP ping packets to test network connectivity to a remote host.
 
@@ -1075,7 +1296,11 @@ Ping initiated
 - Timeout if host unreachable
 - Requires functional network configuration
 
-### `nvm_status`
+</details>
+
+<details>
+<summary><code>nvm_status</code></summary>
+<br>
 
 Display detailed information about the network configuration stored in non-volatile memory, including magic numbers, checksums, and validation status.
 
@@ -1113,7 +1338,11 @@ Magic: 0x4E455457 (expected 0x4E455457)
 - Magic number indicates valid configuration
 - Checksum verifies data integrity
 
-### `http`
+</details>
+
+<details>
+<summary><code>http</code></summary>
+<br>
 
 Control the HTTP web server for browser-based control interface.
 
@@ -1156,7 +1385,11 @@ HTTP server stopped
 - Logging useful for debugging
 - Server must be manually started after boot
 
-### `eth_stream`
+</details>
+
+<details>
+<summary><code>eth_stream</code></summary>
+<br>
 
 Control real-time data streaming over TCP for data logging and visualization.
 
@@ -1194,12 +1427,30 @@ Ethernet streaming stopped
 
 ---
 
-## Performance Monitoring Commands
+</details>
 
-These commands provide detailed performance metrics and data logging capabilities.
 
-### `perf_stats`
-TODO: doesn't exist in the CLI: "Unknown command: perf_stats". Also doesn't exist when doing `help`
+---
+
+## Performance Monitoring
+
+Detailed performance metrics and data logging.
+
+> [!WARNING]
+> TODO: `perf_stats`, `perf_rms`, and `perf_dump` do not exist in the CLI — "Unknown command". They also don't appear in the `help` output.
+
+| Command | Description |
+|:--------|:------------|
+| `perf_stats` | Min/max/mean statistics |
+| `perf_rms` | RMS values for position, velocity, torque |
+| `perf_dump` | Export CSV data for offline analysis |
+
+<details>
+<summary><code>perf_stats</code></summary>
+<br>
+
+> [!WARNING]
+> TODO: doesn't exist in the CLI: "Unknown command: perf_stats". Also doesn't exist when doing `help`
 
 Display comprehensive performance statistics including min/max/mean values for key measurements.
 
@@ -1237,8 +1488,14 @@ Samples:   10000
 - Mean values show typical operation
 - Reset when control restarts
 
-### `perf_rms`
-TODO: same as `perf_stats`
+</details>
+
+<details>
+<summary><code>perf_rms</code></summary>
+<br>
+
+> [!WARNING]
+> TODO: same as `perf_stats`
 
 Display root-mean-square (RMS) values for position, velocity, and torque. RMS provides a measure of signal magnitude over time.
 
@@ -1266,8 +1523,15 @@ Torque:      0.089 N·m
 - Compare across configurations
 - Computed over recent time window
 
-### `perf_dump`
-TODO: same as `perf_stats`
+</details>
+
+<details>
+<summary><code>perf_dump</code></summary>
+<br>
+
+> [!WARNING]
+> TODO: same as `perf_stats`
+
 Export recorded performance data in CSV format for offline analysis.
 
 **Usage:**
@@ -1299,9 +1563,16 @@ time_ms,position_deg,velocity_deg_s,torque_nm
 
 ---
 
-## Diagnostics Commands
+</details>
 
-### `fault_last`
+
+---
+
+## Diagnostics
+
+<details>
+<summary><code>fault_last</code></summary>
+<br>
 
 Display information about the last hard fault (crash) that occurred, including register values for debugging.
 
@@ -1336,21 +1607,22 @@ CFSR:      0x00000001
 
 ---
 
+</details>
+
+
+---
+
 ## Command Syntax Notes
 
 ### General Conventions
 
-- Commands are case-sensitive (all lowercase)
-- Arguments are separated by spaces
-- String arguments with spaces are not currently supported
+- Commands are **case-sensitive** (all lowercase)
+- Arguments separated by spaces
+- String arguments with spaces are not supported
 - Numeric arguments accept decimal format
-- Press Enter to execute command
-- Backspace to delete characters
-- Commands echo as you type
+- Backspace to delete characters; commands echo as you type
 
 ### Error Handling
-
-If a command fails, you'll see an error message:
 
 ```
 > valve_damping xyz
@@ -1358,43 +1630,48 @@ Failed to set damping
 Error: Invalid parameter
 ```
 
-Common error causes:
-
-- Missing required arguments
-- Invalid numeric format
-- System not in correct state
-- Hardware communication failure
-
-### Special Characters
-
-- `>` - Command prompt (do not type this)
-- `\r\n` - Line endings (automatic)
-- No escape sequences needed
+| Common Cause | Fix |
+|:-------------|:----|
+| Missing required arguments | Check command syntax above |
+| Invalid numeric format | Use decimal numbers (e.g., `0.05`) |
+| System not in correct state | Enable ODrive, set correct mode |
+| Hardware communication failure | Check CAN wiring, power |
 
 ---
 
-## Quick Reference Table
+## Quick Reference
 
-TODO: clear out the Monitoring row (since `perf_*` don't exist...). Also clear out other things that don't exist that we have confirmed shouldn't be there
-| Command Category | Key Commands                                             |
-| ---------------- | -------------------------------------------------------- |
-| Basic Control    | `valve_start`, `valve_stop`, `valve_status`              |
-| ODrive Control   | `odrive_enable`, `odrive_disable`, `odrive_status`       |
-| Configuration    | `valve_damping`, `valve_friction`, `valve_torquelimit`   |
-| Presets          | `valve_preset`, `valve_preset_save`, `valve_preset_show` |
-| Network          | `ethstatus`, `setip`, `http`, `eth_stream`               |
-| Monitoring       | `perf_stats`, `perf_rms`, `perf_dump`                    |
-| Diagnostics      | `can_status`, `valve_timing`, `fault_last`               |
+> [!WARNING]
+> TODO: clear out the Monitoring row (since `perf_*` don't exist). Also clear out other commands confirmed to not work.
+
+| Category | Key Commands |
+|:---------|:-------------|
+| **Basic Control** | `valve_start` · `valve_stop` · `valve_status` |
+| **ODrive Control** | `odrive_enable` · `odrive_disable` · `odrive_status` |
+| **Configuration** | `valve_damping` · `valve_friction` · `valve_torquelimit` |
+| **Presets** | `valve_preset` · `valve_preset_save` · `valve_preset_show` |
+| **Network** | `ethstatus` · `setip` · `http` · `eth_stream` |
+| **Monitoring** | `perf_stats` · `perf_rms` · `perf_dump` |
+| **Diagnostics** | `can_status` · `valve_timing` · `fault_last` |
 
 ---
 
 ## See Also
 
-- [Getting Started Guide](../getting-started/getting-started.md) - Initial setup and first commands
-- [Web Interface Guide](../html/web-interface-guide.md) - Browser-based control panel
-- [REST API Reference](../rest/rest-api.md) - Remote control via HTTP
-- [REST API Examples](../rest/rest-api-examples.md) - Integration code samples
-- [Streaming Guide](../stream/streaming-guide.md) - Real-time TCP data streaming
-- [Streaming Examples](../stream/streaming-examples.md) - Streaming integration code
-- [PRISM Project Overview](../README.md) - Project introduction and architecture
-- Firmware source: `firmware/src/app/cli.c`
+| Resource | Link |
+|:---------|:-----|
+| Getting Started | [Getting Started](Getting%20Started.md) |
+| Web Interface Guide | [Web GUI](../web/web-interface-guide.md) |
+| REST API Reference | [REST API](../rest/rest-api.md) |
+| REST API Examples | [REST Examples](../rest/rest-api-examples.md) |
+| Streaming Guide | [Streaming](../stream/streaming-guide.md) |
+| Streaming Examples | [Streaming Examples](../stream/streaming-examples.md) |
+| Firmware Source | `firmware/src/app/cli.c` |
+
+---
+
+<div align="center">
+   <sub>
+      <a href="../../../README.md">Back to Main README</a> · <a href="Getting%20Started.md">Getting Started</a>
+   </sub>
+</div>
