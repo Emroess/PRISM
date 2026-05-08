@@ -21,7 +21,7 @@
 
 ---
 
-## 📦 What You'll Need
+## What You'll Need
 
 ### Hardware
 
@@ -47,7 +47,7 @@
 
 ---
 
-## 🔌 Connecting to PRISM
+## Connecting to PRISM
 
 ### Physical Connection
 
@@ -107,7 +107,7 @@ The device will appear as something like `/dev/ttyACM0`
 
 ---
 
-## 💻 Opening a Serial Terminal
+## Opening a Serial Terminal
 
 <details>
 <summary><strong>Windows — PuTTY</strong></summary>
@@ -184,7 +184,7 @@ Replace with your actual device name. To exit: `Ctrl+A`, then `K`, then `Y`.
 
 ---
 
-## 🚀 First Commands
+## First Commands
 
 After connecting, you should see a welcome prompt:
 
@@ -242,7 +242,7 @@ Interface status:  UP
 
 ---
 
-## ⚙️ Basic Operation Workflow
+## Basic Operation Workflow
 
 A typical startup sequence for running a haptic session:
 
@@ -262,7 +262,7 @@ A typical startup sequence for running a haptic session:
 
 ---
 
-## 🎛️ Common Tasks
+## Common Tasks
 
 ### Adjusting Haptic Feel
 
@@ -436,7 +436,7 @@ Connect with a client application to port `8888` to receive real-time telemetry.
 
 ---
 
-## ➡️ Next Steps
+## Next Steps
 
 | Goal | Resource |
 |:-----|:---------|
