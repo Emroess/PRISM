@@ -486,7 +486,7 @@ Not suitable for:
 
 - [REST API Reference](../rest/rest-api.md) - Backend API used by web interface
 - [REST API Examples](../rest/rest-api-examples.md) - Build custom clients
-- [CLI Reference](../cli/cli-reference.md) - Command-line interface
+- [CLI Reference](../cli/CLI%20Reference.md) - Command-line interface
 - [Getting Started Guide](../getting-started/getting-started.md) - Initial setup
 - [Streaming Guide](../stream/streaming-guide.md) - High-speed data logging
 

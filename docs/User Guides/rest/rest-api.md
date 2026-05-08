@@ -1157,7 +1157,7 @@ if data.get("status") == "error":
 - [Web Interface Guide](../html/web-interface-guide.md) - Browser-based control using REST API
 - [Streaming Guide](../stream/streaming-guide.md) - Real-time TCP data streaming
 - [Streaming Examples](../stream/streaming-examples.md) - Streaming integration code
-- [CLI Reference](../cli/cli-reference.md) - Command-line interface documentation
+- [CLI Reference](../cli/CLI%20Reference.md) - Command-line interface documentation
 - [Getting Started Guide](../getting-started/getting-started.md) - Initial setup and configuration
 - [PRISM Project Overview](../README.md) - System architecture and features
 

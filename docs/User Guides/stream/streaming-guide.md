@@ -1,4 +1,4 @@
-﻿[⬅ Back to Main README](../../../README.md#user-guides)
+[⬅ Back to Main README](../../../README.md#user-guides)
 
 # PRISM TCP Streaming Guide
 
@@ -480,7 +480,7 @@ The TCP streaming server has no authentication mechanism. Access control should 
 - [Streaming Examples](streaming-examples.md) - Complete code examples
 - [Web Interface Guide](../html/web-interface-guide.md) - Browser-based control panel
 - [REST API Reference](../rest/rest-api.md) - API endpoint documentation
-- [CLI Reference](../cli/cli-reference.md) - Command-line interface
+- [CLI Reference](../cli/CLI%20Reference.md) - Command-line interface
 - [Getting Started Guide](../getting-started/getting-started.md) - Initial setup
 
 ## Support

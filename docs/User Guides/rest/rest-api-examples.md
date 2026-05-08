@@ -1074,7 +1074,7 @@ diagnose_connection("192.168.1.100")
 - [Web Interface Guide](../html/web-interface-guide.md) - Browser-based control using REST API
 - [Streaming Guide](../stream/streaming-guide.md) - Real-time TCP data streaming
 - [Streaming Examples](../stream/streaming-examples.md) - Streaming integration code
-- [CLI Reference](../cli/cli-reference.md) - Command-line interface
+- [CLI Reference](../cli/CLI%20Reference.md) - Command-line interface
 - [Getting Started Guide](../getting-started/getting-started.md) - Initial setup
 
 For questions or issues, refer to the project repository or documentation.

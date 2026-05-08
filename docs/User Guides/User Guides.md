@@ -54,7 +54,7 @@ Once connected, you will see the `Type 'help' for available commands` message. B
    ```
 6. **Stop Operations**: `valve_stop` and `odrive_disable`
 
-A complete CLI Reference Guide can be found at [docs/cli/cli-reference.md](cli/cli-reference.md)
+A complete CLI Reference Guide can be found at [docs/cli/CLI Reference.md](cli/CLI%20Reference.md)
 
 ---
 

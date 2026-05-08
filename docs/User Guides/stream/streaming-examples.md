@@ -1,4 +1,4 @@
-﻿# PRISM Streaming Examples
+# PRISM Streaming Examples
 
 Complete code examples for consuming real-time valve simulation data from PRISM's TCP streaming server.
 
@@ -801,6 +801,6 @@ xlabel('Time (ms)');
 
 - [Streaming Guide](streaming-guide.md) - Complete streaming documentation
 - [REST API Reference](../rest/rest-api.md) - Control streaming via REST API
-- [CLI Reference](../cli/cli-reference.md) - Control streaming via CLI
+- [CLI Reference](../cli/CLI%20Reference.md) - Control streaming via CLI
 - [Getting Started Guide](../getting-started/getting-started.md) - Initial setup
 

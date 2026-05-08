@@ -1,4 +1,4 @@
-﻿[⬅ Back to Main README](../../../README.md#build-one-for-your-lab)
+[⬅ Back to Main README](../../../README.md#build-one-for-your-lab)
 
 # Firmware Installation Guide
 
@@ -644,7 +644,7 @@ After successfully installing the firmware:
 
 - **Firmware README**: `firmware/README.md` - Architecture overview
 - **Makefile**: `firmware/Makefile` - Build system details
-- **CLI Reference**: [CLI Reference Guide](../cli/cli-reference.md)
+- **CLI Reference**: [CLI Reference Guide](../cli/CLI%20Reference.md)
 - **REST API**: [REST API Documentation](../rest/rest-api.md)
 - **Hardware**: [Nucleo-H753ZI User Manual](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf)
 - **OpenOCD Manual**: [OpenOCD Documentation](http://openocd.org/doc/html/index.html)
