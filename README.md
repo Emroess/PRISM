@@ -24,7 +24,7 @@ PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hard
       <a href="docs/Build%20Guide/">
         <img src="https://img.shields.io/badge/-Build_Guide-2ea44f?style=for-the-badge" alt="Build Guide">
       </a>
-      <br><sub>BOM, assembly, CAD files</sub>
+      <br><sub>BOM, assembly, firmware</sub>
     </td>
     <td align="center" width="33%">
       <a href="docs/User%20Guides/">
@@ -140,8 +140,8 @@ graph LR
 
 | Step | Action | Link |
 |:---:|---|---|
-| **1** | **Order** the Bill of Materials | [BOM](docs/Build Guide/BOM/PRISM Bill of Materials.md) |
-| **2** | **Print** structural mounts and handles | [CAD Files](docs/Build%20Guide/CAD%20%26%20Assembly%20Files), [Handles](docs/Rotation%20Library/Rotation%20Library.md) |
+| **1** | **Order** the Bill of Materials | [BOM](docs/Build%20Guide/PRISM%20Bill%20of%20Materials.md) |
+| **2** | **Print** structural mounts and handles | [Handles](docs/Rotation%20Library/Rotation%20Library.md) |
 | **3** | **Assemble** the mechanical and electrical system | [Assembly Guide](docs/Build%20Guide/Assembly%20Guide.md) |
 | **4** | **Flash** firmware onto the STM32 | [Firmware Guide](docs/User%20Guides/firmware/firmware-installation.md) |
 | **5** | **Verify** haptic response via the onboard CLI | [CLI Guide](docs/User%20Guides/cli/connecting-to-onboard-cli.md) |
