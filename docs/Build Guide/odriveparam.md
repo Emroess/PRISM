@@ -1,16 +1,16 @@
 <div align="center">
-   <img src="../../assets/images/PRISMlogo.png" width="500" alt="PRISM Logo">
+   <img src="../assets/images/PRISMlogo.png" width="500" alt="PRISM Logo">
 
    <h3>ODrive S1 Configuration Reference</h3>
 
    <p>Recommended parameters for reliable valve emulation with the<br>
    Nucleo-STM32H753ZI & SimpleCAN setup.</p>
 
-   <a href="../../../README.md">
+   <a href="../../README.md">
       <img src="https://img.shields.io/badge/⬅_Back_to_README-e34c26?style=for-the-badge" alt="Back to README">
    </a>
    &nbsp;
-   <a href="../../Build%20Guide/PRISM%20Bill%20of%20Materials.md">
+   <a href="PRISM%20Bill%20of%20Materials.md">
       <img src="https://img.shields.io/badge/Bill_of_Materials-2ea44f?style=for-the-badge" alt="Bill of Materials">
    </a>
 </div>
@@ -98,6 +98,6 @@ odrivetool
 
 <div align="center">
    <sub>
-      <a href="../../../README.md">Back to Main README</a> · <a href="../../Build%20Guide/PRISM%20Bill%20of%20Materials.md">Bill of Materials</a>
+      <a href="../../README.md">Back to Main README</a> · <a href="PRISM%20Bill%20of%20Materials.md">Bill of Materials</a>
    </sub>
 </div>
