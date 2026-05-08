@@ -9,6 +9,10 @@
    <a href="../../README.md">
       <img src="https://img.shields.io/badge/⬅_Back_to_README-e34c26?style=for-the-badge" alt="Back to README">
    </a>
+   &nbsp;
+   <a href="Assembly%20Guide.md">
+      <img src="https://img.shields.io/badge/Next:_Assembly_Guide_→-0969da?style=for-the-badge" alt="Next: Assembly Guide">
+   </a>
 </div>
 
 ---
@@ -104,6 +108,6 @@ Select one or more handles depending on the tasks you want to train on.
 
 <div align="center">
    <sub>
-      <a href="../../README.md">⬅ Back to Main README</a> · <a href="../Rotation%20Library/Rotation%20Library.md">Rotation Library →</a>
+      <a href="../../README.md">Back to Main README</a> · <a href="Assembly%20Guide.md">Next: Assembly Guide →</a>
    </sub>
 </div>

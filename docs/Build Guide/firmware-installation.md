@@ -1,4 +1,16 @@
-[⬅ Back to Main README](../../../README.md#build-one-for-your-lab)
+<div align="center">
+   <img src="../assets/images/PRISMlogo.png" width="500" alt="PRISM Logo">
+
+   <h3>Firmware Installation Guide</h3>
+
+   <a href="odriveparam.md">
+      <img src="https://img.shields.io/badge/⬅_ODrive_Config-2ea44f?style=for-the-badge" alt="ODrive Config">
+   </a>
+   &nbsp;
+   <a href="../../README.md">
+      <img src="https://img.shields.io/badge/Back_to_README-e34c26?style=for-the-badge" alt="Back to README">
+   </a>
+</div>
 
 # Firmware Installation Guide
 
@@ -700,3 +712,11 @@ make help
 **Last Updated**: November 21, 2025  
 **Target Hardware**: Nucleo-H753ZI (MB1364)  
 **Firmware Version**: Compatible with PRISM firmware v1.x
+
+---
+
+<div align="center">
+   <sub>
+      <a href="odriveparam.md">← ODrive Config</a> · <a href="../../README.md">Back to Main README</a>
+   </sub>
+</div>

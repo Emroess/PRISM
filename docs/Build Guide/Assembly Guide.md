@@ -1,4 +1,16 @@
-[⬅ Back to Main README](../../README.md#build-one-for-your-lab)
+<div align="center">
+   <img src="../assets/images/PRISMlogo.png" width="500" alt="PRISM Logo">
+
+   <h3>Assembly Guide</h3>
+
+   <a href="PRISM%20Bill%20of%20Materials.md">
+      <img src="https://img.shields.io/badge/⬅_Bill_of_Materials-2ea44f?style=for-the-badge" alt="BOM">
+   </a>
+   &nbsp;
+   <a href="odriveparam.md">
+      <img src="https://img.shields.io/badge/Next:_ODrive_Config_→-0969da?style=for-the-badge" alt="Next: ODrive Config">
+   </a>
+</div>
 
 # Build Guide
 
@@ -89,4 +101,10 @@ Next up: Component Assembly
 ### 3. Motor Unit Assembly
 
 
-### Next: [Firmware Installation](firmware-installation.md)
+---
+
+<div align="center">
+   <sub>
+      <a href="PRISM%20Bill%20of%20Materials.md">← Bill of Materials</a> · <a href="../../README.md">Back to Main README</a> · <a href="odriveparam.md">Next: ODrive Config →</a>
+   </sub>
+</div>

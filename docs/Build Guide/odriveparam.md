@@ -6,12 +6,12 @@
    <p>Recommended parameters for reliable valve emulation with the<br>
    Nucleo-STM32H753ZI & SimpleCAN setup.</p>
 
-   <a href="../../README.md">
-      <img src="https://img.shields.io/badge/⬅_Back_to_README-e34c26?style=for-the-badge" alt="Back to README">
+   <a href="Assembly%20Guide.md">
+      <img src="https://img.shields.io/badge/⬅_Assembly_Guide-2ea44f?style=for-the-badge" alt="Assembly Guide">
    </a>
    &nbsp;
-   <a href="PRISM%20Bill%20of%20Materials.md">
-      <img src="https://img.shields.io/badge/Bill_of_Materials-2ea44f?style=for-the-badge" alt="Bill of Materials">
+   <a href="firmware-installation.md">
+      <img src="https://img.shields.io/badge/Next:_Firmware_Install_→-0969da?style=for-the-badge" alt="Next: Firmware Install">
    </a>
 </div>
 
@@ -98,6 +98,6 @@ odrivetool
 
 <div align="center">
    <sub>
-      <a href="../../README.md">Back to Main README</a> · <a href="PRISM%20Bill%20of%20Materials.md">Bill of Materials</a>
+      <a href="Assembly%20Guide.md">← Assembly Guide</a> · <a href="../../README.md">Back to Main README</a> · <a href="firmware-installation.md">Next: Firmware Install →</a>
    </sub>
 </div>
