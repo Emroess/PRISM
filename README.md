@@ -128,8 +128,9 @@ graph LR
 | **1** | **Order** the Bill of Materials | [BOM](docs/Build%20Guide/PRISM%20Bill%20of%20Materials.md) |
 | **2** | **Print** structural mounts and handles | [Handles](docs/Rotation%20Library/Rotation%20Library.md) |
 | **3** | **Assemble** the mechanical and electrical system | [Assembly Guide](docs/Build%20Guide/Assembly%20Guide.md) |
-| **4** | **Flash** firmware onto the STM32 | [Firmware Guide](docs/Build%20Guide/firmware-installation.md) |
-| **5** | **Verify** haptic response via the onboard CLI | [CLI Guide](docs/User%20Guides/cli/Getting%20Started.md) |
+| **4** | **Configure** the ODrive S1 motor controller | [ODrive Config](docs/Build%20Guide/odriveparam.md) |
+| **5** | **Flash** firmware onto the STM32 | [Firmware Guide](docs/Build%20Guide/firmware-installation.md) |
+| **6** | **Verify** haptic response via the onboard CLI | [CLI Guide](docs/User%20Guides/cli/Getting%20Started.md) |
 
 ---
 
