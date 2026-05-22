@@ -1,5 +1,13 @@
 # Drivers Subsystem
 
+
+## Table of Contents
+
+- [Files](#files)
+- [Architecture](#architecture)
+- [Dependencies](#dependencies)
+
+
 This directory contains hardware abstraction layer (HAL) drivers for the STM32H7 microcontroller.
 
 ## Files

@@ -1,175 +1,180 @@
 <div align="center">
+   <img src="docs/assets/images/PRISMlogo.png" width="700" alt="PRISM Logo">
 
-   <h1>PRISM: Programmable Rotary Impedance Suite for Manipulation </h1>
-   <div style="display: flex; gap: 1rem; justify-content: center; align-items: center;" >
-   <img
-      src="docs/CAD/images/PRISM LOGO Square.jpg"
-      style="width: 40%;"
-    />
-   
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/PRISM)
+[![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/PRISM)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://github.com/Emroess/PRISM)
+[![GitHub Stars](https://img.shields.io/github/stars/Emroess/PRISM?style=social)](https://github.com/Emroess/PRISM)
 </div>
 
-<h2>
-    <p>Introduction</p>
-</h2>
-An open-source, low-cost task emulator engineered to replicate the dynamics of real-world valves, handles, knobs, etc. 
-
-PRISM can be used for robotic policy training, as a benchmark tool, or to emulate virtually any real-world rotational behavior. 
-</div>
-
-> ℹ️  NOTE: Project is currently going through a renaming. Documentation may have STEVE and not yet be changed to PRISM. 
-
-## 🎯 Key Capabilities
-
-### Multi-Task Benchmark — Realistic rotational task simulation
-
-<table style="width:100%"><tr>
-<td align="center" style="width:25%">
-<img src="docs/CAD/images/PXL_20260112_203228289.PORTRAIT.jpg" style="width:100%" alt="Multi-turn valves"><br>
-<strong>Multi-turn valves</strong><br>
-</td>
-<td align="center" style="width:25%">
-<img src="docs/CAD/images/quarter_turn.jpeg" style="width:100%" alt="Quarter-turn Valves"><br>
-<strong>Quarter-turn Valves</strong><br>
-</td>
-<td align="center" style="width:25%">
-<img src="docs/CAD/images/door_handle_iso.jpg" style="width:100%" alt="Door Handles"><br>
-<strong>Door Handles</strong><br>
-</td>
-<td align="center" style="width:25%">
-<img src="docs/CAD/images/wrench_free.jpg" style="width:100%" alt="Fastener Tighting"><br>
-<strong>Fastener Tighting</strong><br>
-</td>
-</tr></table>
-
-PRISM simulates common rotational tasks (valves, handles, fasteners) with configurable physical behavior and reproducible randomness. 
 <div align="center">
-  
-### Key Features
+<h3>Train robot policies on real-world rotational tasks — with real force feedback.</h3>
 </div>
 
-- Configurable dynamics: Damping, friction, stiffness, and endstops
-- Controlled randomness: REPEATABLY emulate real-world rotational physics such as sticking or rusty rotation targets 
-- Real-time telemetry: position, torque/force and other signals for success detection
-- Velocity Maximums: Prevents dammage to robotic manipulators or PRISM
-- Self-resetting tasks and software presets for common sub-types (handwheel, quarter-turn, wrench, door handle)
+## What is PRISM?
 
----
+PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hardware-based haptic control system designed to help practitioners train policies on real-world rotational tasks. Unlike purely virtual simulations, PRISM can replicate the tactile force feedback of valves, handles, knobs, and fasteners. It delivers realistic haptic feedback to the policy through a modular, motor-driven interface.
 
-### Video Demo
 
-<p align="center">
-  <img src="docs/assets/Lerobot_Example.gif" alt="STEVE rotational benchmark demo" width="640">
-</p>
+## Explore PRISM
+<div align="center">  
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="docs/Build%20Guide/">
+        <img src="https://img.shields.io/badge/-Build_Guide-2ea44f?style=for-the-badge" alt="Build Guide">
+      </a>
+      <br><sub>BOM, assembly, firmware</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/User%20Guides/">
+        <img src="https://img.shields.io/badge/-User_Guides-0969da?style=for-the-badge" alt="User Guides">
+      </a>
+      <br><sub>CLI, REST API, Web GUI, Streaming</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/Rotation%20Library/">
+        <img src="https://img.shields.io/badge/-Rotation_Library-8250df?style=for-the-badge" alt="Rotation Library">
+      </a>
+      <br><sub>Printable handles and haptic profiles</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="firmware/">
+        <img src="https://img.shields.io/badge/-Firmware-e8590c?style=for-the-badge" alt="Firmware">
+      </a>
+      <br><sub>STM32H7 open-source firmware</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="client/">
+        <img src="https://img.shields.io/badge/-Python_Client-ffd43b?style=for-the-badge" alt="Python Client">
+      </a>
+      <br><sub>PyPRISM API and examples</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="#quick-start">
+        <img src="https://img.shields.io/badge/-Quick_Start-e34c26?style=for-the-badge" alt="Quick Start">
+      </a>
+      <br><sub>Get building in 5 steps</sub>
+    </td>
+  </tr>
+</table>
+</div>
 
-<p align="center">
-  <em>Demo: PRISM rotational benchmark in action</em>
-</p>
 
----
+## Key Capabilities
+| Feature | Description |
+|---|---|
+| **1 kHz Task Telemetry** | Real-time TCP streaming of θ, τ, and velocity for policy training |
+| **Self-Resetting Tasks** | Automated return-to-start for continuous training loops |
+| **Programmable Haptics** | Tune damping, friction, stiffness, and torque per-episode |
+| **Multi-Interface** | CLI, Web GUI, REST API, and data streaming — all on-device |
+| **Sim Integration** | Experimental Isaac Sim & MuJoCo support *(in development)* |
+| **Modular Handles** | Swap 3D-printed attachments to emulate any rotational task |
 
-## System Architecture
+### Real-time Task Telemetry
+PRISM streams (1 kHz) real-time TCP telemetry about the task over ethernet. This enables robotic policies to autonomously monitor task progress in real time. Practitioner-written scripts can also determine task success or failure by reading theta_on, theta_off, torque, or velocity thresholds.
 
-**PRISM Hardware** consists of:
+### Task Self-Resetting
+PRISM's fully programmable API allows the rotational task to automatically reset to its starting state or other programmed positions. Practitioners can use this feature to fast track expert demonstrations or make a continuous policy training loop with PRISM API control scripts.
 
-1. **PRISM DEVICE** — Physical PRISM unit including power supply, drive motor, controllers, etc.
-2. **Selectable Handle** — Handles, knobs, or other rotation interface 
+### Programmable Characteristics
+Practitioners define a software "profile" by configuring physically meaningful parameters such as viscous damping, Coulomb friction coefficient, smoothing parameter ϵ, virtual wall stiffness, torque limits, and others. These parameters define how each rotational task will "feel" and lets PRISM emulate the spring-back of a lever door handle to the hard to turn quarter-turn valve found in naval ships. 
+  
+  > Practitioners can also instantly randomize these parameters for the next episode to train ML polices to adapt to task changes. 
 
-**PRISM Software** consists of:
+### Multi-interface Support
+PRISM has a CLI, Web-GUI, REST API, Data Streaming interfaces. Each interface lets the practitioner configure or use certain features. 
+  
+  > Every user-interface is locally hosted by the main micro-controller. 
 
-1. **Firmware** — STM32H753ZI bare-metal C with lwIP, CAN FD, Ethernet, REST API, CLI
-2. **Motor Control** — ODrive S1 brushless motor controller via CAN
-3. **Python Client** — `pysteve` library with integrations for MuJoCo, Gymnasium, ROS 2, Isaac Sim
+### Simulation Integration (Under Development)
+Experimental support for reinforcement learning environments (Isaac Sim, MuJoCo) and sim2real transfer.
+
+## Specifications
+
+| Spec | Value |
+|---|---|
+| Controller | STM32H7 microcontroller |
+| Motor Driver | ODrive S1 |
+| Telemetry Rate | 1 kHz over TCP/Ethernet |
+| Interfaces | CLI, Web GUI, REST API, Data Stream |
+| Build Cost | ~$400 – $500 |
+| Print Volume | ≥ 180 × 180 × 180 mm |
+| Software | Python 3.10+, GNU ARM Toolchain |
+| License | MIT |
+
+## Architecture
+
+```mermaid
+graph LR
+    A[Robot Arm] -->|Grasps| B[PRISM Handle]
+    B -->|Shaft Encoder + Motor| C[STM32H7]
+    C -->|1 kHz TCP| D[Host PC]
+    D -->|PyPRISM API| E[Policy Training]
+    D -->|REST / CLI / Web| C
+    C -->|Haptic Feedback| B
+```
 
 ---
 
 ## Quick Start
 
-### Firmware (C/STM32H7)
+> **Total build time:** ~2-5 hours  |  **Cost:** ~$400-500  |  **Difficulty:** Intermediate
 
-```bash
-cd firmware && make && make flash
-# Connect serial: screen /dev/ttyACM0 115200
-# Try: odrive_enable, valve_start, valve_preset smooth
+| Step | Action | Link |
+|:---:|---|---|
+| **1** | **Order** the Bill of Materials | [BOM](docs/Build%20Guide/PRISM%20Bill%20of%20Materials.md) |
+| **2** | **Print** structural mounts and handles | [Handles](docs/Rotation%20Library/Rotation%20Library.md) |
+| **3** | **Assemble** the mechanical and electrical system | [Assembly Guide](docs/Build%20Guide/Assembly%20Guide.md) |
+| **4** | **Configure** the ODrive S1 motor controller | [ODrive Config](docs/Build%20Guide/odriveparam.md) |
+| **5** | **Flash** firmware onto the STM32 | [Firmware Guide](docs/Build%20Guide/firmware-installation.md) |
+| **6** | **Verify** haptic response via the onboard CLI | [CLI Guide](docs/User%20Guides/cli/Getting%20Started.md) |
+
+---
+
+## Rotation Library
+
+PRISM's modular handle system allows for custom haptic emulations. Each attachment mounts to the same motor shaft interface, letting practitioners swap between task types in seconds.
+
+See the [**Rotation Library**](docs/Rotation%20Library/Rotation%20Library.md) for 3D-printable designs and parameter configurations.
+
+| Handle | Range of Motion |
+|---|---|
+| Hydrant Handwheel | 4-turn |
+| Quarter-turn Valve | 90 degrees |
+| Door Handle | +/- 45 degrees |
+| Wrench Tightening | Continuous |
+| More to come | -- |
+
+---
+
+## Contributing
+
+PRISM is open source and contributions are welcome.
+
+- [Report a Bug]()
+- [Request a Feature]()
+- [Submit a Pull Request]()
+
+---
+
+## Citation
+
+If you use PRISM in your research, please cite:
+
+```bibtex
+@misc{prism2026,
+  title={PRISM: Programmable Rotary Impedance Suite for Manipulation},
+  author={},
+  year={2026},
+  url={https://github.com/Emroess/PRISM}
+}
 ```
 
-See [Firmware Installation](docs/firmware/firmware-installation.md).
-
-### Python Client
-
-```python
-pip install -e client/
-from pysteve import SteveClient
-
-steve = SteveClient("192.168.1.100")
-steve.valve_start(preset="smooth")
-status = steve.get_status()
-```
-
-See [Python Examples](client/examples/).
-
 ---
 
-## Reproducible Environment
+## License
 
-To ensure reproducibility, STEVE uses widely available components:
-
-- **"GoBilda" robotics build system componts** (8mm REX shaft standard)
-- **COTS hardware** — Nucleo-H753ZI, ODrive S1, off-the-shelf handles
-- **Open firmware** — MISRA-C:2012 compliant, modular design
-- **Standardized task initialization** — GUI tool for state randomization
-
-## Benchmark Results
-
-#### --> TODO ADD RESULTS
----
-
-## Handle Library
-
-STEVE's modular handle system allows custom designs. Contribute new handles via our structured catalog:
-
-- **[Handle Library](docs/CAD/Handles/README.md)** — View all available handles
-- **[handles.json](docs/CAD/Handles/handles.json)** — Structured metadata
-- **[Auto-Generated Catalog](docs/CAD/Handles/catalog.md)** — Updated catalog with images & BOM
-
-Current handles:
-- 🟢 Hydrant Handwheel (4-turn industrial design)
-- 🟢 Quarter-turn Handle (90° rotation)
-- 🟢 Door Handle (+/- 45° rotation with self-centering)
-- 🟢 Wrench Tightening (fastener task)
-
----
-
-## Datasets
-
-Coming soon: Pre-collected demonstrations and benchmark datasets for offline RL training.
-
----
-
-## Projects Using STEVE
-
-<!-- Placeholder for projects that use STEVE -->
-
-- Your research project here — [Submit a PR!](https://github.com/Emroess/STE-VE/pulls)
-
----
-
-## Documentation
-
-- **[Main Hub](docs/README.md)** — Complete reference
-- **[Firmware Setup](docs/firmware/firmware-installation.md)**
-- **[Getting Started](docs/getting-started/getting-started.md)**
-- **[CLI Reference](docs/cli/cli-reference.md)** | **[REST API](docs/rest/rest-api.md)** | **[Streaming](docs/stream/streaming-guide.md)**
-- **[Handle Design Guide](docs/CAD/Handles/README.md)** — Contribute custom handles
-
----
-
-**Ready to benchmark your manipulation algorithm?**
-
-- **[Firmware Installation](docs/firmware/firmware-installation.md)** — Set up STEVE
-- **[Python Examples](client/examples/)** — Start coding
-- **[Documentation Hub](docs/README.md)** — Learn more
-
----
-
-_STEVE: Benchmarking realistic rotational task manipulation for robotics research._
+MIT License

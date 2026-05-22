@@ -1,3 +1,10 @@
+
+## Table of Contents
+
+- [IMPORTANT INFORMATION](#important-information)
+  - [Contributor License Agreement (CLA)](#contributor-license-agreement-cla)
+
+
 ## IMPORTANT INFORMATION 
 
 ### Contributor License Agreement (CLA)

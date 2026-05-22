@@ -1,3 +1,13 @@
+
+## Table of Contents
+
+- [Contributing guide](#contributing-guide)
+  - [1. Before opening an issue](#1-before-opening-an-issue)
+  - [2. Posting the issue](#2-posting-the-issue)
+  - [3. Pull Requests](#3-pull-requests)
+  - [4. How to proceed](#4-how-to-proceed)
+
+
 ## Contributing guide
 
 This document serves as a checklist before contributing to this repository.

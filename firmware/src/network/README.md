@@ -1,5 +1,13 @@
 # Network Services Subsystem
 
+
+## Table of Contents
+
+- [Files](#files)
+- [Architecture](#architecture)
+- [Dependencies](#dependencies)
+
+
 This directory contains all network-related functionality for remote control and monitoring.
 
 ## Files

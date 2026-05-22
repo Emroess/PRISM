@@ -1,5 +1,13 @@
 # Protocols Subsystem
 
+
+## Table of Contents
+
+- [Files](#files)
+- [Architecture](#architecture)
+- [Dependencies](#dependencies)
+
+
 This directory contains communication protocol implementations that operate above the hardware drivers.
 
 ## Files

@@ -1,5 +1,15 @@
 # STM32CubeH7 CMSIS Device MCU Component
 
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Description](#description)
+- [Release note](#release-note)
+- [Compatibility information](#compatibility-information)
+- [Troubleshooting](#troubleshooting)
+
+
 ![latest tag](https://img.shields.io/github/v/tag/STMicroelectronics/cmsis_device_h7.svg?color=brightgreen)
 
 ## Overview

@@ -1,20 +1,47 @@
 # Thread Safety Guide
 
+
+## Table of Contents
+
+- [Overview](#overview)
+- [SteveClient Thread Safety](#steveclient-thread-safety)
+  - [Default Behavior (Not Thread-Safe)](#default-behavior-not-thread-safe)
+  - [Enable Thread Safety](#enable-thread-safety)
+  - [Manual Locking](#manual-locking)
+- [SteveStreamer Thread Safety](#stevestreamer-thread-safety)
+  - [Callback Execution](#callback-execution)
+  - [Thread-Safe Callbacks](#thread-safe-callbacks)
+  - [Multiple Callbacks](#multiple-callbacks)
+- [DataRecorder Thread Safety](#datarecorder-thread-safety)
+- [Common Patterns](#common-patterns)
+  - [Pattern 1: Single Client, Multiple Readers](#pattern-1-single-client-multiple-readers)
+  - [Pattern 2: Command Queue](#pattern-2-command-queue)
+  - [Pattern 3: Async Alternative](#pattern-3-async-alternative)
+- [Troubleshooting](#troubleshooting)
+  - [Race Conditions](#race-conditions)
+  - [Deadlocks](#deadlocks)
+  - [Callback Delays](#callback-delays)
+- [Performance Considerations](#performance-considerations)
+  - [Lock Contention](#lock-contention)
+  - [Lock-Free Alternatives](#lock-free-alternatives)
+- [Best Practices](#best-practices)
+
+
 Understanding thread safety in PySteve and best practices for concurrent access.
 
 ## Overview
 
 PySteve components have different thread safety guarantees:
 
-| Component | Thread Safe | Notes |
-|-----------|-------------|-------|
-| `SteveClient` | No* | Use `threadsafe=True` or external locking |
-| `SteveStreamer` | Yes | Callbacks run in separate thread |
-| `SteveAsyncClient` | Yes | Uses asyncio event loop |
-| `DataRecorder` | Yes | Internal locking for data buffer |
-| `RealtimeTuner` | No | Wraps SteveClient |
+| Component          | Thread Safe | Notes                                     |
+| ------------------ | ----------- | ----------------------------------------- |
+| `SteveClient`      | No*         | Use `threadsafe=True` or external locking |
+| `SteveStreamer`    | Yes         | Callbacks run in separate thread          |
+| `SteveAsyncClient` | Yes         | Uses asyncio event loop                   |
+| `DataRecorder`     | Yes         | Internal locking for data buffer          |
+| `RealtimeTuner`    | No          | Wraps SteveClient                         |
 
-\* Can be made thread-safe with `threadsafe=True` parameter
+Can be made thread-safe with `threadsafe=True` parameter
 
 ## SteveClient Thread Safety
 
@@ -41,6 +68,7 @@ for t in threads:
 ```
 
 **Problems**:
+
 - Race conditions in HTTP requests
 - Corrupted state
 - Connection errors
@@ -65,6 +93,7 @@ for t in threads:
 ```
 
 How it works:
+
 - Internal `threading.Lock` acquired for each operation
 - Sequential execution of methods
 - Small performance overhead
@@ -96,6 +125,7 @@ for t in threads:
 ```
 
 **Advantages**:
+
 - Control lock granularity
 - Atomic multi-operation sequences
 - Better performance when needed
@@ -127,6 +157,7 @@ time.sleep(10)
 ```
 
 **Thread diagram**:
+
 ```
 Main Thread:        [client.connect()] [start_streaming()] [time.sleep(10)]
                                 |
@@ -243,6 +274,7 @@ t2.start()
 ```
 
 Internal locking protects:
+
 - `recorder.data` list
 - `recorder.is_recording` flag
 - `recorder.start_time` / `recorder.end_time`
@@ -338,6 +370,7 @@ asyncio.run(main())
 ```
 
 **Advantages**:
+
 - No locking needed
 - Better performance for I/O
 - Cleaner code
@@ -349,6 +382,7 @@ asyncio.run(main())
 **Symptom**: Inconsistent state, unexpected errors
 
 **Example**:
+
 ```python
 # UNSAFE
 if client.is_valve_running():
@@ -357,6 +391,7 @@ if client.is_valve_running():
 ```
 
 **Solution**: Atomic operations with lock
+
 ```python
 with client_lock:
     if client.is_valve_running():
@@ -368,6 +403,7 @@ with client_lock:
 **Symptom**: Program hangs
 
 **Example**:
+
 ```python
 def callback(sample):
     # BAD: Callback tries to acquire same lock as main thread!
@@ -387,6 +423,7 @@ with client_lock:
 **Cause**: Slow callbacks
 
 **Solution**:
+
 ```python
 # Use queue to offload work
 callback_queue = queue.Queue()
@@ -471,10 +508,3 @@ for _ in range(100):
 3. **Keep callbacks fast** - Offload work to separate threads/queues
 4. **Avoid nested locks** - Careful with locks in callbacks
 5. **Use higher-level APIs** - `DataRecorder` handles threading for you
-
-## See Also
-
-- [SteveClient API](../api/client.md)
-- [SteveAsyncClient API](../api/async-client.md)
-- [Error Handling](error-handling.md)
-- [Performance Guide](performance.md)

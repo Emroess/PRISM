@@ -1,5 +1,17 @@
 # README
 
+
+## Table of Contents
+
+- [Tested configurations](#tested-configurations)
+- [Building](#building)
+- [Functions with no instance arguments](#functions-with-no-instance-arguments)
+- [Functions with instance arguments](#functions-with-instance-arguments)
+- [FFT](#fft)
+- [Matrix](#matrix)
+- [example.py](#examplepy)
+
+
 This Python wrapper for CMSIS-DSP is compatible with numpy.
 
 It is a very experimental wrapper with lots of limitations as described in the corresponding section below.

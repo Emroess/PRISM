@@ -1,5 +1,16 @@
 # BSP LAN8742 Component
 
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Description](#description)
+- [License](#license)
+- [Release note](#release-note)
+- [Compatibility information](#compatibility-information)
+- [Troubleshooting](#troubleshooting)
+
+
 ## Overview
 
 **STM32Cube** is an STMicroelectronics original initiative to ease the developers life by reducing efforts, time and cost.

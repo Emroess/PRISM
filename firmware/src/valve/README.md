@@ -1,5 +1,13 @@
 # Valve Control Subsystem
 
+
+## Table of Contents
+
+- [Files](#files)
+- [Architecture](#architecture)
+- [Dependencies](#dependencies)
+
+
 This directory contains the complete valve haptic control system implementation.
 
 ## Files
