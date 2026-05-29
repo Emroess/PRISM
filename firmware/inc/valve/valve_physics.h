@@ -18,7 +18,7 @@ extern "C" {
 
 /* Calculate total torque using HIL physics model (viscous + Coulomb) */
 float valve_physics_calculate_torque_hil(const struct valve_config *, float,
-    float, bool);
+    float, float, bool);
 
 /* Clamp torque to limits */
 float valve_physics_clamp_torque(float, float);

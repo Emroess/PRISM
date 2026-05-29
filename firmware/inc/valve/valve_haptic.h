@@ -109,6 +109,7 @@ struct valve_diagnostics_simple {
 struct valve_state {
     float position_deg;        /* Current position (degrees) */
     float omega_rad_s;         /* Current angular velocity (rad/s) */
+    float filtered_omega_rad_s;/* Filtered angular velocity for damping (rad/s) */
     float alpha_rad_s2;        /* Current angular acceleration (rad/s²) for feedforward */
     float prev_omega_rad_s;    /* Previous angular velocity for acceleration calculation */
     float command_position_deg;/* Legacy command field; mirrors measured position */

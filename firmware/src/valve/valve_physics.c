@@ -225,6 +225,7 @@ static inline float valve_hil_compute_wall_torque(
 static inline float valve_hil_compute_virtual_torque(
     float theta_turns,
     float omega_turns_per_s,
+    float damping_omega_turns_per_s,
     float theta_off,
     float theta_on,
     float b,
@@ -235,6 +236,7 @@ static inline float valve_hil_compute_virtual_torque(
     float max_torque)
 {
     float omega_rad_s;
+    float damping_omega_rad_s;
     float viscous_torque;
     float friction_torque;
     float wall_torque;
@@ -242,16 +244,17 @@ static inline float valve_hil_compute_virtual_torque(
 
     /* Convert omega from turns/s to rad/s for physical units */
     omega_rad_s = omega_turns_per_s * VALVE_TWO_PI;
+    damping_omega_rad_s = damping_omega_turns_per_s * VALVE_TWO_PI;
 
     /* Viscous damping term: b in [N*m*s/rad] */
-    viscous_torque = -b * omega_rad_s;
+    viscous_torque = -b * damping_omega_rad_s;
 
     /* Coulomb/static friction term: tau_c in [N*m] */
     friction_torque = -tau_c * valve_hil_smooth_sign(omega_rad_s, eps);
 
     /* Wall interaction torque: kw [N*m/turn], cw [N*m*s/turn] */
     wall_torque = valve_hil_compute_wall_torque(
-        theta_turns, omega_turns_per_s, theta_off, theta_on, kw, cw);
+        theta_turns, damping_omega_turns_per_s, theta_off, theta_on, kw, cw);
 
     /* Combine all torque components */
     total_torque = viscous_torque + friction_torque + wall_torque;
@@ -305,6 +308,7 @@ float valve_physics_calculate_torque_hil(
     const struct valve_config *cfg,
     float position_deg,
     float omega_rad_s,
+    float damping_omega_rad_s,
     bool quiet_active)
 {
     /* Quiet gate: no torque when active */
@@ -334,7 +338,9 @@ float valve_physics_calculate_torque_hil(
 
     /* Compute virtual torque using HIL physics */
     float virtual_torque = valve_hil_compute_virtual_torque(
-        theta_turns, (omega_rad_s * VALVE_RAD_TO_DEG) / degrees_per_turn,
+        theta_turns, 
+        (omega_rad_s * VALVE_RAD_TO_DEG) / degrees_per_turn,
+        (damping_omega_rad_s * VALVE_RAD_TO_DEG) / degrees_per_turn,
         theta_off_turns, theta_on_turns,
         b, tau_c, kw, cw, eps, max_torque);
 

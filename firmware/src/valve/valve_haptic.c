@@ -316,6 +316,7 @@ status_t valve_haptic_init(struct valve_context *ctx, struct can_simple_handle *
 	ctx->state = (struct valve_state){
 		.position_deg = 0.0f,
 		.omega_rad_s = 0.0f,
+		.filtered_omega_rad_s = 0.0f,
 		.alpha_rad_s2 = 0.0f,
 		.prev_omega_rad_s = 0.0f,
 		.torque_nm = 0.0f,
@@ -778,10 +779,10 @@ valve_process_encoder_data(struct valve_state *state)
 	state->raw_position_turns = obs.position;
 	state->position_deg = (obs.position - state->encoder_zero_turns) * deg_per_turn;
 
-	/* Estimate instantaneous velocity from position delta (removes ODrive filter lag) */
 	float vel_raw = delta_turns * deg_per_turn * VALVE_DEG_TO_RAD * (float)VALVE_CONTROL_LOOP_HZ;
 	if (!velocity_filters_initialized) {
 		valve_velocity_filters_seed(vel_raw);
+		state->filtered_omega_rad_s = vel_raw;
 	}
 
 	/* Clamp extreme velocity estimates to avoid over-reacting to single-sample spikes */
@@ -796,6 +797,10 @@ valve_process_encoder_data(struct valve_state *state)
 	state->omega_rad_s = vel_raw;
 	state->prev_omega_rad_s = prev_omega;
 	state->alpha_rad_s2 = (state->omega_rad_s - prev_omega) * (float)VALVE_CONTROL_LOOP_HZ;
+
+	/* Apply EMA filter for damping */
+	state->filtered_omega_rad_s = valve_filter_lowpass_simple(
+		vel_raw, state->filtered_omega_rad_s, VALVE_DAMPING_FILTER_CUTOFF_HZ, VALVE_CONTROL_LOOP_HZ);
 	state->diag.can_retry_count = 0;
 
 	return STATUS_OK;
@@ -905,6 +910,7 @@ valve_haptic_process(struct valve_context *ctx)
 	float torque_nm = valve_physics_calculate_torque_hil(cfg,
 	    state->position_deg,
 	    state->omega_rad_s,
+	    state->filtered_omega_rad_s,
 	    state->quiet_active);
 
 	float torque_limit = 0.0f;
