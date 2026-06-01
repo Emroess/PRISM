@@ -1,0 +1,2 @@
+src/valve/valve_physics.c:122:1:valve_physics_clamp_torque	0	static
+src/valve/valve_physics.c:307:7:valve_physics_calculate_torque_hil	0	static

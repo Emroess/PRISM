@@ -297,6 +297,16 @@ status_t can_simple_get_cached_encoder(struct can_simple_handle *h,
 void can_simple_reset_encoder_cache(struct can_simple_handle *h);
 
 /*
+ * CAN RX Timing Diagnostics
+ */
+status_t can_simple_get_rx_timing_stats(struct can_simple_handle *h, 
+                                        uint32_t *min_us, 
+                                        uint32_t *max_us, 
+                                        uint32_t *curr_us, 
+                                        uint32_t *count);
+void can_simple_reset_rx_timing_stats(struct can_simple_handle *h);
+
+/*
  * can_simple_get_encoder_count - Get raw encoder count and CPR
  * Note: This requires sending a request and waiting for response
  */
@@ -387,6 +397,12 @@ float can_simple_parse_float(const uint8_t *);
  * Utility: Pack float to CAN data (little-endian IEEE 754)
  */
 void can_simple_pack_float(uint8_t *, float);
+
+/*
+ * Event Callbacks
+ */
+typedef void (*can_simple_encoder_cb_t)(void);
+void can_simple_set_encoder_callback(struct can_simple_handle *h, can_simple_encoder_cb_t cb);
 
 #ifdef __cplusplus
 }

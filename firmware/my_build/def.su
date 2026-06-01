@@ -1,0 +1,8 @@
+third_party/lwip/core/def.c:76:1:lwip_htons	0	static
+third_party/lwip/core/def.c:90:1:lwip_htonl	0	static
+third_party/lwip/core/def.c:105:1:lwip_strnstr	24	static
+third_party/lwip/core/def.c:128:1:lwip_strnistr	24	static
+third_party/lwip/core/def.c:151:1:lwip_stricmp	4	static
+third_party/lwip/core/def.c:186:1:lwip_strnicmp	16	static
+third_party/lwip/core/def.c:222:1:lwip_itoa	12	static
+third_party/lwip/core/def.c:274:5:lwip_memcmp_consttime	4	static

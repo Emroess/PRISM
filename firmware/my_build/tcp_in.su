@@ -1,0 +1,7 @@
+third_party/lwip/core/tcp_in.c:1064:1:tcp_oos_insert_segment	24	static
+third_party/lwip/core/tcp_in.c:600:1:tcp_input_delayed_close	8	static
+third_party/lwip/core/tcp_in.c:1101:1:tcp_free_acked_segments.isra	40	static
+third_party/lwip/core/tcp_in.c:1154:1:tcp_receive	40	static
+third_party/lwip/core/tcp_in.c:1925:1:tcp_parseopt	24	static
+third_party/lwip/core/tcp_in.c:118:1:tcp_input	64	static
+third_party/lwip/core/tcp_in.c:2045:1:tcp_trigger_input_pcb_close	0	static

@@ -1,0 +1,8 @@
+src/valve/valve_presets.c:25:1:valve_presets_init	8	static
+src/valve/valve_presets.c:47:1:valve_presets_save	20	static
+src/valve/valve_presets.c:60:1:valve_preset_get	8	static
+src/valve/valve_presets.c:71:1:valve_preset_set	16	static
+src/valve/valve_presets.c:87:1:valve_preset_from_preset	0	static
+src/valve/valve_presets.c:129:1:valve_preset_validate	0	static
+src/valve/valve_presets.c:169:1:valve_preset_get_default_travel	0	static
+src/valve/valve_presets.c:182:1:valve_preset_save_current	72	static

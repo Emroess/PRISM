@@ -1,0 +1,5 @@
+src/drivers/flash_utils.c:14:1:flash_get_bank	0	static
+src/drivers/flash_utils.c:21:1:flash_get_sector	0	static
+src/drivers/flash_utils.c:29:1:flash_erase_sector	40	static
+src/drivers/flash_utils.c:54:1:flash_program_data	24	static
+src/drivers/flash_utils.c:90:1:flash_calculate_checksum	4	static

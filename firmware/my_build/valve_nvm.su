@@ -1,0 +1,4 @@
+src/valve/valve_nvm.c:142:1:valve_nvm_init	232	static
+src/valve/valve_nvm.c:170:1:valve_nvm_load_presets	208	static
+src/valve/valve_nvm.c:181:29:valve_nvm_get_default_presets	0	static
+src/valve/valve_nvm.c:188:1:valve_nvm_save_presets	232	static

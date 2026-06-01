@@ -44,6 +44,14 @@ struct can_simple_handle {
 	volatile uint32_t bus_voltage_timestamp_ms;
 	float bus_voltage;
 	float bus_current;
+	/* CAN RX Timing Diagnostics */
+	volatile uint32_t encoder_rx_prev_cycles;
+	volatile uint32_t encoder_rx_min_delta_us;
+	volatile uint32_t encoder_rx_max_delta_us;
+	volatile uint32_t encoder_rx_curr_delta_us;
+	volatile uint32_t encoder_rx_count;
+	/* Callbacks */
+	can_simple_encoder_cb_t encoder_cb;
 };
 
 /*
@@ -136,6 +144,23 @@ can_simple_fdcan_rx_callback(const struct can_frame *frame, void *context)
 		const float pos = can_simple_parse_float(&frame->data[0]);
 		const float vel = can_simple_parse_float(&frame->data[4]);
 		uint32_t next_seq = h->encoder_seq + 1U;
+		
+		/* Timing Diagnostics */
+		uint32_t current_cycles = board_get_dwt_cycles();
+		if (h->encoder_rx_count > 0) {
+			uint32_t delta_cycles = current_cycles - h->encoder_rx_prev_cycles;
+			uint32_t delta_us = board_dwt_cycles_to_us(delta_cycles);
+			h->encoder_rx_curr_delta_us = delta_us;
+			if (delta_us < h->encoder_rx_min_delta_us) h->encoder_rx_min_delta_us = delta_us;
+			if (delta_us > h->encoder_rx_max_delta_us) h->encoder_rx_max_delta_us = delta_us;
+		} else {
+			h->encoder_rx_min_delta_us = 0xFFFFFFFFU;
+			h->encoder_rx_max_delta_us = 0;
+			h->encoder_rx_curr_delta_us = 0;
+		}
+		h->encoder_rx_prev_cycles = current_cycles;
+		h->encoder_rx_count++;
+
 		if (next_seq == 0U) {
 			next_seq = 1U;
 		}
@@ -143,6 +168,12 @@ can_simple_fdcan_rx_callback(const struct can_frame *frame, void *context)
 		h->encoder_vel_turns_s = vel;
 		h->encoder_timestamp_ms = now_ms;
 		h->encoder_seq = next_seq;
+
+		/* Execute encoder callback if registered (event-driven physics) */
+		if (h->encoder_cb != NULL) {
+			h->encoder_cb();
+		}
+		
 		return;
 	}
 
@@ -210,6 +241,12 @@ can_simple_init(struct can_simple_handle **h, const struct can_simple_config *cf
 	can_simple_ctx.heartbeat_timestamp_ms = 0U;
 	can_simple_ctx.heartbeat_axis_error = 0U;
 	can_simple_ctx.heartbeat_axis_state = 0U;
+	can_simple_ctx.encoder_rx_count = 0U;
+	can_simple_ctx.encoder_rx_prev_cycles = 0U;
+	can_simple_ctx.encoder_rx_min_delta_us = 0xFFFFFFFFU;
+	can_simple_ctx.encoder_rx_max_delta_us = 0U;
+	can_simple_ctx.encoder_rx_curr_delta_us = 0U;
+	can_simple_ctx.encoder_cb = NULL;
 
 	fdcan_set_rx_callback(cfg->can, can_simple_fdcan_rx_callback, &can_simple_ctx);
 	(void)fdcan_enable_interrupts(cfg->can);
@@ -803,6 +840,44 @@ can_simple_get_cached_encoder(struct can_simple_handle *h,
 	}
 
 	return STATUS_OK;
+}
+
+status_t
+can_simple_get_rx_timing_stats(struct can_simple_handle *h, 
+                               uint32_t *min_us, 
+                               uint32_t *max_us, 
+                               uint32_t *curr_us, 
+                               uint32_t *count)
+{
+	if (h == NULL) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
+
+	if (min_us) *min_us = h->encoder_rx_min_delta_us;
+	if (max_us) *max_us = h->encoder_rx_max_delta_us;
+	if (curr_us) *curr_us = h->encoder_rx_curr_delta_us;
+	if (count) *count = h->encoder_rx_count;
+
+	return STATUS_OK;
+}
+
+void
+can_simple_reset_rx_timing_stats(struct can_simple_handle *h)
+{
+	if (h != NULL) {
+		h->encoder_rx_count = 0U;
+		h->encoder_rx_min_delta_us = 0xFFFFFFFFU;
+		h->encoder_rx_max_delta_us = 0U;
+		h->encoder_rx_curr_delta_us = 0U;
+	}
+}
+
+void
+can_simple_set_encoder_callback(struct can_simple_handle *h, can_simple_encoder_cb_t cb)
+{
+	if (h != NULL) {
+		h->encoder_cb = cb;
+	}
 }
 
 void

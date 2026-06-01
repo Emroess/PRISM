@@ -1,0 +1,49 @@
+2026-03-06 17:12:39 PERFORMANCE Initialized shared memory (heap size: 8589934592, dep table pow: 27, hash table pow: 26): 0.002s
+2026-03-06 17:12:39 PERFORMANCE Initialized multiprocessing workers (workers: 7): 0.008s
+2026-03-06 17:12:39 INFO Server has started listening on socket `/tmp/pyre_server_a0ad5b0b32eeaf32.sock`
+2026-03-06 17:12:39 INFO Initializing server state from scratch...
+2026-03-06 17:12:39 INFO Building module tracker...
+2026-03-06 17:12:39 PERFORMANCE Module tracker built: 0.095s
+2026-03-06 17:12:39 PERFORMANCE Full environment built: 0.095s
+2026-03-06 17:12:39 INFO Collecting all definitions...
+<unknown>:25: SyntaxWarning: invalid escape sequence '\D'
+<unknown>:26: SyntaxWarning: invalid escape sequence '\D'
+<unknown>:25: SyntaxWarning: invalid escape sequence '\D'
+<unknown>:26: SyntaxWarning: invalid escape sequence '\D'
+2026-03-06 17:12:40 PERFORMANCE Collected definitions (defines: 20956): 0.942s
+2026-03-06 17:12:40 INFO Checking 20956 functions...
+2026-03-06 17:12:43 PROGRESS Processed 1497 of 20956 functions
+2026-03-06 17:12:43 PROGRESS Processed 2994 of 20956 functions
+2026-03-06 17:12:43 PROGRESS Processed 4491 of 20956 functions
+2026-03-06 17:12:43 PROGRESS Processed 5988 of 20956 functions
+2026-03-06 17:12:43 PROGRESS Processed 7485 of 20956 functions
+2026-03-06 17:12:43 PROGRESS Processed 8982 of 20956 functions
+2026-03-06 17:12:44 PROGRESS Processed 10479 of 20956 functions
+2026-03-06 17:12:45 PROGRESS Processed 11976 of 20956 functions
+2026-03-06 17:12:45 PROGRESS Processed 13473 of 20956 functions
+2026-03-06 17:12:45 PROGRESS Processed 14970 of 20956 functions
+2026-03-06 17:12:45 PROGRESS Processed 16467 of 20956 functions
+2026-03-06 17:12:46 PROGRESS Processed 17964 of 20956 functions
+2026-03-06 17:12:46 PROGRESS Processed 19461 of 20956 functions
+2026-03-06 17:12:46 PROGRESS Processed 20956 of 20956 functions
+2026-03-06 17:12:46 PERFORMANCE Check_TypeCheck: 5.526s
+2026-03-06 17:12:46 MEMORY Shared memory size post-typecheck (size: 21)
+2026-03-06 17:12:46 PROGRESS Postprocessing 995 sources...
+2026-03-06 17:12:46 PROGRESS Postprocessed 137 of 995 sources
+2026-03-06 17:12:46 PROGRESS Postprocessed 280 of 995 sources
+2026-03-06 17:12:46 PROGRESS Postprocessed 423 of 995 sources
+2026-03-06 17:12:46 PROGRESS Postprocessed 566 of 995 sources
+2026-03-06 17:12:46 PROGRESS Postprocessed 709 of 995 sources
+2026-03-06 17:12:46 PROGRESS Postprocessed 852 of 995 sources
+2026-03-06 17:12:46 PROGRESS Postprocessed 995 of 995 sources
+2026-03-06 17:12:46 PERFORMANCE Check_Postprocessing: 0.384s
+2026-03-06 17:12:46 PERFORMANCE Initialization (binary_version: 7873fbf76ce7a1f3b02a527f4e2ee8ac50ca6843, initialization method: cold start): 6.950s
+2026-03-06 17:12:46 INFO Server state initialized.
+2026-03-06 17:12:46 SERVER Connection established
+2026-03-06 17:12:46 SERVER Processing request (DisplayTypeError())...
+2026-03-06 17:12:46 PERFORMANCE Server request (binary_version: 7873fbf76ce7a1f3b02a527f4e2ee8ac50ca6843, request kind: DisplayTypeErrors): 0.067s
+2026-03-06 17:12:46 SERVER Request `(DisplayTypeError())` processed
+2026-03-06 17:12:46 SERVER Connection closed
+2026-03-10 12:06:29 INFO Server interrupted with signal `sigterm`
+2026-03-10 12:06:29 INFO Server is going down. Cleaning up...
+2026-03-10 12:06:29 INFO Server process get interrputed with signal sigterm

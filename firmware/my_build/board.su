@@ -1,0 +1,14 @@
+src/bsp/board.c:154:1:board_validate	0	static
+src/bsp/board.c:590:1:SysTick_Handler	0	static
+src/bsp/board.c:599:1:board_get_systick_ms	0	static
+src/bsp/board.c:608:1:board_delay_ms	0	static
+src/bsp/board.c:623:1:board_dwt_init	0	static
+src/bsp/board.c:634:1:board_get_dwt_cycles	0	static
+src/bsp/board.c:643:1:board_dwt_cycles_to_us	0	static
+src/bsp/board.c:652:1:board_led_on	0	static
+src/bsp/board.c:681:1:board_led_off	0	static
+src/bsp/board.c:710:1:board_led_toggle	0	static
+src/bsp/board.c:739:1:board_get_sysclk_hz	0	static
+src/bsp/board.c:748:1:board_get_unique_id	0	static
+src/bsp/board.c:763:1:board_panic	16	static
+src/bsp/board.c:78:1:board_init	24	static

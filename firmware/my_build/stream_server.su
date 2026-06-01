@@ -1,0 +1,14 @@
+src/network/stream_server.c:585:1:stream_poll	0	static
+src/network/stream_server.c:128:1:stream_log	152	static
+src/network/stream_server.c:147:1:stream_send_buffer	8	static
+src/network/stream_server.c:213:1:stream_disconnect	16	static
+src/network/stream_server.c:572:1:stream_error	0	static
+src/network/stream_server.c:415:1:stream_accept	184	static
+src/network/stream_server.c:102:13:u64_to_dec_str.part.0.constprop	64	static
+src/network/stream_server.c:466:1:stream_recv	280	static
+src/network/stream_server.c:255:1:stream_send_data	584	static
+src/network/stream_server.c:384:1:ethernet_stream_process	24	static
+src/network/stream_server.c:598:1:ethernet_stream_init	16	static
+src/network/stream_server.c:657:1:ethernet_stream_stop	16	static
+src/network/stream_server.c:682:10:ethernet_stream_set_default_interval	0	static
+src/network/stream_server.c:694:6:ethernet_stream_get_stats	4	static

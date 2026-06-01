@@ -1,0 +1,13 @@
+src/network/http_server.c:523:1:http_accept	24	static
+src/network/http_server.c:242:13:http_log	152	static
+src/network/http_server.c:639:1:http_close_conn	16	static
+src/network/http_server.c:301:13:http_send_json_error	416	static
+src/network/http_server.c:621:1:http_poll	16	static
+src/network/http_server.c:608:1:http_err	0	static
+src/network/http_server.c:553:1:http_recv	320	static
+src/network/http_server.c:484:6:ethernet_http_init	16	static
+src/network/http_server.c:510:6:ethernet_http_stop	8	static
+src/network/http_server.c:518:6:ethernet_http_process	0	static
+src/network/http_server.c:800:6:ethernet_http_enable_logging	0	static
+src/network/http_server.c:804:6:ethernet_http_get_logging_enabled	0	static
+src/network/http_server.c:808:6:ethernet_http_get_status	12	static

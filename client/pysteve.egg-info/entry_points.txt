@@ -1,0 +1,3 @@
+[console_scripts]
+pysteve-discover = pysteve.cli:discover_devices
+pysteve-monitor = pysteve.cli:monitor_device

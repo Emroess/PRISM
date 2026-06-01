@@ -96,7 +96,15 @@ void board_panic(status_t error_code, const char *file, int line)
  */
 
 /*
+ * DWT Cycle Counter Functions for precise microsecond timing
+ */
+void board_dwt_init(void);
+uint32_t board_get_dwt_cycles(void);
+uint32_t board_dwt_cycles_to_us(uint32_t cycles);
+
+/*
  * board_get_systick_ms - Get millisecond counter since boot
+
  *
  * Returns: Milliseconds since board_init() was called
  */
