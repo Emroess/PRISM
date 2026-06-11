@@ -239,6 +239,24 @@ class SteveAsyncClient:
         """Get ODrive motor controller status."""
         return await self._request("GET", "odrive")
 
+    async def set_torque(self, torque: float) -> Dict[str, Any]:
+        """Set motor torque directly (bypass valve control)."""
+        return await self._request("POST", "odrive", json={"action": "set_torque", "value": torque})
+
+    async def set_position(self, position: float) -> Dict[str, Any]:
+        """Set motor position (requires position control mode)."""
+        return await self._request("POST", "odrive", json={"action": "set_position", "value": position})
+
+    async def set_velocity(self, velocity: float) -> Dict[str, Any]:
+        """Set motor velocity (requires velocity control mode)."""
+        return await self._request("POST", "odrive", json={"action": "set_velocity", "value": velocity})
+
+    async def set_odrive_mode(self, mode: int) -> Dict[str, Any]:
+        """Set ODrive controller mode (0=voltage, 1=torque, 2=velocity, 3=position)."""
+        if mode < 0 or mode > 3:
+            raise SteveValidationError("mode must be 0-3")
+        return await self._request("POST", "odrive", json={"action": "set_mode", "value": mode})
+
     @property
     def is_connected(self) -> bool:
         """Check if client is connected."""

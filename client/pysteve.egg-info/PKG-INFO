@@ -1,0 +1,53 @@
+Metadata-Version: 2.4
+Name: pysteve
+Version: 0.1.0
+Summary: Python client for STEVE haptic valve simulation system
+Author-email: STEVE Team <steve@example.com>
+License: MIT
+Project-URL: Homepage, https://github.com/yourusername/steve_can
+Project-URL: Documentation, https://pysteve.readthedocs.io
+Project-URL: Repository, https://github.com/yourusername/steve_can
+Project-URL: Bug Tracker, https://github.com/yourusername/steve_can/issues
+Keywords: robotics,haptics,simulation,valve,mujoco,gymnasium,isaac-sim
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Scientific/Engineering :: Robotics
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.28.0
+Requires-Dist: numpy>=1.21.0
+Provides-Extra: mujoco
+Requires-Dist: mujoco>=2.3.0; extra == "mujoco"
+Provides-Extra: gymnasium
+Requires-Dist: gymnasium>=0.28.0; extra == "gymnasium"
+Requires-Dist: stable-baselines3>=2.0.0; extra == "gymnasium"
+Provides-Extra: isaac
+Provides-Extra: async
+Requires-Dist: aiohttp>=3.8.0; extra == "async"
+Provides-Extra: data
+Requires-Dist: h5py>=3.7.0; extra == "data"
+Requires-Dist: pandas>=1.5.0; extra == "data"
+Provides-Extra: viz
+Requires-Dist: matplotlib>=3.5.0; extra == "viz"
+Requires-Dist: plotly>=5.11.0; extra == "viz"
+Provides-Extra: ros
+Requires-Dist: rclpy>=3.0.0; extra == "ros"
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: black>=22.0.0; extra == "dev"
+Requires-Dist: ruff>=0.0.280; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Requires-Dist: sphinx>=5.0.0; extra == "dev"
+Requires-Dist: sphinx-rtd-theme>=1.2.0; extra == "dev"
+Provides-Extra: all
+Requires-Dist: pysteve[async,data,gymnasium,mujoco,ros,viz]; extra == "all"

@@ -459,6 +459,44 @@ class SteveClient:
         """
         return self._request("POST", "odrive", json={"action": "set_torque", "value": torque})
 
+    def set_position(self, position: float) -> Dict[str, Any]:
+        """
+        Set motor position (requires position control mode).
+
+        Args:
+            position: Position in turns
+
+        Returns:
+            Response data
+        """
+        return self._request("POST", "odrive", json={"action": "set_position", "value": position})
+
+    def set_velocity(self, velocity: float) -> Dict[str, Any]:
+        """
+        Set motor velocity (requires velocity control mode).
+
+        Args:
+            velocity: Velocity in turns/s
+
+        Returns:
+            Response data
+        """
+        return self._request("POST", "odrive", json={"action": "set_velocity", "value": velocity})
+
+    def set_odrive_mode(self, mode: int) -> Dict[str, Any]:
+        """
+        Set ODrive controller mode.
+
+        Args:
+            mode: Control mode (0=voltage, 1=torque, 2=velocity, 3=position)
+
+        Returns:
+            Response data
+        """
+        if mode < 0 or mode > 3:
+            raise SteveValidationError("mode must be 0-3")
+        return self._request("POST", "odrive", json={"action": "set_mode", "value": mode})
+
     # Streaming Control
 
     def start_stream(self, interval_ms: int = 100) -> Dict[str, Any]:
