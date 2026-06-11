@@ -1,4 +1,4 @@
 /firmware/build/
 .pyc
-/pycache
+/__pycache__
 
