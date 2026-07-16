@@ -136,6 +136,28 @@ cli_cmd_valve_damping(struct cli_context *ctx, int argc, char *argv[])
 }
 
 /*
+ * cli_cmd_valve_damping_cutoff - Set damping velocity filter cutoff
+ */
+static int
+cli_cmd_valve_damping_cutoff(struct cli_context *ctx, int argc, char *argv[])
+{
+	if (argc < 2) {
+		uart_write_string(ctx->uart, "\r\nUsage: valve_damping_cutoff <val_hz>\r\n", 100);
+		return 0;
+	}
+	
+	float val = strtof(argv[1], NULL);
+	status_t status = valve_set_damping_cutoff(ctx->valve_ctx, val);
+	if (status != STATUS_OK) {
+		uart_write_string(ctx->uart, "\r\nFailed to set damping cutoff\r\n", 100);
+		uart_printf(ctx->uart, "Error: %s\r\n", status_to_string(status));
+	} else {
+		uart_write_string(ctx->uart, "\r\nDamping cutoff set\r\n", 100);
+	}
+	return 0;
+}
+
+/*
  * cli_cmd_valve_start - Start valve control
  */
 static int
@@ -205,6 +227,7 @@ cli_cmd_valve_status(struct cli_context *ctx, int argc, char *argv[])
 	uart_printf(ctx->uart, "Wall damping:       %.3f N·m·s/turn\r\n", ctx->valve_ctx->config.hil_c_w_wall_damping_nm_s_per_turn);
 	uart_printf(ctx->uart, "Scale:              %.3f deg/turn\r\n", ctx->valve_ctx->config.degrees_per_turn);
 	uart_printf(ctx->uart, "Epsilon:            %.6f\r\n", ctx->valve_ctx->config.hil_eps_smoothing);
+	uart_printf(ctx->uart, "Damping cutoff:     %.3f Hz\r\n", ctx->valve_ctx->config.hil_damping_filter_cutoff_hz);
 	uart_printf(ctx->uart, "Energy tank:        %.6f J\r\n", state->passivity_energy_j);
 	uart_printf(ctx->uart, "Loop time:          %lu us\r\n", (unsigned long)state->diag.last_loop_time_us);
 	
@@ -1116,6 +1139,7 @@ const struct cli_command cli_commands[] = {
 	{"ping", cli_cmd_ping, "Ping an IP address to test network connectivity"},
 	{"setip", cli_cmd_setip, "Set static IP address, subnet mask, and gateway"},
 	{"valve_damping", cli_cmd_valve_damping, "Set viscous damping (N·m·s/rad)"},
+	{"valve_damping_cutoff", cli_cmd_valve_damping_cutoff, "Set damping velocity filter cutoff (Hz, min: >0, max: 450, 0=disable)"},
 	{"valve_energy", cli_cmd_valve_energy, "Show passivity energy tank status"},
 	{"valve_epsilon", cli_cmd_valve_epsilon, "Set smoothing epsilon"},
 	{"valve_friction", cli_cmd_valve_friction, "Set Coulomb friction (N·m)"},

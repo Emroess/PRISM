@@ -118,6 +118,7 @@ valve_preset_from_preset(int preset, float travel_degrees, struct valve_config *
 	cfg->hil_c_w_wall_damping_nm_s_per_turn = params->hil_c_w_wall_damping_nm_s_per_turn;
 	cfg->hil_eps_smoothing = params->hil_eps_smoothing;
 	cfg->hil_tau_max_limit_nm = params->torque_limit_nm;
+	cfg->hil_damping_filter_cutoff_hz = VALVE_DAMPING_FILTER_CUTOFF_HZ;
 
 	return STATUS_OK;
 }

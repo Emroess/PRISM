@@ -31,6 +31,7 @@
 #define CFG_FIELD_OPEN_POS       (1U << 6)
 #define CFG_FIELD_CLOSED_POS     (1U << 7)
 #define CFG_FIELD_SCALE          (1U << 8)
+#define CFG_FIELD_DAMPING_CUTOFF (1U << 9)
 
 /*
  * ===========================================================================
@@ -74,8 +75,8 @@
  * ===========================================================================
  */
 #define VALVE_TORQUE_FILTER_CUTOFF_HZ        400.0f
-#define VALVE_DAMPING_FILTER_CUTOFF_HZ       50.0f
-#define VALVE_PASSIVITY_ENERGY_CAP_J         2.0f
+#define VALVE_DAMPING_FILTER_CUTOFF_HZ       150.0f
+// #define VALVE_PASSIVITY_ENERGY_CAP_J         2.0f
 
 /*
  * ===========================================================================

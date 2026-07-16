@@ -31,6 +31,14 @@ valve_set_damping(struct valve_context *ctx, float value)
 }
 
 status_t
+valve_set_damping_cutoff(struct valve_context *ctx, float value)
+{
+	struct valve_config temp_cfg = ctx->config;
+	temp_cfg.hil_damping_filter_cutoff_hz = value;
+	return valve_haptic_stage_config(ctx, &temp_cfg, CFG_FIELD_DAMPING_CUTOFF);
+}
+
+status_t
 valve_set_friction(struct valve_context *ctx, float value)
 {
 	struct valve_config temp_cfg = ctx->config;

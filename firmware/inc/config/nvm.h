@@ -32,7 +32,7 @@
  * ===========================================================================
  */
 #define VALVE_NVM_MAGIC             0x56414C56U  /* "VALV" as ASCII */
-#define VALVE_NVM_VERSION           2U
+#define VALVE_NVM_VERSION           3U
 #define VALVE_NVM_PRESET_COUNT      4U
 
 /* Linker symbol for valve NVM region */

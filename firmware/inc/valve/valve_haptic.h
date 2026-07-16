@@ -62,6 +62,7 @@ struct valve_config {
     float hil_c_w_wall_damping_nm_s_per_turn; /* Wall damping c_w [N·m·s/turn] */
     float hil_eps_smoothing;                /* Smoothing parameter ε for sign function */
     float hil_tau_max_limit_nm;             /* Maximum torque limit τ_max [N·m] */
+    float hil_damping_filter_cutoff_hz;     /* Cutoff frequency for damping velocity EMA filter (Hz) */
 };
 
 /* Safety event counters for diagnostics */

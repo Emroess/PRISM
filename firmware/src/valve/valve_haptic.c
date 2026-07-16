@@ -579,6 +579,7 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		state->omega_rad_s = 0.0f;
 	}
 	valve_velocity_filters_seed(state->omega_rad_s);
+	state->filtered_omega_rad_s = state->omega_rad_s;
 	state->prev_omega_rad_s = state->omega_rad_s;
 	state->alpha_rad_s2 = 0.0f;
 	state->quiet_active = (state->omega_rad_s == 0.0f) ? 1U : 0U;
@@ -642,6 +643,7 @@ void valve_haptic_stop(struct valve_context *ctx)
 	state->diag.heartbeat_age_ms = UINT32_MAX;
 }
 
+
 /* Emergency stop with ESTOP command for immediate shutdown in critical safety situations */
 static void valve_haptic_emergency_stop(struct valve_context *ctx)
 {
@@ -659,6 +661,9 @@ static void valve_haptic_emergency_stop(struct valve_context *ctx)
 		(void)can_simple_estop_nb(state->odrive);
 	}
 	
+	/* Stop TIM6 timer */
+	tim6_stop();
+
 	/* Set error state */
 	state->status = VALVE_STATE_ERROR;
 	state->diag.can_retry_count = 0;
@@ -703,14 +708,16 @@ static void valve_handle_can_failure(struct valve_context *ctx, status_t error_c
 
 /* Process incoming encoder data from ODrive to update position and velocity estimates */
 static status_t
-valve_process_encoder_data(struct valve_state *state)
+valve_process_encoder_data(struct valve_state *state, const struct valve_config *cfg)
 {
 	struct can_simple_encoder_estimates obs;
 	uint32_t age_ms = UINT32_MAX;
 	status_t obs_status;
 
+	uint32_t current_seq = 0;
+	
 	/* Get cached encoder data (S1 broadcasts at 1kHz automatically) */
-	obs_status = can_simple_get_cached_encoder(state->odrive, &obs, &age_ms, NULL);
+	obs_status = can_simple_get_cached_encoder(state->odrive, &obs, &age_ms, &current_seq);
 	if (obs_status != STATUS_OK) {
 		state->diag.telemetry_age_ms = UINT32_MAX;
 		state->diag.can_retry_count++;
@@ -720,6 +727,19 @@ valve_process_encoder_data(struct valve_state *state)
 		}
 		return STATUS_ERROR_BUFFER_EMPTY;
 	}
+
+	static uint32_t last_seq = 0;
+	if (last_seq != 0 && current_seq == last_seq) {
+		/* No new CAN packet arrived this millisecond due to CAN jitter. 
+		 * Skip physics update to hold the previous torque perfectly steady! */
+		return STATUS_ERROR_BUFFER_EMPTY;
+	}
+	
+	uint32_t seq_diff = current_seq - last_seq;
+	if (last_seq == 0 || seq_diff > 10) {
+		seq_diff = 1; /* Reset on first run or huge gap */
+	}
+	last_seq = current_seq;
 
 	state->diag.telemetry_age_ms = age_ms;
 	
@@ -779,7 +799,14 @@ valve_process_encoder_data(struct valve_state *state)
 	state->raw_position_turns = obs.position;
 	state->position_deg = (obs.position - state->encoder_zero_turns) * deg_per_turn;
 
-	float vel_raw = delta_turns * deg_per_turn * VALVE_DEG_TO_RAD * (float)VALVE_CONTROL_LOOP_HZ;
+	/* NEW VELOCITY CALCULATION (JITTER COMPENSATED):
+	 * Calculate actual time elapsed based on how many CAN packets were received.
+	 * If CAN packets arrive clumped together (jitter), dividing by seq_diff prevents 
+	 * the velocity from artificially spiking 2x or 3x higher! */
+	float actual_dt_s = seq_diff * (1.0f / VALVE_CONTROL_LOOP_HZ);
+	float vel_raw = (delta_turns * deg_per_turn * VALVE_DEG_TO_RAD) / actual_dt_s;
+
+
 	if (!velocity_filters_initialized) {
 		valve_velocity_filters_seed(vel_raw);
 		state->filtered_omega_rad_s = vel_raw;
@@ -791,6 +818,11 @@ valve_process_encoder_data(struct valve_state *state)
 		vel_raw = max_vel_rad_s;
 	} else if (vel_raw < -max_vel_rad_s) {
 		vel_raw = -max_vel_rad_s;
+	} else if (vel_raw < 0.05f && vel_raw > -0.05f) {
+		/* DEADBAND: If velocity is extremely close to zero (e.g. sensor noise), 
+		 * snap it to exactly 0.0f. This is critical because it triggers the 
+		 * quiet_active gate and sets Torque to exactly 0, preventing resting limit cycles. */
+		vel_raw = 0.0f;
 	}
 
 	float prev_omega = state->omega_rad_s;
@@ -800,7 +832,7 @@ valve_process_encoder_data(struct valve_state *state)
 
 	/* Apply EMA filter for damping */
 	state->filtered_omega_rad_s = valve_filter_lowpass_simple(
-		vel_raw, state->filtered_omega_rad_s, VALVE_DAMPING_FILTER_CUTOFF_HZ, VALVE_CONTROL_LOOP_HZ);
+		vel_raw, state->filtered_omega_rad_s, cfg->hil_damping_filter_cutoff_hz, VALVE_CONTROL_LOOP_HZ);
 	state->diag.can_retry_count = 0;
 
 	return STATUS_OK;
@@ -876,7 +908,7 @@ valve_haptic_process(struct valve_context *ctx)
 	t_start = dwt_get_cycles();
 
 	/* Process encoder data and check for fresh samples */
-	status_t encoder_status = valve_process_encoder_data(state);
+	status_t encoder_status = valve_process_encoder_data(state, cfg);
 	if (encoder_status != STATUS_OK) {
 		return;
 	}
@@ -909,7 +941,7 @@ valve_haptic_process(struct valve_context *ctx)
 	 */
 	float torque_nm = valve_physics_calculate_torque_hil(cfg,
 	    state->position_deg,
-	    state->omega_rad_s,
+	    state->filtered_omega_rad_s, /* Use filtered velocity for Coulomb to suppress quantization noise! */
 	    state->filtered_omega_rad_s,
 	    state->quiet_active);
 
@@ -921,6 +953,19 @@ valve_haptic_process(struct valve_context *ctx)
 	float clamped_torque = valve_physics_clamp_torque(
 	    torque_nm,
 	    torque_limit);
+
+	// /* Torque Slew Rate Limiter: Prevent instantaneous massive current spikes 
+	//  * that trip ODrive SPINOUT_DETECTED. 
+	//  * Limits change to 2.0 Nm per ms (2000 Nm/s). Imperceptible to human touch,
+	//  * but prevents the Electrical/Mechanical power discrepancy from spiking. */
+	// float max_torque_delta = 0.25f;  // Tried 2, 1, and 0.5; all still resulted in motor spinouts, just 0.25 works
+	// float torque_delta = clamped_torque - state->filtered_torque_nm;
+	// if (torque_delta > max_torque_delta) {
+	// 	clamped_torque = state->filtered_torque_nm + max_torque_delta;
+	// } else if (torque_delta < -max_torque_delta) {
+	// 	clamped_torque = state->filtered_torque_nm - max_torque_delta;
+	// }
+	
 	torque_nm = clamped_torque;
 
 	float prev_filtered = state->filtered_torque_nm;
@@ -931,7 +976,15 @@ valve_haptic_process(struct valve_context *ctx)
 	    VALVE_TORQUE_FILTER_SAMPLE_RATE_HZ);
 	torque_nm = filtered_torque;
 
-	/* Enhanced passivity energy tank with persistent storage */
+	/* 
+	 * Enhanced passivity energy tank with persistent storage
+	 * BYPASSED: Since this is a pure resistive (passive) haptic system, 
+	 * the energy tank is not needed. When using cutoff=0 (raw velocity), 
+	 * zero-mean noise artificially drains the tank (ratchet effect), causing
+	 * unexpected torque dropouts. Bypassing this ensures smooth, continuous
+	 * resistance for robotic training.
+	 */
+#if 0
 	const float dt_s = VALVE_LOOP_DT_S;
 	float power_w = torque_nm * state->omega_rad_s;
 	float delta_energy = power_w * dt_s;
@@ -962,6 +1015,7 @@ valve_haptic_process(struct valve_context *ctx)
 	if (state->passivity_energy_j > 0.0f) {
 		state->passivity_energy_j = 0.0f;
 	}
+#endif
 	
 	state->filtered_torque_nm = torque_nm;
 	state->previous_torque_nm = torque_nm;

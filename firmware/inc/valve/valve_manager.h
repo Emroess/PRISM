@@ -28,6 +28,7 @@ status_t valve_stop(struct valve_context *ctx);
  * Valve configuration setters - atomic updates via staging
  */
 status_t valve_set_damping(struct valve_context *ctx, float value);
+status_t valve_set_damping_cutoff(struct valve_context *ctx, float value);
 status_t valve_set_friction(struct valve_context *ctx, float value);
 status_t valve_set_epsilon(struct valve_context *ctx, float value);
 status_t valve_set_torque_limit(struct valve_context *ctx, float value);
