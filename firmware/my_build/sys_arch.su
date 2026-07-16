@@ -1,4 +1,0 @@
-ports/lwip/sys_arch.c:36:7:sys_now	0	static
-ports/lwip/sys_arch.c:46:6:sys_init	0	static
-ports/lwip/sys_arch.c:56:12:sys_arch_protect	0	static
-ports/lwip/sys_arch.c:68:6:sys_arch_unprotect	0	static

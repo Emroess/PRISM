@@ -1,3 +1,0 @@
-src/system_stm32h7xx.c:45:1:ExitRun0Mode	0	static
-src/system_stm32h7xx.c:63:1:SystemInit	4	static
-src/system_stm32h7xx.c:144:1:SystemCoreClockUpdate	4	static

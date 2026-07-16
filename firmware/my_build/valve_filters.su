@@ -1,5 +1,0 @@
-src/valve/valve_filters.c:54:23:valve_filter_setup	88	static
-src/valve/valve_filters.c:137:23:valve_filter_process	16	static
-src/valve/valve_filters.c:164:23:valve_filter_process_block	8	static
-src/valve/valve_filters.c:191:23:valve_filter_reset	8	static
-src/valve/valve_filters.c:223:1:valve_filter_lowpass_simple	0	static

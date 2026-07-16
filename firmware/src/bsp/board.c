@@ -129,9 +129,6 @@ board_init(void)
 	/* Update SystemCoreClock variable (CMSIS requirement) */
 	SystemCoreClock = BOARD_SYSCLK_HZ;
 
-	/* Initialize DWT for precise cycle counting */
-	board_dwt_init();
-
 	/* Configure SysTick for 1ms timebase */
 	status = configure_systick();
 	if (status != STATUS_OK) {
@@ -614,35 +611,6 @@ board_delay_ms(uint32_t ms)
 	do {
 		elapsed = systick_counter_ms - start;
 	} while (elapsed < ms);
-}
-
-/*
- * board_dwt_init - Initialize DWT cycle counter
- */
-void
-board_dwt_init(void)
-{
-	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-	DWT->CYCCNT = 0;
-	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-}
-
-/*
- * board_get_dwt_cycles - Get current DWT cycle count
- */
-uint32_t
-board_get_dwt_cycles(void)
-{
-	return DWT->CYCCNT;
-}
-
-/*
- * board_dwt_cycles_to_us - Convert cycles to microseconds
- */
-uint32_t
-board_dwt_cycles_to_us(uint32_t cycles)
-{
-	return cycles / (BOARD_SYSCLK_HZ / 1000000U);
 }
 
 /*

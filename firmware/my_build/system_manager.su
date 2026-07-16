@@ -1,4 +1,0 @@
-third_party/stm32cube/CMSIS/Core/Include/core_cm7.h:2156:34:__NVIC_SystemReset	0	static
-src/app/system_manager.c:15:1:system_reboot	8	static
-src/app/system_manager.c:24:1:system_enter_dfu	8	static
-src/app/system_manager.c:36:1:system_get_fault_info	4	static

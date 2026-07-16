@@ -1,2 +1,0 @@
-common/status_strings.c:32:1:status_to_string	0	static
-common/status_strings.c:55:1:valve_state_to_string	0	static

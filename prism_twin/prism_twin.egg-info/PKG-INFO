@@ -1,7 +1,0 @@
-Metadata-Version: 2.4
-Name: prism-twin
-Version: 0.1.0
-Summary: Firmware-faithful PRISM digital twin in MuJoCo
-Requires-Python: >=3.10
-Requires-Dist: numpy>=1.26
-Requires-Dist: mujoco>=3.1

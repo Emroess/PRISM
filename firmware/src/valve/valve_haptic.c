@@ -20,8 +20,9 @@
 #include "valve_physics.h"
 #include "valve_presets.h"
 
+/* TIM6 handle (basic timer for valve control loop) */
+static TIM_TypeDef *htim6 = TIM6;
 static struct valve_context *active_valve_context;
-static void valve_haptic_encoder_cb(void);
 static uint32_t last_heartbeat_check_ms = 0;
 #define VALVE_VELOCITY_FILTER_LIGHT_HZ 200.0f
 
@@ -168,10 +169,83 @@ static inline float valve_lowpass_alpha(float cutoff_hz, float dt_s)
 }
 
 /*
- * -----------------------------------------------------------------------------
- * Event-Driven Physics Loop (ODrive Master Clock)
- * -----------------------------------------------------------------------------
+ * DWT Cycle Counter Functions
+ * Used for precise timing measurements (CPU cycles @ 400 MHz)
  */
+
+/* Initialize DWT cycle counter for performance profiling */
+static inline void dwt_init(void)
+{
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CYCCNT = 0;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+/* Get current cycle count for timing measurements */
+static inline uint32_t dwt_get_cycles(void)
+{
+    return DWT->CYCCNT;
+}
+
+/* Convert cycles to microseconds for human-readable timing data */
+static inline uint32_t dwt_cycles_to_us(uint32_t cycles)
+{
+    return cycles / VALVE_CPU_CLOCK_MHZ;
+}
+
+/*
+ * TIM6 Configuration
+ * Configure TIM6 for VALVE_CONTROL_LOOP_HZ interrupt rate
+ * APB1 timer clock = 200 MHz (check RCC configuration)
+ * Prescaler = 199 (200 MHz / 200 = 1 MHz)
+ * ARR = (1 MHz / VALVE_CONTROL_LOOP_HZ) - 1
+ */
+
+/* Configure TIM6 registers for the specified interrupt frequency to drive the control loop */
+static void tim6_configure_for_hz(uint32_t hz)
+{
+    /* Calculate period in timer ticks */
+    uint32_t period_ticks = (TIM6_BASE_FREQUENCY_HZ / hz) - 1U;
+    
+    /* Configure timer */
+    htim6->PSC = TIM6_PRESCALER;  /* Prescaler: 200 MHz / 200 = 1 MHz */
+    htim6->ARR = period_ticks;
+    htim6->CR1 = TIM_CR1_ARPE;    /* Auto-reload preload enable */
+    
+    /* Enable update interrupt */
+    htim6->DIER = TIM_DIER_UIE;
+}
+
+/* Initialize TIM6 hardware and NVIC for periodic control loop interrupts */
+static void tim6_init(void)
+{
+    /* Enable TIM6 clock */
+    RCC->APB1LENR |= RCC_APB1LENR_TIM6EN;
+    (void)RCC->APB1LENR;  /* Read back to ensure write completes */
+    
+    /* Configure TIM6 for control loop frequency */
+    tim6_configure_for_hz(VALVE_CONTROL_LOOP_HZ);
+    
+    /* Configure NVIC
+     * Priority 5 = HIGH (higher than FDCAN=6, UART=5)
+	* Critical: TIM6 must preempt FDCAN to maintain 1000 Hz loop timing
+     * Lower number = higher priority on Cortex-M
+     */
+    NVIC_SetPriority(TIM6_DAC_IRQn, 5);
+    NVIC_EnableIRQ(TIM6_DAC_IRQn);
+}
+
+/* Start TIM6 timer to begin generating control loop interrupts */
+static void tim6_start(void)
+{
+    htim6->CR1 |= TIM_CR1_CEN;  /* Enable counter */
+}
+
+/* Stop TIM6 timer to halt control loop execution */
+static void tim6_stop(void)
+{
+    htim6->CR1 &= ~TIM_CR1_CEN;  /* Disable counter */
+}
 
 /* Wait for ODrive to enter the required control and input modes before starting closed-loop control */
 static bool valve_wait_for_controller_mode(struct valve_state *state,
@@ -285,8 +359,6 @@ status_t valve_haptic_init(struct valve_context *ctx, struct can_simple_handle *
 	struct fdcan_handle *fdcan = fdcan_get_handle();
 	fdcan_set_error_callback(fdcan, valve_fdcan_error_callback, &ctx->state);
 
-	/* Register physics loop to run precisely when ODrive encoder packet arrives */
-	can_simple_set_encoder_callback(odrive, valve_haptic_encoder_cb);
 	
 	return STATUS_OK;
 }
@@ -524,6 +596,13 @@ status_t valve_haptic_start(struct valve_context *ctx)
 	state->filtered_torque_nm = 0.0f;
 	state->passivity_energy_j = 0.0f;
     
+    /* Initialize DWT cycle counter for timing measurements */
+    dwt_init();
+    
+    /* Initialize and start TIM6 */
+    tim6_init();
+    tim6_start();
+    
     /* Enter RUNNING state */
     state->status = VALVE_STATE_RUNNING;
     
@@ -546,6 +625,9 @@ void valve_haptic_stop(struct valve_context *ctx)
     
 	valve_velocity_filters_invalidate(state);
     
+    /* Stop TIM6 timer */
+    tim6_stop();
+    
 	/* SAFETY: Abort pending TX and command zero torque before setting IDLE */
 	if (state->odrive != NULL) {
 		can_simple_abort_all_tx(state->odrive);
@@ -566,6 +648,9 @@ static void valve_haptic_emergency_stop(struct valve_context *ctx)
     struct valve_state *state = &ctx->state;
     
 	valve_velocity_filters_invalidate(state);
+    
+    /* Stop TIM6 timer */
+    tim6_stop();
     
 	/* EMERGENCY: Abort pending TX, command zero torque, and ESTOP */
 	if (state->odrive != NULL) {
@@ -727,9 +812,9 @@ static void valve_update_diagnostics(struct valve_state *state, float torque, ui
 	(void)loop_period_us;  /* Unused - timing calculated from DWT cycles */
 	
 	/* Calculate loop execution time in microseconds */
-	uint32_t t_end = board_get_dwt_cycles();
+	uint32_t t_end = dwt_get_cycles();
 	uint32_t elapsed_cycles = t_end - t_start;
-	uint32_t elapsed_us = board_dwt_cycles_to_us(elapsed_cycles);
+	uint32_t elapsed_us = dwt_cycles_to_us(elapsed_cycles);
 
 	/* Expose instantaneous loop time and accumulate monotonic time for streaming */
 	state->diag.last_loop_time_us = elapsed_us;
@@ -788,7 +873,7 @@ valve_haptic_process(struct valve_context *ctx)
 	valve_apply_staged_config(ctx);
 	cfg = &ctx->config;
 
-	t_start = board_get_dwt_cycles();
+	t_start = dwt_get_cycles();
 
 	/* Process encoder data and check for fresh samples */
 	status_t encoder_status = valve_process_encoder_data(state);
@@ -895,8 +980,8 @@ valve_haptic_process(struct valve_context *ctx)
 	/* Process profiler sampling */
 }
 
-/* Event ISR callback to execute valve control loop exactly when ODrive packet arrives */
-static void valve_haptic_encoder_cb(void)
+/* Timer ISR callback to execute valve control loop at fixed intervals for real-time operation */
+void valve_haptic_timer_isr(void)
 {
 	struct valve_context *ctx = active_valve_context;
 
@@ -908,13 +993,30 @@ static void valve_haptic_encoder_cb(void)
 		return;
 	}
 
-	/* Execute control loop immediately inside FDCAN ISR for minimum latency */
+	/* Execute control loop directly in ISR for autonomous operation */
 	valve_haptic_process(ctx);
 }
 
 /*
- * Get pointer to current valve state for external monitoring and diagnostics
+ * TIM6_DAC_IRQHandler - TIM6 interrupt handler
+ * Called at VALVE_CONTROL_LOOP_HZ when TIM6 update event occurs
+ * Executes valve control loop directly for autonomous, deterministic operation
  */
+
+/* Hardware interrupt handler for TIM6 to trigger control loop execution at precise intervals */
+void TIM6_DAC_IRQHandler(void)
+{
+    /* Check if update interrupt flag is set */
+    if (htim6->SR & TIM_SR_UIF) {
+        /* Clear update interrupt flag precisely */
+        htim6->SR &= ~TIM_SR_UIF;
+        
+        /* Execute control loop autonomously */
+        valve_haptic_timer_isr();
+    }
+}
+
+/* Get pointer to current valve state for external monitoring and diagnostics */
 struct valve_state *
 valve_haptic_get_state(struct valve_context *ctx)
 {

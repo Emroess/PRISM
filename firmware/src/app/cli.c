@@ -143,7 +143,6 @@ cli_cmd_valve_start(struct cli_context *ctx, int argc, char *argv[])
 {
 	(void)argc;
 	(void)argv;
-	can_simple_reset_rx_timing_stats(ctx->odrive);
 	status_t status = valve_start(ctx->valve_ctx);
 	if (status == STATUS_OK) {
 		uart_write_string(ctx->uart, "\r\nValve started\r\n", 100);
@@ -180,16 +179,6 @@ cli_cmd_valve_stop(struct cli_context *ctx, int argc, char *argv[])
 	(void)argv;
 	valve_stop(ctx->valve_ctx);
 	uart_write_string(ctx->uart, "\r\nValve stopped\r\n", 100);
-
-	uint32_t min_us, max_us, curr_us, count;
-	if (can_simple_get_rx_timing_stats(ctx->odrive, &min_us, &max_us, &curr_us, &count) == STATUS_OK && count > 0) {
-		uart_write_string(ctx->uart, "\r\nCAN RX Timing Stats (ODrive Encoder):\r\n", 100);
-		uart_printf(ctx->uart, "Packets Rx:         %lu\r\n", (unsigned long)count);
-		uart_printf(ctx->uart, "Min Delta:          %lu us\r\n", (unsigned long)min_us);
-		uart_printf(ctx->uart, "Max Delta:          %lu us\r\n", (unsigned long)max_us);
-		uart_printf(ctx->uart, "Last Delta:         %lu us\r\n", (unsigned long)curr_us);
-	}
-
 	return 0;
 }
 
@@ -620,16 +609,6 @@ cli_cmd_valve_timing(struct cli_context *ctx, int argc, char *argv[])
 	uart_printf(ctx->uart, "Max loop time:      %lu us\r\n", (unsigned long)state->diag.loop_time_max_us);
 	uart_printf(ctx->uart, "Avg loop time:      %lu us\r\n", (unsigned long)(state->diag.loop_time_sum_us / state->diag.timing_sample_count));
 	uart_printf(ctx->uart, "Timing samples:     %lu\r\n", (unsigned long)state->diag.timing_sample_count);
-
-	uint32_t min_us, max_us, curr_us, count;
-	if (can_simple_get_rx_timing_stats(ctx->odrive, &min_us, &max_us, &curr_us, &count) == STATUS_OK && count > 0) {
-		uart_write_string(ctx->uart, "\r\nCAN RX Timing Stats (ODrive Encoder):\r\n", 100);
-		uart_printf(ctx->uart, "Packets Rx:         %lu\r\n", (unsigned long)count);
-		uart_printf(ctx->uart, "Min Delta:          %lu us\r\n", (unsigned long)min_us);
-		uart_printf(ctx->uart, "Max Delta:          %lu us\r\n", (unsigned long)max_us);
-		uart_printf(ctx->uart, "Last Delta:         %lu us\r\n", (unsigned long)curr_us);
-	}
-
 	return 0;
 }
 

@@ -74,7 +74,7 @@
  * ===========================================================================
  */
 #define VALVE_TORQUE_FILTER_CUTOFF_HZ        400.0f
-#define VALVE_DAMPING_FILTER_CUTOFF_HZ       100.0f
+#define VALVE_DAMPING_FILTER_CUTOFF_HZ       50.0f
 #define VALVE_PASSIVITY_ENERGY_CAP_J         2.0f
 
 /*
