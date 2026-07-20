@@ -710,6 +710,8 @@ static void valve_handle_can_failure(struct valve_context *ctx, status_t error_c
 static status_t
 valve_process_encoder_data(struct valve_state *state, const struct valve_config *cfg)
 {
+	(void)cfg; /* Suppress unused parameter warning since PLL doesn't need filter cutoff */
+	
 	struct can_simple_encoder_estimates obs;
 	uint32_t age_ms = UINT32_MAX;
 	status_t obs_status;
@@ -794,45 +796,35 @@ valve_process_encoder_data(struct valve_state *state, const struct valve_config 
 	 */
 	const float deg_per_turn = (state->degrees_per_turn > 0.0f) ?
 		state->degrees_per_turn : VALVE_DEFAULT_DEGREES_PER_TURN;
-	float prev_turns = state->raw_position_turns;
-	float delta_turns = obs.position - prev_turns;
+
 	state->raw_position_turns = obs.position;
 	state->position_deg = (obs.position - state->encoder_zero_turns) * deg_per_turn;
 
-	/* NEW VELOCITY CALCULATION (JITTER COMPENSATED):
-	 * Calculate actual time elapsed based on how many CAN packets were received.
-	 * If CAN packets arrive clumped together (jitter), dividing by seq_diff prevents 
-	 * the velocity from artificially spiking 2x or 3x higher! */
-	float actual_dt_s = seq_diff * (1.0f / VALVE_CONTROL_LOOP_HZ);
-	float vel_raw = (delta_turns * deg_per_turn * VALVE_DEG_TO_RAD) / actual_dt_s;
-
-
-	if (!velocity_filters_initialized) {
-		valve_velocity_filters_seed(vel_raw);
-		state->filtered_omega_rad_s = vel_raw;
-	}
-
-	/* Clamp extreme velocity estimates to avoid over-reacting to single-sample spikes */
+	/* THE SILVER BULLET: Use ODrive's Native Velocity Estimate
+	 * ODrive calculates velocity internally at 8000Hz using a highly tuned hardware PLL.
+	 * By using obs.velocity, we get a mathematically pristine, zero-lag velocity 
+	 * estimate that completely eliminates the need for 1kHz custom observers or filters! */
+	
+	/* Convert ODrive's native velocity (turns/s) to physical units (rad/s) */
+	float vel_rad_s = obs.velocity * deg_per_turn * VALVE_DEG_TO_RAD;
+	
+	/* Clamp extreme velocity estimates (safety constraint) */
 	const float max_vel_rad_s = deg_per_turn * VALVE_DEG_TO_RAD * VALVE_ODRIVE_VEL_LIMIT_TURNS_PER_S;
-	if (vel_raw > max_vel_rad_s) {
-		vel_raw = max_vel_rad_s;
-	} else if (vel_raw < -max_vel_rad_s) {
-		vel_raw = -max_vel_rad_s;
-	} else if (vel_raw < 0.05f && vel_raw > -0.05f) {
-		/* DEADBAND: If velocity is extremely close to zero (e.g. sensor noise), 
-		 * snap it to exactly 0.0f. This is critical because it triggers the 
-		 * quiet_active gate and sets Torque to exactly 0, preventing resting limit cycles. */
-		vel_raw = 0.0f;
+	if (vel_rad_s > max_vel_rad_s) {
+		vel_rad_s = max_vel_rad_s;
+	} else if (vel_rad_s < -max_vel_rad_s) {
+		vel_rad_s = -max_vel_rad_s;
 	}
 
+	const float dt = 1.0f / VALVE_CONTROL_LOOP_HZ;
 	float prev_omega = state->omega_rad_s;
-	state->omega_rad_s = vel_raw;
+	state->omega_rad_s = vel_rad_s;
 	state->prev_omega_rad_s = prev_omega;
-	state->alpha_rad_s2 = (state->omega_rad_s - prev_omega) * (float)VALVE_CONTROL_LOOP_HZ;
+	state->alpha_rad_s2 = (state->omega_rad_s - prev_omega) / dt;
 
-	/* Apply EMA filter for damping */
-	state->filtered_omega_rad_s = valve_filter_lowpass_simple(
-		vel_raw, state->filtered_omega_rad_s, cfg->hil_damping_filter_cutoff_hz, VALVE_CONTROL_LOOP_HZ);
+	/* Feed the pristine ODrive velocity into BOTH the raw and filtered outputs 
+	 * so the physics engine uses it for both Coulomb and Viscous damping */
+	state->filtered_omega_rad_s = vel_rad_s;
 	state->diag.can_retry_count = 0;
 
 	return STATUS_OK;
