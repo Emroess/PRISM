@@ -3,6 +3,7 @@ import json
 import math
 import asyncio
 import omni.kit.app
+import omni.timeline
 from isaacsim.core.prims import SingleArticulation
 
 """
@@ -42,22 +43,20 @@ with an Articulation Root and a force-driven Revolute Joint:
 # ===================== CONFIG (EDIT THESE) =====================
 STM32_IP = "10.0.1.15"
 TCP_PORT = 8889
-ARTICULATION_PATH = "/World/Robot_Root_Xform"  # Match your Articulation Root
+ARTICULATION_PATH = "/Test_World/Robot_Root_Xform"  # Match your Articulation Root
 JOINT_INDEX = 0                                # The rotating DOF index
 # ===============================================================
 
 async def hitl_background_loop():
     print(f"🚀 Starting PRISM HITL Controller for {ARTICULATION_PATH}")
     
-    # Grab the robot from the GUI scene
-    robot = SingleArticulation(prim_paths_expr=ARTICULATION_PATH)
-    robot.initialize()
-    
+    timeline = omni.timeline.get_timeline_interface()
+    robot = None
     sock = None
     buf = b""
     torque_nm = 0.0
 
-    print(f"🔄 Waiting for STM32 connection at {STM32_IP}:{TCP_PORT}...")
+    print(f"🔄 Waiting for Play button & STM32 connection at {STM32_IP}:{UDP_PORT}...") # changed from TCP TO UDP
     
     try:
         # Loop forever inside the Isaac Sim GUI
@@ -65,12 +64,27 @@ async def hitl_background_loop():
             # Yield to Isaac Sim's physics/rendering engine (prevent freezing)
             await omni.kit.app.get_app().next_update_async()
 
+            # Skip physics updates if simulation is stopped/paused
+            if not timeline.is_playing():
+                robot = None  # Reset so it re-initializes on next 'Play'
+                continue
+
+            if robot is None:
+                try:
+                    # Initialize after Play is pressed (physics context exists)
+                    robot = SingleArticulation(prim_path=ARTICULATION_PATH)
+                    robot.initialize()
+                except Exception:
+                    # Context might not be fully ready on the exact first frame
+                    robot = None
+                    continue
+
             # 1. Handle Connection
             if sock is None:
                 try:
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # DGRAM is UDP, SOCK_STREAM is TCP, TCP is far more reliable, doesnt lose or misorder packages as much
                     sock.settimeout(0.5)  # Short timeout so GUI doesn't hard-freeze
-                    sock.connect((STM32_IP, TCP_PORT))
+                    sock.connect((STM32_IP, UDP_PORT)) # CHANGED FROM TCP TO UDP_PORT
                     sock.settimeout(0.0)  # Switch to pure non-blocking for I/O
                     print("✅ Connected to STM32 HITL server")
                     buf = b""
@@ -131,8 +145,15 @@ async def hitl_background_loop():
             sock.close()
 
 # If you click "Run" twice, cancel the old loop before starting a new one
-if "prism_hitl_task" in globals() and not prism_hitl_task.done():
-    prism_hitl_task.cancel()
+if "prism_hitl_task" in globals():
+    try:
+        if not prism_hitl_task.done():
+            prism_hitl_task.cancel()
+    except AttributeError:
+        try:
+            prism_hitl_task.close()
+        except AttributeError:
+            pass
 
 # Start the async loop inside the GUI
 prism_hitl_task = asyncio.ensure_future(hitl_background_loop())

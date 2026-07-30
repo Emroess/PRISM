@@ -193,6 +193,18 @@ status_t valve_haptic_get_loop_timing(struct valve_context *, uint32_t *, uint32
 status_t valve_haptic_set_output_mode(struct valve_context *, uint8_t mode);
 uint8_t  valve_haptic_get_output_mode(const struct valve_context *);
 
+status_t valve_haptic_set_vel_source(uint8_t source);
+uint8_t  valve_haptic_get_vel_source(void);
+status_t valve_haptic_set_vel_lpf_hz(float hz);
+float    valve_haptic_get_vel_lpf_hz(void);
+
+void     valve_haptic_set_quiet_enable(uint8_t enable);
+uint8_t  valve_haptic_get_quiet_enable(void);
+void     valve_haptic_set_quiet_enter(float rad_s);
+float    valve_haptic_get_quiet_enter(void);
+void     valve_haptic_set_quiet_exit(float rad_s);
+float    valve_haptic_get_quiet_exit(void);
+
 #ifdef __cplusplus
 }
 #endif

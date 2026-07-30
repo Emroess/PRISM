@@ -30,6 +30,18 @@ static uint32_t last_heartbeat_check_ms = 0;
 /* Velocity filter state */
 static float velocity_filter_state = 0.0f;
 static bool velocity_filters_initialized = false;
+static volatile uint8_t velocity_source = VALVE_VEL_SOURCE_DEFAULT;
+static volatile float velocity_lpf_hz = VALVE_VELOCITY_LPF_CUTOFF_HZ;
+static volatile uint8_t quiet_gate_enable = VALVE_QUIET_GATE_DEFAULT_ENABLE;
+static volatile float quiet_enter_rad_s = VALVE_QUIET_ENTER_DEFAULT_RAD_S;
+static volatile float quiet_exit_rad_s = VALVE_QUIET_EXIT_DEFAULT_RAD_S;
+/* Residual settle + ring detect */
+static uint8_t settle_armed = 0;
+static uint16_t settle_timeout_count = 0;
+static uint16_t rest_latch_count = 0;
+static int8_t ring_last_sign = 0;
+static uint8_t ring_flip_count = 0;
+static uint16_t ring_flip_window = 0;
 /* Use BOARD_SYSCLK_HZ from board_config.h instead of local define */
 #define VALVE_CAN_FAILURE_MAX 3U
 #define VALVE_ENCODER_STALE_MS 10U
@@ -42,8 +54,6 @@ static bool velocity_filters_initialized = false;
 #define VALVE_MIN_VELOCITY_DEADBAND_RAD_S     (0.5f * VALVE_DEG_TO_RAD)
 #define VALVE_STARTUP_RAMP_MS         2000U   /* 2 second startup ramp */
 #define VALVE_MAX_PENDING_TICKS 4U
-#define VALVE_QUIET_ENTER_RAD_S       (1.0f * VALVE_DEG_TO_RAD)
-#define VALVE_QUIET_EXIT_RAD_S        (2.0f * VALVE_DEG_TO_RAD)
 #define VALVE_TORQUE_SIGN 1.0f  /* Odrive is positive torque */
 #define VALVE_TORQUE_FILTER_SAMPLE_RATE_HZ ((float)VALVE_CONTROL_LOOP_HZ)
 
@@ -110,8 +120,145 @@ static inline void valve_velocity_filters_invalidate(struct valve_state *state)
 {
 	velocity_filters_initialized = false;
 	if (state != NULL) {
-		state->quiet_active = 0U;
+		if (quiet_gate_enable == 0U) {
+			state->quiet_active = 0U;
+		}
 	}
+}
+
+static void
+valve_update_quiet_gate(struct valve_state *state)
+{
+	float abs_w;
+	float enter_w;
+	float exit_w;
+	uint16_t latch_need;
+
+	if (state == NULL) {
+		return;
+	}
+	if (quiet_gate_enable == 0U) {
+		state->quiet_active = 0U;
+		return;
+	}
+	abs_w = state->omega_rad_s;
+	if (abs_w < 0.0f) {
+		abs_w = -abs_w;
+	}
+	enter_w = quiet_enter_rad_s;
+	exit_w = quiet_exit_rad_s;
+	if (exit_w < enter_w) {
+		exit_w = enter_w;
+	}
+	latch_need = VALVE_REST_LATCH_SAMPLES;
+	if (settle_armed != 0U) {
+		latch_need = VALVE_REST_LATCH_SETTLE_SAMPLES;
+	}
+	if (state->quiet_active != 0U) {
+		if (abs_w > exit_w) {
+			state->quiet_active = 0U;
+			rest_latch_count = 0;
+		}
+	} else if (abs_w < enter_w) {
+		if (rest_latch_count < 0xFFFFU) {
+			rest_latch_count++;
+		}
+		if (rest_latch_count >= latch_need) {
+			state->quiet_active = 1U;
+			settle_armed = 0U;
+			settle_timeout_count = 0U;
+			ring_flip_count = 0U;
+			ring_flip_window = 0U;
+		}
+	} else {
+		rest_latch_count = 0;
+	}
+}
+
+/*
+ * Arm settle after real motion or sign-flip rings; blank free-space while
+ * |ω| < BLANK until quiet (pre-FOC-cap residual logic).
+ */
+static bool
+valve_update_settle_residual(struct valve_state *state)
+{
+	float abs_filt;
+	float omega;
+	int8_t sgn;
+
+	if (state == NULL) {
+		return false;
+	}
+
+	omega = state->omega_rad_s;
+	abs_filt = omega;
+	if (abs_filt < 0.0f) {
+		abs_filt = -abs_filt;
+	}
+
+	if (ring_flip_window > 0U) {
+		ring_flip_window--;
+		if (ring_flip_window == 0U) {
+			ring_flip_count = 0U;
+		}
+	}
+	if (abs_filt > quiet_enter_rad_s) {
+		if (omega > 0.0f) {
+			sgn = 1;
+		} else if (omega < 0.0f) {
+			sgn = -1;
+		} else {
+			sgn = 0;
+		}
+		if (sgn != 0 && ring_last_sign != 0 && sgn != ring_last_sign &&
+		    abs_filt < 1.20f) {
+			if (ring_flip_count < 0xFFU) {
+				ring_flip_count++;
+			}
+			ring_flip_window = VALVE_RING_FLIP_WINDOW_SAMPLES;
+			if (ring_flip_count >= VALVE_RING_FLIP_COUNT) {
+				settle_armed = 1U;
+				settle_timeout_count = VALVE_SETTLE_TIMEOUT_SAMPLES;
+			}
+		}
+		if (sgn != 0) {
+			ring_last_sign = sgn;
+		}
+	} else {
+		ring_last_sign = 0;
+	}
+
+	if (abs_filt >= VALVE_SETTLE_ARM_RAD_S) {
+		settle_armed = 1U;
+		settle_timeout_count = VALVE_SETTLE_TIMEOUT_SAMPLES;
+	}
+
+	if (state->quiet_active != 0U) {
+		settle_armed = 0U;
+		settle_timeout_count = 0U;
+		ring_flip_count = 0U;
+		ring_flip_window = 0U;
+		return false;
+	}
+	if (settle_armed == 0U) {
+		return false;
+	}
+
+	if (abs_filt > quiet_enter_rad_s) {
+		if (settle_timeout_count < 800U) {
+			settle_timeout_count = 800U;
+		}
+	} else if (settle_timeout_count > 0U) {
+		settle_timeout_count--;
+	} else {
+		settle_armed = 0U;
+		return false;
+	}
+
+	if (abs_filt >= VALVE_SETTLE_BLANK_RAD_S) {
+		return false;
+	}
+	return true;
 }
 
 /* Clamp filter alpha to [0,1] for stability and to prevent invalid filter behavior */
@@ -443,6 +590,10 @@ status_t valve_haptic_start(struct valve_context *ctx)
     if (state->odrive == NULL) {
         return STATUS_ERROR_INVALID_PARAM;  /* No Odrive handle */
     }
+
+    if (state->status == VALVE_STATE_ERROR) {
+	    valve_haptic_stop(ctx);
+    }
     
     /* Verify state is IDLE */
     if (state->status != VALVE_STATE_IDLE) {
@@ -556,11 +707,17 @@ status_t valve_haptic_start(struct valve_context *ctx)
 			return enc_status;
 		}
 
-		/* Seed position/velocity state from physical encoder */
+		/* Seed: zero at start pose */
 		state->encoder_zero_turns = est.position;
 		state->raw_position_turns = est.position;
-		state->position_deg       = est.position * state->degrees_per_turn;
-		state->command_position_deg = state->position_deg;
+		state->position_deg       = 0.0f;
+		state->command_position_deg = 0.0f;
+		settle_armed = 0U;
+		settle_timeout_count = 0U;
+		rest_latch_count = 0;
+		ring_last_sign = 0;
+		ring_flip_count = 0U;
+		ring_flip_window = 0U;
 		float turn_to_rad = state->degrees_per_turn * VALVE_DEG_TO_RAD;
 		state->omega_rad_s = est.velocity * turn_to_rad;
 		if (state->omega_rad_s < (0.1f * VALVE_DEG_TO_RAD) &&
@@ -636,11 +793,18 @@ void valve_haptic_stop(struct valve_context *ctx)
 		(void)can_simple_set_axis_state_nb(state->odrive, AXIS_STATE_IDLE);
 	}
 	
-	/* Return to IDLE state */
 	state->status = VALVE_STATE_IDLE;
+	state->quiet_active = 0U;
+	settle_armed = 0U;
+	settle_timeout_count = 0U;
+	rest_latch_count = 0;
+	ring_last_sign = 0;
+	ring_flip_count = 0U;
+	ring_flip_window = 0U;
 	state->diag.can_retry_count = 0;
 	state->diag.telemetry_age_ms = UINT32_MAX;
 	state->diag.heartbeat_age_ms = UINT32_MAX;
+	state->diag.safety.last_error_code = (uint32_t)VALVE_ERROR_NONE;
 }
 
 /* Emergency stop with ESTOP command for immediate shutdown in critical safety situations */
@@ -662,6 +826,13 @@ static void valve_haptic_emergency_stop(struct valve_context *ctx)
 	
 	/* Set error state */
 	state->status = VALVE_STATE_ERROR;
+	state->quiet_active = 0U;
+	settle_armed = 0U;
+	settle_timeout_count = 0U;
+	rest_latch_count = 0;
+	ring_last_sign = 0;
+	ring_flip_count = 0U;
+	ring_flip_window = 0U;
 	state->diag.can_retry_count = 0;
 	state->diag.telemetry_age_ms = UINT32_MAX;
 	state->diag.heartbeat_age_ms = UINT32_MAX;
@@ -770,9 +941,6 @@ valve_process_encoder_data(struct valve_state *state)
 		return STATUS_ERROR_BUFFER_EMPTY;
 	}
 
-	/* Update position and velocity with multi-stage filtering.
-	 * As above, we use the ODrive encoder's native sign convention directly.
-	 */
 	const float deg_per_turn = (state->degrees_per_turn > 0.0f) ?
 		state->degrees_per_turn : VALVE_DEFAULT_DEGREES_PER_TURN;
 	float prev_turns = state->raw_position_turns;
@@ -780,24 +948,60 @@ valve_process_encoder_data(struct valve_state *state)
 	state->raw_position_turns = obs.position;
 	state->position_deg = (obs.position - state->encoder_zero_turns) * deg_per_turn;
 
-	/* Estimate instantaneous velocity from position delta (removes ODrive filter lag) */
-	float vel_raw = delta_turns * deg_per_turn * VALVE_DEG_TO_RAD * (float)VALVE_CONTROL_LOOP_HZ;
-	if (!velocity_filters_initialized) {
-		valve_velocity_filters_seed(vel_raw);
+	float vel_delta = delta_turns * deg_per_turn * VALVE_DEG_TO_RAD *
+	    (float)VALVE_CONTROL_LOOP_HZ;
+	float vel_odrive = obs.velocity * deg_per_turn * VALVE_DEG_TO_RAD;
+	const float max_vel_rad_s = deg_per_turn * VALVE_DEG_TO_RAD *
+	    VALVE_ODRIVE_VEL_LIMIT_TURNS_PER_S;
+	if (vel_delta > max_vel_rad_s) {
+		vel_delta = max_vel_rad_s;
+	} else if (vel_delta < -max_vel_rad_s) {
+		vel_delta = -max_vel_rad_s;
+	}
+	if (vel_odrive > max_vel_rad_s) {
+		vel_odrive = max_vel_rad_s;
+	} else if (vel_odrive < -max_vel_rad_s) {
+		vel_odrive = -max_vel_rad_s;
 	}
 
-	/* Clamp extreme velocity estimates to avoid over-reacting to single-sample spikes */
-	const float max_vel_rad_s = deg_per_turn * VALVE_DEG_TO_RAD * VALVE_ODRIVE_VEL_LIMIT_TURNS_PER_S;
-	if (vel_raw > max_vel_rad_s) {
-		vel_raw = max_vel_rad_s;
-	} else if (vel_raw < -max_vel_rad_s) {
-		vel_raw = -max_vel_rad_s;
-	}
+	{
+		float alpha = valve_lowpass_alpha(velocity_lpf_hz, VALVE_LOOP_DT_S);
+		float vel_out;
+		uint8_t src = velocity_source;
 
-	float prev_omega = state->omega_rad_s;
-	state->omega_rad_s = vel_raw;
-	state->prev_omega_rad_s = prev_omega;
-	state->alpha_rad_s2 = (state->omega_rad_s - prev_omega) * (float)VALVE_CONTROL_LOOP_HZ;
+		if (src == VALVE_VEL_SOURCE_ODRIVE) {
+			vel_out = vel_odrive;
+			if (!velocity_filters_initialized) {
+				valve_velocity_filters_seed(vel_out);
+			} else {
+				(void)simple_lowpass(vel_delta, &velocity_filter_state, alpha);
+			}
+		} else if (src == VALVE_VEL_SOURCE_LPF_DELTA) {
+			if (!velocity_filters_initialized) {
+				valve_velocity_filters_seed(vel_delta);
+				vel_out = vel_delta;
+			} else {
+				vel_out = simple_lowpass(vel_delta, &velocity_filter_state,
+				    alpha);
+			}
+		} else {
+			vel_out = vel_delta;
+			if (!velocity_filters_initialized) {
+				valve_velocity_filters_seed(vel_delta);
+			} else {
+				(void)simple_lowpass(vel_delta, &velocity_filter_state, alpha);
+			}
+		}
+
+		{
+			float prev_omega = state->omega_rad_s;
+			state->omega_rad_s = vel_out;
+			state->prev_omega_rad_s = prev_omega;
+			state->alpha_rad_s2 = (state->omega_rad_s - prev_omega) *
+			    (float)VALVE_CONTROL_LOOP_HZ;
+		}
+	}
+	valve_update_quiet_gate(state);
 	state->diag.can_retry_count = 0;
 
 	return STATUS_OK;
@@ -864,7 +1068,7 @@ valve_haptic_process(struct valve_context *ctx)
 	uint32_t t_start;
 
 	state = &ctx->state;
-	if ((state->status & VALVE_STATE_RUNNING) == 0)
+	if (state->status != VALVE_STATE_RUNNING)
 		return;
 
 	valve_apply_staged_config(ctx);
@@ -902,16 +1106,18 @@ valve_haptic_process(struct valve_context *ctx)
 	/* Mirror measured angle for tooling that still inspects command_position */
 	state->command_position_deg = state->position_deg;
 
-	/* === TORQUE COMMAND PATH ===
-	 *
-	 * Purely resistive behavior: compute braking torque from the physics model,
-	 * apply optional rate limiting, clamp to safety limits, then stream the
-	 * torque setpoint directly to the ODrive torque controller.
-	 */
+	/* === TORQUE COMMAND PATH === */
+	bool settle_residual = valve_update_settle_residual(state);
+	valve_update_quiet_gate(state);
+	if (state->quiet_active != 0U) {
+		settle_residual = false;
+	}
+
 	float torque_nm = valve_physics_calculate_torque_hil(cfg,
 	    state->position_deg,
 	    state->omega_rad_s,
-	    state->quiet_active);
+	    state->quiet_active != 0U,
+	    settle_residual);
 
 	float torque_limit = 0.0f;
 	if (cfg->torque_limit_nm > 0.0f) {
@@ -923,20 +1129,19 @@ valve_haptic_process(struct valve_context *ctx)
 	    torque_limit);
 	torque_nm = clamped_torque;
 
-	float prev_filtered = state->filtered_torque_nm;
-	float filtered_torque = valve_filter_lowpass_simple(
-	    torque_nm,
-	    prev_filtered,
-	    VALVE_TORQUE_FILTER_CUTOFF_HZ,
-	    VALVE_TORQUE_FILTER_SAMPLE_RATE_HZ);
-	torque_nm = filtered_torque;
+	if (state->quiet_active != 0U || settle_residual) {
+		/* snap filter — no residual LPF memory buzz */
+	} else {
+		float prev_filtered = state->filtered_torque_nm;
+		torque_nm = valve_filter_lowpass_simple(
+		    torque_nm,
+		    prev_filtered,
+		    VALVE_TORQUE_FILTER_CUTOFF_HZ,
+		    VALVE_TORQUE_FILTER_SAMPLE_RATE_HZ);
+	}
 
-	/* Enhanced passivity energy tank with persistent storage.
-	 * SKIPPED in HITL mode: Isaac Sim conserves energy in the simulation;
-	 * running the tank here on simulated encoder data would cause spurious
-	 * torque clamping and destabilise the HITL loop.
-	 */
-	if (ctx->output_mode == VALVE_OUTPUT_MODE_ODRIVE) {
+	if (ctx->output_mode == VALVE_OUTPUT_MODE_ODRIVE &&
+	    state->quiet_active == 0U && !settle_residual) {
 		const float dt_s = VALVE_LOOP_DT_S;
 		float power_w = torque_nm * state->omega_rad_s;
 		float delta_energy = power_w * dt_s;
@@ -1104,6 +1309,90 @@ float
 valve_haptic_calc_settling_time_ms(void)
 {
 	return 0.0f;
+}
+
+status_t
+valve_haptic_set_vel_source(uint8_t source)
+{
+	if (source > VALVE_VEL_SOURCE_LPF_DELTA) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
+	velocity_source = source;
+	return STATUS_OK;
+}
+
+uint8_t
+valve_haptic_get_vel_source(void)
+{
+	return velocity_source;
+}
+
+status_t
+valve_haptic_set_vel_lpf_hz(float hz)
+{
+	if (hz < VALVE_VELOCITY_LPF_CUTOFF_MIN_HZ ||
+	    hz > VALVE_VELOCITY_LPF_CUTOFF_MAX_HZ) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
+	velocity_lpf_hz = hz;
+	return STATUS_OK;
+}
+
+float
+valve_haptic_get_vel_lpf_hz(void)
+{
+	return velocity_lpf_hz;
+}
+
+void
+valve_haptic_set_quiet_enable(uint8_t enable)
+{
+	quiet_gate_enable = (enable != 0U) ? 1U : 0U;
+	if (quiet_gate_enable == 0U && active_valve_context != NULL) {
+		active_valve_context->state.quiet_active = 0U;
+	}
+}
+
+uint8_t
+valve_haptic_get_quiet_enable(void)
+{
+	return quiet_gate_enable;
+}
+
+void
+valve_haptic_set_quiet_enter(float rad_s)
+{
+	if (rad_s < 0.0f) {
+		rad_s = 0.0f;
+	}
+	quiet_enter_rad_s = rad_s;
+	if (quiet_exit_rad_s < quiet_enter_rad_s) {
+		quiet_exit_rad_s = quiet_enter_rad_s;
+	}
+}
+
+float
+valve_haptic_get_quiet_enter(void)
+{
+	return quiet_enter_rad_s;
+}
+
+void
+valve_haptic_set_quiet_exit(float rad_s)
+{
+	if (rad_s < 0.0f) {
+		rad_s = 0.0f;
+	}
+	quiet_exit_rad_s = rad_s;
+	if (quiet_exit_rad_s < quiet_enter_rad_s) {
+		quiet_enter_rad_s = quiet_exit_rad_s;
+	}
+}
+
+float
+valve_haptic_get_quiet_exit(void)
+{
+	return quiet_exit_rad_s;
 }
 
 /*

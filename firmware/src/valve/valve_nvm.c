@@ -12,6 +12,7 @@
 #include "stm32h7xx_hal.h"
 
 #include "config/nvm.h"
+#include "config/valve.h"
 #include "drivers/flash_utils.h"
 #include "valve_nvm.h"
 
@@ -40,7 +41,7 @@ static const struct preset_params default_presets[VALVE_NVM_PRESET_COUNT] = {
         .hil_tau_c_coulomb_nm = 0.06f,
         .hil_k_w_wall_stiffness_nm_per_turn = 10.0f,
         .hil_c_w_wall_damping_nm_s_per_turn = 0.1f,
-        .hil_eps_smoothing = 1e-3f
+        .hil_eps_smoothing = VALVE_HIL_EPS_SMOOTHING_DEFAULT
     },
     /* VALVE_PRESET_MEDIUM */
     {
@@ -51,7 +52,7 @@ static const struct preset_params default_presets[VALVE_NVM_PRESET_COUNT] = {
         .hil_tau_c_coulomb_nm = 0.12f,
         .hil_k_w_wall_stiffness_nm_per_turn = 15.0f,
         .hil_c_w_wall_damping_nm_s_per_turn = 0.2f,
-        .hil_eps_smoothing = 1e-3f
+        .hil_eps_smoothing = VALVE_HIL_EPS_SMOOTHING_DEFAULT
     },
     /* VALVE_PRESET_HEAVY */
     {
@@ -62,7 +63,7 @@ static const struct preset_params default_presets[VALVE_NVM_PRESET_COUNT] = {
         .hil_tau_c_coulomb_nm = 0.25f,
         .hil_k_w_wall_stiffness_nm_per_turn = 25.0f,
         .hil_c_w_wall_damping_nm_s_per_turn = 0.4f,
-        .hil_eps_smoothing = 1e-3f
+        .hil_eps_smoothing = VALVE_HIL_EPS_SMOOTHING_DEFAULT
     },
     /* VALVE_PRESET_INDUSTRIAL */
     {
@@ -73,7 +74,7 @@ static const struct preset_params default_presets[VALVE_NVM_PRESET_COUNT] = {
         .hil_tau_c_coulomb_nm = 0.40f,
         .hil_k_w_wall_stiffness_nm_per_turn = 35.0f,
         .hil_c_w_wall_damping_nm_s_per_turn = 0.6f,
-        .hil_eps_smoothing = 1e-3f
+        .hil_eps_smoothing = VALVE_HIL_EPS_SMOOTHING_DEFAULT
     }
 };
 

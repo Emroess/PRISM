@@ -507,6 +507,93 @@ cli_cmd_valve_epsilon(struct cli_context *ctx, int argc, char *argv[])
 	return 0;
 }
 
+static int
+cli_cmd_valve_vel_source(struct cli_context *ctx, int argc, char *argv[])
+{
+	static const char *names[] = {
+		"delta (raw dtheta/dt)",
+		"odrive (CAN encoder vel)",
+		"lpf_delta (EMA/LPF on dtheta/dt)",
+	};
+
+	if (argc < 2) {
+		uint8_t cur = valve_haptic_get_vel_source();
+		uart_write_string(ctx->uart,
+		    "\r\nUsage: valve_vel_source <0|1|2>\r\n", 100);
+		uart_printf(ctx->uart, "Current: %u (%s)\r\n", cur,
+		    cur <= 2U ? names[cur] : "?");
+		return 0;
+	}
+	{
+		unsigned long v = strtoul(argv[1], NULL, 10);
+		status_t st = valve_haptic_set_vel_source((uint8_t)v);
+		if (st != STATUS_OK) {
+			uart_write_string(ctx->uart, "\r\nFailed to set velocity source\r\n", 100);
+		} else {
+			uart_printf(ctx->uart, "\r\nVelocity source set to %lu (%s)\r\n",
+			    v, v <= 2UL ? names[v] : "?");
+		}
+	}
+	(void)ctx;
+	return 0;
+}
+
+static int
+cli_cmd_valve_vel_lpf(struct cli_context *ctx, int argc, char *argv[])
+{
+	if (argc < 2) {
+		uart_printf(ctx->uart, "\r\nUsage: valve_vel_lpf <Hz>\r\n");
+		uart_printf(ctx->uart, "Current: %.1f Hz\r\n",
+		    valve_haptic_get_vel_lpf_hz());
+		return 0;
+	}
+	{
+		float hz = strtof(argv[1], NULL);
+		status_t st = valve_haptic_set_vel_lpf_hz(hz);
+		if (st != STATUS_OK) {
+			uart_write_string(ctx->uart, "\r\nFailed to set LPF cutoff\r\n", 100);
+		} else {
+			uart_printf(ctx->uart, "\r\nVelocity LPF cutoff set to %.1f Hz\r\n",
+			    hz);
+		}
+	}
+	(void)ctx;
+	return 0;
+}
+
+static int
+cli_cmd_valve_quiet(struct cli_context *ctx, int argc, char *argv[])
+{
+	if (argc < 2) {
+		uart_printf(ctx->uart, "\r\nQuiet gate: %s  enter=%.3f exit=%.3f rad/s\r\n",
+		    valve_haptic_get_quiet_enable() ? "ENABLED" : "DISABLED",
+		    valve_haptic_get_quiet_enter(),
+		    valve_haptic_get_quiet_exit());
+		uart_write_string(ctx->uart,
+		    "Usage: valve_quiet <0|1>  or  valve_quiet enter|exit <rad_s>\r\n",
+		    100);
+		return 0;
+	}
+	if (argc >= 3 && argv[1][0] == 'e') {
+		float v = strtof(argv[2], NULL);
+		if (argv[1][1] == 'n') {
+			valve_haptic_set_quiet_enter(v);
+		} else {
+			valve_haptic_set_quiet_exit(v);
+		}
+		uart_write_string(ctx->uart, "\r\nQuiet threshold set\r\n", 100);
+		return 0;
+	}
+	{
+		unsigned long en = strtoul(argv[1], NULL, 10);
+		valve_haptic_set_quiet_enable((uint8_t)en);
+		uart_printf(ctx->uart, "\r\nQuiet gate %s\r\n",
+		    en ? "ENABLED" : "DISABLED");
+	}
+	(void)ctx;
+	return 0;
+}
+
 /*
  * cli_cmd_valve_torquelimit - Set torque limit
  */
@@ -1189,12 +1276,15 @@ const struct cli_command cli_commands[] = {
 	{"valve_preset", cli_cmd_valve_preset, "Load a valve preset configuration"},
 	{"valve_preset_save", cli_cmd_valve_preset_save, "Save current configuration as preset"},
 	{"valve_preset_show", cli_cmd_valve_preset_show, "Show all valve presets and their parameters"},
+	{"valve_quiet", cli_cmd_valve_quiet, "Quiet-at-rest: 0|1, enter/exit <rad_s>"},
 	{"valve_scale", cli_cmd_valve_scale, "Set mechanical degrees per encoder turn"},
 	{"valve_start", cli_cmd_valve_start, "Start valve control"},
 	{"valve_status", cli_cmd_valve_status, "Show valve status"},
 	{"valve_stop", cli_cmd_valve_stop, "Stop valve control"},
 	{"valve_timing", cli_cmd_valve_timing, "Show loop timing diagnostics"},
 	{"valve_torquelimit", cli_cmd_valve_torquelimit, "Set torque limit (N·m)"},
+	{"valve_vel_lpf", cli_cmd_valve_vel_lpf, "EMA/LPF cutoff Hz for vel source 2"},
+	{"valve_vel_source", cli_cmd_valve_vel_source, "Vel: 0=delta, 1=odrive, 2=lpf_delta"},
 	{"valve_wall_c", cli_cmd_valve_wall_c, "Set wall damping (N·m·s/turn)"},
 	{"valve_wall_k", cli_cmd_valve_wall_k, "Set wall stiffness (N·m/turn)"},
 };

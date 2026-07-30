@@ -77,6 +77,50 @@
 #define VALVE_PASSIVITY_ENERGY_CAP_J         2.0f
 
 /*
+ * Velocity estimate (runtime selectable).
+ * 0=raw Δθ  1=ODrive  2=LPF on Δθ (default)
+ */
+#define VALVE_VEL_SOURCE_DELTA               0U
+#define VALVE_VEL_SOURCE_ODRIVE              1U
+#define VALVE_VEL_SOURCE_LPF_DELTA           2U
+#define VALVE_VEL_SOURCE_DEFAULT             VALVE_VEL_SOURCE_LPF_DELTA
+#define VALVE_VELOCITY_LPF_CUTOFF_HZ         30.0f
+#define VALVE_VELOCITY_LPF_CUTOFF_MIN_HZ     1.0f
+#define VALVE_VELOCITY_LPF_CUTOFF_MAX_HZ     200.0f
+
+/*
+ * Quiet-at-rest: free-space off when |ω| low; walls always active.
+ */
+#define VALVE_QUIET_GATE_DEFAULT_ENABLE      1U
+#define VALVE_QUIET_ENTER_DEFAULT_RAD_S      0.08f
+#define VALVE_QUIET_EXIT_DEFAULT_RAD_S       0.16f
+
+/*
+ * Coulomb: pure viscous when slow; full τc when firm.
+ */
+#define VALVE_HIL_EPS_SMOOTHING_DEFAULT      0.30f
+#define VALVE_COULOMB_DEADBAND_RAD_S         0.50f
+#define VALVE_COULOMB_FULL_RAD_S             2.00f
+
+/*
+ * Quiet enter debounce (faster after settle-arm).
+ */
+#define VALVE_REST_LATCH_SAMPLES             40U
+#define VALVE_REST_LATCH_SETTLE_SAMPLES      12U
+
+/*
+ * Residual settle: arm on |ω|≥ARM or ring flips; blank free-space
+ * while |ω| < BLANK until quiet. Wall exit k=0 on leave.
+ */
+#define VALVE_SETTLE_ARM_RAD_S               0.25f
+#define VALVE_SETTLE_BLANK_RAD_S             0.45f
+#define VALVE_SETTLE_TIMEOUT_SAMPLES         5000U
+#define VALVE_RING_FLIP_WINDOW_SAMPLES       300U
+#define VALVE_RING_FLIP_COUNT               3U
+#define VALVE_WALL_HOLD_OMEGA_RAD_S          0.12f
+#define VALVE_WALL_TAU_MAX_NM                2.5f
+
+/*
  * ===========================================================================
  * Thermal Monitoring (read-only; limits enforced by ODrive S1 firmware)
  * ===========================================================================

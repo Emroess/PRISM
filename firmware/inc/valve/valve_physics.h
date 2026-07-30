@@ -2,7 +2,6 @@
  * valve_physics.h
  *
  * HIL Physics Model: Viscous + Coulomb friction with soft end-stops
- * Exact implementation of hil_valve_model.py physics
  */
 
 #ifndef VALVE_PHYSICS_H
@@ -16,11 +15,13 @@
 extern "C" {
 #endif
 
-/* Calculate total torque using HIL physics model (viscous + Coulomb) */
+/*
+ * HIL torque: position, ω (LPF), quiet, settle_residual.
+ * quiet / settle_residual: free-space b=τc=0; walls always apply.
+ */
 float valve_physics_calculate_torque_hil(const struct valve_config *, float,
-    float, bool);
+    float, bool, bool);
 
-/* Clamp torque to limits */
 float valve_physics_clamp_torque(float, float);
 
 #ifdef __cplusplus
