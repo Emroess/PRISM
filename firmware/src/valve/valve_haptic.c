@@ -64,6 +64,8 @@ static uint8_t free_space_restore = 0;
 #define VALVE_SETTLE_BLANK_WIDE_MAX_RAD_S    1.50f
 /* Firm free-space motion after wall → restore friction feel (not just wall blank) */
 #define VALVE_WALL_REENTRY_FREE_RAD_S        0.50f
+/* Sustained |ω| above runaway threshold → ESTOP */
+static uint16_t runaway_omega_count = 0;
 /* Use BOARD_SYSCLK_HZ from board_config.h instead of local define */
 #define VALVE_CAN_FAILURE_MAX 3U
 #define VALVE_ENCODER_STALE_MS 10U
@@ -604,6 +606,7 @@ status_t valve_haptic_init(struct valve_context *ctx, struct can_simple_handle *
 	ctx->state = (struct valve_state){
 		.position_deg = 0.0f,
 		.omega_rad_s = 0.0f,
+		.omega_raw_rad_s = 0.0f,
 		.alpha_rad_s2 = 0.0f,
 		.prev_omega_rad_s = 0.0f,
 		.torque_nm = 0.0f,
@@ -871,6 +874,7 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		    state->omega_rad_s > -(0.1f * VALVE_DEG_TO_RAD)) {
 			state->omega_rad_s = 0.0f;
 		}
+		state->omega_raw_rad_s = state->omega_rad_s;
 
 	} else {
 		/* ---- HITL path (Isaac Sim) ----------------------------------- *
@@ -882,6 +886,7 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		state->position_deg         = 0.0f;
 		state->command_position_deg = 0.0f;
 		state->omega_rad_s          = 0.0f;
+		state->omega_raw_rad_s      = 0.0f;
 	}
 	valve_velocity_filters_seed(state->omega_rad_s);
 	state->prev_omega_rad_s = state->omega_rad_s;
@@ -947,6 +952,7 @@ void valve_haptic_stop(struct valve_context *ctx)
 	settle_peak_abs = 0.0f;
 	wall_release_armed = 0U;
 	free_space_restore = 0U;
+	runaway_omega_count = 0U;
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -982,6 +988,7 @@ static void valve_haptic_emergency_stop(struct valve_context *ctx)
 	settle_peak_abs = 0.0f;
 	wall_release_armed = 0U;
 	free_space_restore = 0U;
+	runaway_omega_count = 0U;
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -1098,14 +1105,32 @@ valve_process_encoder_data(struct valve_state *state)
 		state->degrees_per_turn : VALVE_DEFAULT_DEGREES_PER_TURN;
 	float prev_turns = state->raw_position_turns;
 	float delta_turns = obs.position - prev_turns;
-	state->raw_position_turns = obs.position;
-	state->position_deg = (obs.position - state->encoder_zero_turns) * deg_per_turn;
+	float abs_delta;
+	uint8_t glitch = 0U;
+
+	/*
+	 * Reject impossible single-sample jumps (CAN/glitch). Hold previous
+	 * position/velocity so −b·ω cannot spike.
+	 */
+	abs_delta = delta_turns;
+	if (abs_delta < 0.0f) {
+		abs_delta = -abs_delta;
+	}
+	if (abs_delta > VALVE_ENCODER_DELTA_MAX_TURNS) {
+		glitch = 1U;
+		delta_turns = 0.0f;
+		/* Do not advance raw_position on glitch — next good sample OK */
+	} else {
+		state->raw_position_turns = obs.position;
+		state->position_deg = (obs.position - state->encoder_zero_turns) *
+		    deg_per_turn;
+	}
 
 	float vel_delta = delta_turns * deg_per_turn * VALVE_DEG_TO_RAD *
 	    (float)VALVE_CONTROL_LOOP_HZ;
 	float vel_odrive = obs.velocity * deg_per_turn * VALVE_DEG_TO_RAD;
-	const float max_vel_rad_s = deg_per_turn * VALVE_DEG_TO_RAD *
-	    VALVE_ODRIVE_VEL_LIMIT_TURNS_PER_S;
+	/* Hand-scale clamp (not ODrive 20 turn/s) */
+	const float max_vel_rad_s = VALVE_PHYSICS_OMEGA_MAX_RAD_S;
 	if (vel_delta > max_vel_rad_s) {
 		vel_delta = max_vel_rad_s;
 	} else if (vel_delta < -max_vel_rad_s) {
@@ -1118,11 +1143,22 @@ valve_process_encoder_data(struct valve_state *state)
 	}
 
 	{
-		float alpha = valve_lowpass_alpha(velocity_lpf_hz, VALVE_LOOP_DT_S);
+		/* Fixed 30 Hz velocity LPF (CLI override still works at baseline) */
+		float lpf_hz = velocity_lpf_hz;
+		float alpha;
 		float vel_out;
 		uint8_t src = velocity_source;
 
-		if (src == VALVE_VEL_SOURCE_ODRIVE) {
+		if (lpf_hz < 1.0f) {
+			lpf_hz = VALVE_VELOCITY_LPF_CUTOFF_HZ;
+		}
+		alpha = valve_lowpass_alpha(lpf_hz, VALVE_LOOP_DT_S);
+
+		if (glitch != 0U) {
+			/* Hold filtered velocity through glitch sample */
+			vel_out = state->omega_rad_s;
+			vel_delta = state->omega_raw_rad_s;
+		} else if (src == VALVE_VEL_SOURCE_ODRIVE) {
 			vel_out = vel_odrive;
 			if (!velocity_filters_initialized) {
 				valve_velocity_filters_seed(vel_out);
@@ -1149,6 +1185,7 @@ valve_process_encoder_data(struct valve_state *state)
 		{
 			float prev_omega = state->omega_rad_s;
 			state->omega_rad_s = vel_out;
+			state->omega_raw_rad_s = vel_delta;
 			state->prev_omega_rad_s = prev_omega;
 			state->alpha_rad_s2 = (state->omega_rad_s - prev_omega) *
 			    (float)VALVE_CONTROL_LOOP_HZ;
@@ -1235,6 +1272,19 @@ valve_haptic_process(struct valve_context *ctx)
 	if (ctx->output_mode == VALVE_OUTPUT_MODE_ODRIVE) {
 		status_t encoder_status = valve_process_encoder_data(state);
 		if (encoder_status != STATUS_OK) {
+			/*
+			 * Never leave last torque on the bus. Soft miss → zero;
+			 * hard timeout after retries → fault stop.
+			 */
+			if (state->odrive != NULL) {
+				(void)can_simple_set_input_torque_nb(state->odrive, 0.0f);
+			}
+			state->filtered_torque_nm = 0.0f;
+			state->previous_torque_nm = 0.0f;
+			state->torque_nm = 0.0f;
+			if (encoder_status == STATUS_ERROR_TIMEOUT) {
+				valve_handle_can_failure(ctx, encoder_status);
+			}
 			return;
 		}
 
@@ -1254,6 +1304,31 @@ valve_haptic_process(struct valve_context *ctx)
 			}
 			last_heartbeat_check_ms = now_ms;
 		}
+
+		/* Runaway: |ω| too high → ESTOP (cannot fling lever) */
+		{
+			float abs_w = state->omega_rad_s;
+			if (abs_w < 0.0f) {
+				abs_w = -abs_w;
+			}
+			if (abs_w >= VALVE_RUNAWAY_OMEGA_HARD_RAD_S) {
+				runaway_omega_count = 0U;
+				valve_haptic_emergency_stop(ctx);
+				return;
+			}
+			if (abs_w >= VALVE_RUNAWAY_OMEGA_RAD_S) {
+				if (runaway_omega_count < 0xFFFFU) {
+					runaway_omega_count++;
+				}
+				if (runaway_omega_count >= VALVE_RUNAWAY_HOLD_SAMPLES) {
+					runaway_omega_count = 0U;
+					valve_haptic_emergency_stop(ctx);
+					return;
+				}
+			} else {
+				runaway_omega_count = 0U;
+			}
+		}
 	} /* end ODRIVE-only encoder/heartbeat block */
 
 	/* Mirror measured angle for tooling that still inspects command_position */
@@ -1269,6 +1344,7 @@ valve_haptic_process(struct valve_context *ctx)
 	float torque_nm = valve_physics_calculate_torque_hil(cfg,
 	    state->position_deg,
 	    state->omega_rad_s,
+	    state->omega_raw_rad_s,
 	    state->quiet_active != 0U,
 	    settle_residual);
 
@@ -1332,21 +1408,11 @@ valve_haptic_process(struct valve_context *ctx)
 		}
 	} /* end passivity block (ODRIVE mode only) */
 
-	/* Slew only when gains > 0.2/0.2 (baseline path has no slew) */
-	if (valve_auto_at_baseline() == 0U) {
-		float prev_cmd = state->previous_torque_nm;
-		float max_step = valve_auto_torque_slew_nm_per_s() * VALVE_LOOP_DT_S;
-		float dtau = torque_nm - prev_cmd;
-
-		if (max_step < 1e-4f) {
-			max_step = 1e-4f;
-		}
-		if (dtau > max_step) {
-			torque_nm = prev_cmd + max_step;
-		} else if (dtau < -max_step) {
-			torque_nm = prev_cmd - max_step;
-		}
-	}
+	/*
+	 * No free-space torque slew. At elevated gains, slew delayed reverse
+	 * during fast shake and pumped speed-specific oscillations. Safety is
+	 * soft free-space sat + runaway ESTOP + encoder fail → zero torque.
+	 */
 
 	state->filtered_torque_nm = torque_nm;
 	state->previous_torque_nm = torque_nm;
@@ -1376,6 +1442,7 @@ valve_haptic_process(struct valve_context *ctx)
 		/* Inject simulated encoder into control-loop state */
 		state->position_deg = enc.pos_deg;
 		state->omega_rad_s  = enc.vel_rad_s;
+		state->omega_raw_rad_s = enc.vel_rad_s;
 	} else {
 		/* Normal ODrive path */
 		status_t torque_status = can_simple_set_input_torque_nb(state->odrive, drive_torque_nm);

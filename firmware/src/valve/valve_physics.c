@@ -161,6 +161,7 @@ static inline float valve_hil_compute_wall_torque(
 static inline float valve_hil_compute_virtual_torque(
     float theta_turns,
     float omega_filt_rad_s,
+    float omega_raw_rad_s,
     float theta_off,
     float theta_on,
     float b,
@@ -176,9 +177,14 @@ static inline float valve_hil_compute_virtual_torque(
 	float wall_torque;
 	float total_torque;
 	float omega_turns_s;
+	float omega_use;
 	float abs_w;
 	float cscale;
 	float pen;
+	float free_space;
+	float free_cap;
+
+	(void)omega_raw_rad_s; /* raw-ω lead disabled (runaway at 0.3/0.3) */
 
 	pen = valve_hil_compute_wall_penetration(theta_turns, theta_off,
 	    theta_on);
@@ -189,14 +195,20 @@ static inline float valve_hil_compute_virtual_torque(
 		tau_c = 0.0f;
 	}
 
-	viscous_torque = -b * omega_filt_rad_s;
-
-	abs_w = valve_fabsf(omega_filt_rad_s);
 	/*
-	 * Soft-sign ε from auto-params (identity at 0.2/0.2). Scales up with
-	 * τc so Coulomb slope τc/ε stays ≤ baseline — higher friction without
-	 * sharper zero-cross grind. Never use a smaller ε than auto.
+	 * Free-space always uses filtered ω only. Clamp to hand-scale so a
+	 * glitch cannot command multi-N·m via −b·ω.
 	 */
+	omega_use = omega_filt_rad_s;
+	if (omega_use > VALVE_PHYSICS_OMEGA_MAX_RAD_S) {
+		omega_use = VALVE_PHYSICS_OMEGA_MAX_RAD_S;
+	} else if (omega_use < -VALVE_PHYSICS_OMEGA_MAX_RAD_S) {
+		omega_use = -VALVE_PHYSICS_OMEGA_MAX_RAD_S;
+	}
+
+	viscous_torque = -b * omega_use;
+
+	abs_w = valve_fabsf(omega_use);
 	{
 		float eps_auto = valve_auto_coulomb_eps();
 		if (eps_auto > eps) {
@@ -208,25 +220,35 @@ static inline float valve_hil_compute_virtual_torque(
 		friction_torque = 0.0f;
 	} else if (eps > 0.0f) {
 		friction_torque = -(tau_c * cscale) *
-		    valve_hil_smooth_sign(omega_filt_rad_s, eps);
+		    valve_hil_smooth_sign(omega_use, eps);
 	} else {
 		friction_torque = -(tau_c * cscale) *
-		    valve_signf(omega_filt_rad_s);
+		    valve_signf(omega_use);
 	}
 
 	/*
-	 * Free-space FOC cap only when gains elevated. At b=τc=0.2 this path
-	 * is skipped so feel matches the hand-tuned baseline exactly.
+	 * Soft free-space saturation (not hard clamp). Hard ±cap during fast
+	 * shake made torque nearly square-wave → speed-specific oscillation.
+	 * Soft: τ → τ·L/(|τ|+L) asymptote L; gentle at hand speeds.
 	 */
-	if (valve_auto_at_baseline() == 0U) {
-		float free_space = viscous_torque + friction_torque;
-		free_space = valve_clamp_sym(free_space,
-		    valve_auto_free_space_tau_max());
-		viscous_torque = free_space;
-		friction_torque = 0.0f;
+	free_space = viscous_torque + friction_torque;
+	free_cap = valve_auto_free_space_tau_max();
+	if (free_cap > VALVE_FREE_SPACE_TAU_HARD_MAX_NM) {
+		free_cap = VALVE_FREE_SPACE_TAU_HARD_MAX_NM;
 	}
+	if (free_cap < 0.1f) {
+		free_cap = 0.1f;
+	}
+	{
+		float a = valve_fabsf(free_space);
+		if (a > 1e-9f) {
+			free_space = free_space * (free_cap / (free_cap + a));
+		}
+	}
+	viscous_torque = free_space;
+	friction_torque = 0.0f;
 
-	omega_turns_s = (omega_filt_rad_s * VALVE_RAD_TO_DEG) / degrees_per_turn;
+	omega_turns_s = (omega_use * VALVE_RAD_TO_DEG) / degrees_per_turn;
 	wall_torque = valve_hil_compute_wall_torque(
 	    theta_turns, omega_turns_s, theta_off, theta_on, kw, cw);
 
@@ -240,6 +262,7 @@ float valve_physics_calculate_torque_hil(
     const struct valve_config *cfg,
     float position_deg,
     float omega_filt_rad_s,
+    float omega_raw_rad_s,
     bool quiet_active,
     bool settle_residual)
 {
@@ -278,7 +301,7 @@ float valve_physics_calculate_torque_hil(
 
 	return valve_physics_clamp_torque(
 	    valve_hil_compute_virtual_torque(
-		theta_turns, omega_filt_rad_s,
+		theta_turns, omega_filt_rad_s, omega_raw_rad_s,
 		theta_off_turns, theta_on_turns,
 		b, tau_c, kw, cw, eps, max_torque, degrees_per_turn),
 	    max_torque);

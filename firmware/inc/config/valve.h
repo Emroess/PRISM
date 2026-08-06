@@ -74,7 +74,11 @@
  * ===========================================================================
  */
 #define VALVE_TORQUE_FILTER_CUTOFF_HZ        400.0f
-#define VALVE_PASSIVITY_ENERGY_CAP_J         2.0f
+/*
+ * Passivity tank: small. 2 J was enough kinetic energy to fling the lever
+ * if the observer mis-classified power during an instability.
+ */
+#define VALVE_PASSIVITY_ENERGY_CAP_J         0.20f
 
 /*
  * Velocity estimate (runtime selectable).
@@ -87,6 +91,18 @@
 #define VALVE_VELOCITY_LPF_CUTOFF_HZ         30.0f
 #define VALVE_VELOCITY_LPF_CUTOFF_MIN_HZ     1.0f
 #define VALVE_VELOCITY_LPF_CUTOFF_MAX_HZ     200.0f
+
+/*
+ * Runaway / free-space safety (hand-lever scale). ODrive vel limit is huge
+ * (20 turn/s); physics + trip use these tighter bounds.
+ */
+#define VALVE_PHYSICS_OMEGA_MAX_RAD_S        12.0f  /* clamp ω into free-space law */
+#define VALVE_ENCODER_DELTA_MAX_TURNS        0.025f /* ~9°/sample glitch reject */
+#define VALVE_RUNAWAY_OMEGA_RAD_S            10.0f  /* sustained → ESTOP */
+#define VALVE_RUNAWAY_OMEGA_HARD_RAD_S       18.0f  /* instant ESTOP */
+#define VALVE_RUNAWAY_HOLD_SAMPLES           30U    /* 30 ms at 1 kHz */
+#define VALVE_FREE_SPACE_TAU_HARD_MAX_NM     2.50f  /* absolute free-space ceiling */
+#define VALVE_TORQUE_SLEW_SAFE_NM_PER_S      100.0f /* always-on reverse rate limit */
 
 /*
  * Quiet-at-rest: free-space off when |ω| low; walls always active.

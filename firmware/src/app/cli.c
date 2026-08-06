@@ -227,6 +227,8 @@ cli_cmd_valve_status(struct cli_context *ctx, int argc, char *argv[])
 		    ap->wall_tau_max_nm, ap->free_space_tau_max_nm);
 		uart_printf(ctx->uart, "  Torque slew/LPF:  %.1f Nm/s / %.0f Hz\r\n",
 		    ap->torque_slew_nm_per_s, ap->torque_lpf_hz);
+		uart_printf(ctx->uart, "  Vel LPF / blend:  %.0f Hz / %.2f\r\n",
+		    ap->velocity_lpf_hz, ap->omega_fast_blend);
 	}
 	
 	return 0;
