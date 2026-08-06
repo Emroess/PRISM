@@ -35,7 +35,9 @@ struct valve_auto_params {
 	float torque_slew_nm_per_s;
 	float torque_lpf_hz;
 	float velocity_lpf_hz;
-	/* 0 at baseline → blend raw ω into viscous for passivity at high gain */
+	/* Extra free-space ω LPF (Hz); 0 at baseline (use main 30 Hz only) */
+	float free_space_omega_lpf_hz;
+	/* 0 at baseline → blend raw ω into viscous (disabled; always 0) */
 	float omega_fast_blend;
 	/* Debug / status */
 	float scale_b;
@@ -57,6 +59,7 @@ float valve_auto_free_space_tau_max(void);
 float valve_auto_torque_slew_nm_per_s(void);
 float valve_auto_torque_lpf_hz(void);
 float valve_auto_velocity_lpf_hz(void);
+float valve_auto_free_space_omega_lpf_hz(void);
 float valve_auto_omega_fast_blend(void);
 
 /* True when b≈0.2 and τc≈0.2 — elevated-only paths must stay off. */

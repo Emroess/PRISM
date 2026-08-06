@@ -196,14 +196,27 @@ static inline float valve_hil_compute_virtual_torque(
 	}
 
 	/*
-	 * Free-space always uses filtered ω only. Clamp to hand-scale so a
-	 * glitch cannot command multi-N·m via −b·ω.
+	 * Free-space uses filtered ω. Clamp so a glitch cannot command
+	 * multi-N·m via −b·ω.
 	 */
 	omega_use = omega_filt_rad_s;
 	if (omega_use > VALVE_PHYSICS_OMEGA_MAX_RAD_S) {
 		omega_use = VALVE_PHYSICS_OMEGA_MAX_RAD_S;
 	} else if (omega_use < -VALVE_PHYSICS_OMEGA_MAX_RAD_S) {
 		omega_use = -VALVE_PHYSICS_OMEGA_MAX_RAD_S;
+	}
+
+	/*
+	 * Elevated free-space: pure viscous only. Coulomb stick-slip is what
+	 * felt like evenly spaced bumps while rotating at 0.3/0.3.
+	 * Map τc into b so effort still rises: b_eff = b + τc/ω_match.
+	 * Identity at 0.2/0.2 (this block skipped).
+	 */
+	if (valve_auto_at_baseline() == 0U && pen < 1e-6f) {
+		const float omega_match = 2.5f;
+
+		b = b + tau_c / omega_match;
+		tau_c = 0.0f;
 	}
 
 	viscous_torque = -b * omega_use;
@@ -227,9 +240,8 @@ static inline float valve_hil_compute_virtual_torque(
 	}
 
 	/*
-	 * Soft free-space saturation (not hard clamp). Hard ±cap during fast
-	 * shake made torque nearly square-wave → speed-specific oscillation.
-	 * Soft: τ → τ·L/(|τ|+L) asymptote L; gentle at hand speeds.
+	 * Free-space ceiling: pass-through below 85% of cap; soft only near
+	 * the limit. (Old τ·L/(L+|τ|) attenuated all motion → wrong feel.)
 	 */
 	free_space = viscous_torque + friction_torque;
 	free_cap = valve_auto_free_space_tau_max();
@@ -241,14 +253,32 @@ static inline float valve_hil_compute_virtual_torque(
 	}
 	{
 		float a = valve_fabsf(free_space);
-		if (a > 1e-9f) {
-			free_space = free_space * (free_cap / (free_cap + a));
+		float soft_start = 0.85f * free_cap;
+
+		if (a > soft_start && a > 1e-9f) {
+			float over = a - soft_start;
+			float room = free_cap - soft_start;
+			float soft_mag = soft_start +
+			    room * (over / (over + room));
+			free_space = free_space * (soft_mag / a);
 		}
 	}
 	viscous_torque = free_space;
 	friction_torque = 0.0f;
 
-	omega_turns_s = (omega_use * VALVE_RAD_TO_DEG) / degrees_per_turn;
+	/* Wall uses less-lagged ω (omega_raw arg) when provided */
+	{
+		float omega_wall = omega_raw_rad_s;
+		if (valve_fabsf(omega_wall) < 1e-12f) {
+			omega_wall = omega_use;
+		}
+		if (omega_wall > VALVE_PHYSICS_OMEGA_MAX_RAD_S) {
+			omega_wall = VALVE_PHYSICS_OMEGA_MAX_RAD_S;
+		} else if (omega_wall < -VALVE_PHYSICS_OMEGA_MAX_RAD_S) {
+			omega_wall = -VALVE_PHYSICS_OMEGA_MAX_RAD_S;
+		}
+		omega_turns_s = (omega_wall * VALVE_RAD_TO_DEG) / degrees_per_turn;
+	}
 	wall_torque = valve_hil_compute_wall_torque(
 	    theta_turns, omega_turns_s, theta_off, theta_on, kw, cw);
 

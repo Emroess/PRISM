@@ -56,7 +56,7 @@
 #define AUTO_FREE_MAX_NM          2.50f
 #define AUTO_SLEW_MIN             80.0f
 #define AUTO_SLEW_MAX             250.0f
-#define AUTO_LPF_MIN_HZ           120.0f
+#define AUTO_LPF_MIN_HZ           150.0f
 #define AUTO_LPF_MAX_HZ           400.0f
 
 static struct valve_auto_params g_auto = {
@@ -70,6 +70,7 @@ static struct valve_auto_params g_auto = {
 	.torque_slew_nm_per_s = AUTO_SLEW0_NM_PER_S,
 	.torque_lpf_hz = AUTO_LPF0_HZ,
 	.velocity_lpf_hz = AUTO_VEL_LPF0_HZ,
+	.free_space_omega_lpf_hz = 0.0f,
 	.omega_fast_blend = 0.0f,
 	.scale_b = 1.0f,
 	.scale_tc = 1.0f,
@@ -232,9 +233,8 @@ valve_auto_params_update(const struct valve_config *cfg)
 	slew = auto_clampf(slew, AUTO_SLEW_MIN, AUTO_SLEW_MAX);
 
 	/*
-	 * (8) Torque LPF — identity 400 Hz; mild drop when elevated to
-	 * smooth Coulomb residual texture without heavy phase lag.
-	 * fc = 400 / √r_τ  → ~327 Hz at 0.3/0.3
+	 * (8) Torque LPF — identity 400 Hz. Mild drop when elevated.
+	 * fc = 400 / √r_τ  → ~327 Hz at 0.3/0.3 (avoid heavy lag).
 	 */
 	lpf = AUTO_LPF0_HZ / auto_fmaxf(r_sqrt, 1.0f);
 	lpf = auto_clampf(lpf, AUTO_LPF_MIN_HZ, AUTO_LPF_MAX_HZ);
@@ -249,6 +249,8 @@ valve_auto_params_update(const struct valve_config *cfg)
 	g_auto.torque_slew_nm_per_s = slew;
 	g_auto.torque_lpf_hz = lpf;
 	g_auto.velocity_lpf_hz = AUTO_VEL_LPF0_HZ;
+	/* No extra free-space ω LPF (lag re-pumped residual + texture) */
+	g_auto.free_space_omega_lpf_hz = 0.0f;
 	g_auto.omega_fast_blend = 0.0f;
 	g_auto.scale_b = rb;
 	g_auto.scale_tc = rc;
@@ -271,6 +273,10 @@ float valve_auto_free_space_tau_max(void) { return g_auto.free_space_tau_max_nm;
 float valve_auto_torque_slew_nm_per_s(void) { return g_auto.torque_slew_nm_per_s; }
 float valve_auto_torque_lpf_hz(void) { return g_auto.torque_lpf_hz; }
 float valve_auto_velocity_lpf_hz(void) { return g_auto.velocity_lpf_hz; }
+float valve_auto_free_space_omega_lpf_hz(void)
+{
+	return g_auto.free_space_omega_lpf_hz;
+}
 float valve_auto_omega_fast_blend(void) { return 0.0f; }
 
 uint8_t
