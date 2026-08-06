@@ -32,6 +32,7 @@
 #include "network/stream.h"
 #include "odrive_manager.h"
 #include "protocols/can_simple.h"
+#include "valve_auto_params.h"
 #include "valve_haptic.h"
 #include "valve_manager.h"
 #include "valve_nvm.h"
@@ -209,6 +210,24 @@ cli_cmd_valve_status(struct cli_context *ctx, int argc, char *argv[])
 	uart_printf(ctx->uart, "Epsilon:            %.6f\r\n", ctx->valve_ctx->config.hil_eps_smoothing);
 	uart_printf(ctx->uart, "Energy tank:        %.6f J\r\n", state->passivity_energy_j);
 	uart_printf(ctx->uart, "Loop time:          %lu us\r\n", (unsigned long)state->diag.last_loop_time_us);
+	{
+		const struct valve_auto_params *ap = valve_auto_params_get();
+		uart_printf(ctx->uart, "Auto (anchor b=tc=0.2) %s:\r\n",
+		    valve_auto_at_baseline() ? "BASELINE" : "elevated");
+		uart_printf(ctx->uart, "  scale b/tc:       %.2f / %.2f\r\n",
+		    ap->scale_b, ap->scale_tc);
+		uart_printf(ctx->uart, "  tau_fs design:    %.3f Nm\r\n", ap->design_tau_fs_nm);
+		uart_printf(ctx->uart, "  Coulomb db/full:  %.2f / %.2f\r\n",
+		    ap->coulomb_deadband_rad_s, ap->coulomb_full_rad_s);
+		uart_printf(ctx->uart, "  Coulomb eps:      %.2f\r\n",
+		    ap->coulomb_eps_rad_s);
+		uart_printf(ctx->uart, "  Settle arm/blank: %.2f / %.2f\r\n",
+		    ap->settle_arm_rad_s, ap->settle_blank_rad_s);
+		uart_printf(ctx->uart, "  Wall/free cap:    %.2f / %.2f Nm\r\n",
+		    ap->wall_tau_max_nm, ap->free_space_tau_max_nm);
+		uart_printf(ctx->uart, "  Torque slew/LPF:  %.1f Nm/s / %.0f Hz\r\n",
+		    ap->torque_slew_nm_per_s, ap->torque_lpf_hz);
+	}
 	
 	return 0;
 }

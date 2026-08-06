@@ -97,6 +97,9 @@
 
 /*
  * Coulomb: pure viscous when slow; full τc when firm.
+ * Deadband / full / ε are gain-scheduled in valve_auto_params (identity
+ * at b=τc=0.2). Raising gains widens onset and ε so τc/ε stays bounded
+ * (more resistance without sharper grind).
  */
 #define VALVE_HIL_EPS_SMOOTHING_DEFAULT      0.30f
 #define VALVE_COULOMB_DEADBAND_RAD_S         0.50f
@@ -109,16 +112,37 @@
 #define VALVE_REST_LATCH_SETTLE_SAMPLES      12U
 
 /*
- * Residual settle: arm on |ω|≥ARM or ring flips; blank free-space
- * while |ω| < BLANK until quiet. Wall exit k=0 on leave.
+ * Residual settle: arm on |ω|≥ARM or ring flips. Mid free-space blank
+ * only after energetic peak (see PEAK_BLANK in valve_haptic.c) or rings —
+ * not on ordinary hand motion (that was grindy at elevated b/τc).
+ * Wall exit k=0 on leave.
  */
 #define VALVE_SETTLE_ARM_RAD_S               0.25f
 #define VALVE_SETTLE_BLANK_RAD_S             0.45f
 #define VALVE_SETTLE_TIMEOUT_SAMPLES         5000U
 #define VALVE_RING_FLIP_WINDOW_SAMPLES       300U
 #define VALVE_RING_FLIP_COUNT               3U
-#define VALVE_WALL_HOLD_OMEGA_RAD_S          0.12f
 #define VALVE_WALL_TAU_MAX_NM                2.5f
+/*
+ * End-stop release: after wall contact, blank free-space until quiet while
+ * coasting slowly. Exit c mult dissipates launch. Soft pen makes deep stop
+ * more "solid force", less elastic catapult.
+ *
+ * HOLD vibration fix: do NOT kill spring on tiny ω noise (that flickered k
+ * on/off while the user held steady past the stop → strong in-place buzz).
+ * Exit k=0 only above EXIT omega. Wall damper deadband while nearly still
+ * so hold feels like pure force −k·p, not −c·ω noise.
+ *
+ * RE-ENTRY grind fix: quick pull from over-travel back into 0–90° used to
+ * leave settle_armed + mid blank on, so free-space b/τc dropped whenever
+ * |ω|<blank → bumpy until sit/quiet. Firm free-space motion after wall
+ * sets free_space_restore (see valve_haptic.c) so friction stays on.
+ */
+#define VALVE_WALL_EXIT_OMEGA_RAD_S          0.60f
+#define VALVE_WALL_DAMP_DEADBAND_RAD_S       0.20f
+#define VALVE_WALL_RELEASE_BLANK_RAD_S       2.00f
+#define VALVE_WALL_EXIT_C_MULT               2.50f
+#define VALVE_WALL_SOFT_PEN_TURNS            0.05f
 
 /*
  * ===========================================================================

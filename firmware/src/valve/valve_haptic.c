@@ -16,6 +16,7 @@
 #include "drivers/fdcan.h"
 #include "network/hitl_server.h"
 #include "protocols/can_simple.h"
+#include "valve_auto_params.h"
 #include "valve_filters.h"
 #include "valve_haptic.h"
 #include "valve_physics.h"
@@ -42,6 +43,27 @@ static uint16_t rest_latch_count = 0;
 static int8_t ring_last_sign = 0;
 static uint8_t ring_flip_count = 0;
 static uint16_t ring_flip_window = 0;
+/* Peak |ω| while armed — wide residual blank after energetic flicks only */
+static float settle_peak_abs = 0.0f;
+/* After wall contact: free-space blank until quiet (end-stop release) */
+static uint8_t wall_release_armed = 0;
+/*
+ * After intentional free-space re-entry from over-travel: keep normal b/τc
+ * until quiet. Otherwise settle_armed + mid blank (and re-arm on |ω|≥arm)
+ * zeros free-space whenever |ω|<blank → bumpy/grindy until sit.
+ */
+static uint8_t free_space_restore = 0;
+/*
+ * Mid free-space blank only after energetic residual (not ordinary hand
+ * motion). Arm-on-|ω|≥arm used to blank whenever |ω|<blank after any move —
+ * with higher b/τc that on/off step felt very grindy. Peak ≥ this gates blank.
+ */
+#define VALVE_SETTLE_PEAK_BLANK_RAD_S        0.90f
+/* Peak above this → widen free-space blank further (elevated gains only) */
+#define VALVE_SETTLE_PEAK_WIDE_RAD_S         1.00f
+#define VALVE_SETTLE_BLANK_WIDE_MAX_RAD_S    1.50f
+/* Firm free-space motion after wall → restore friction feel (not just wall blank) */
+#define VALVE_WALL_REENTRY_FREE_RAD_S        0.50f
 /* Use BOARD_SYSCLK_HZ from board_config.h instead of local define */
 #define VALVE_CAN_FAILURE_MAX 3U
 #define VALVE_ENCODER_STALE_MS 10U
@@ -106,6 +128,7 @@ static void valve_apply_staged_config(struct valve_context *ctx)
 
     ctx->state.degrees_per_turn = (ctx->config.degrees_per_turn > 0.0f) ?
         ctx->config.degrees_per_turn : VALVE_DEFAULT_DEGREES_PER_TURN;
+    valve_auto_params_update(&ctx->config);
 }
 
 /* Seed velocity filters with initial value when encoder stream resets to prevent transients */
@@ -167,6 +190,7 @@ valve_update_quiet_gate(struct valve_state *state)
 			state->quiet_active = 1U;
 			settle_armed = 0U;
 			settle_timeout_count = 0U;
+			settle_peak_abs = 0.0f;
 			ring_flip_count = 0U;
 			ring_flip_window = 0U;
 		}
@@ -176,15 +200,26 @@ valve_update_quiet_gate(struct valve_state *state)
 }
 
 /*
- * Arm settle after real motion or sign-flip rings; blank free-space while
- * |ω| < BLANK until quiet (pre-FOC-cap residual logic).
+ * Mid-range residual: blank free-space while |ω| < blank_eff until quiet.
+ * End-stop: wall_release_armed blanks free-space more broadly after contact
+ * so rebound cannot re-excite a free ring (solid-stop feel).
  */
 static bool
-valve_update_settle_residual(struct valve_state *state)
+valve_update_settle_residual(struct valve_state *state,
+    const struct valve_config *cfg)
 {
 	float abs_filt;
 	float omega;
+	float blank_eff;
+	float peak_extra;
+	float dpt;
+	float theta;
+	float theta_off;
+	float theta_on;
+	float pen;
 	int8_t sgn;
+	bool mid_residual;
+	bool wall_residual;
 
 	if (state == NULL) {
 		return false;
@@ -194,6 +229,47 @@ valve_update_settle_residual(struct valve_state *state)
 	abs_filt = omega;
 	if (abs_filt < 0.0f) {
 		abs_filt = -abs_filt;
+	}
+
+	/* Wall contact → arm wall-release; free-space re-entry restores friction */
+	pen = 0.0f;
+	if (cfg != NULL) {
+		dpt = cfg->degrees_per_turn;
+		if (dpt <= 0.0f) {
+			dpt = VALVE_DEFAULT_DEGREES_PER_TURN;
+		}
+		theta = state->position_deg / dpt;
+		theta_off = cfg->closed_position_deg / dpt;
+		theta_on = cfg->open_position_deg / dpt;
+		if (theta < theta_off) {
+			pen = theta_off - theta;
+		} else if (theta > theta_on) {
+			pen = theta - theta_on;
+		}
+		if (pen >= 1e-6f) {
+			wall_release_armed = 1U;
+			free_space_restore = 0U;
+			settle_armed = 1U;
+			settle_timeout_count = VALVE_SETTLE_TIMEOUT_SAMPLES;
+		} else if (wall_release_armed != 0U) {
+			if (abs_filt > VALVE_WALL_REENTRY_FREE_RAD_S) {
+				/*
+				 * Quick pull back into 0–90°: drop wall blank AND
+				 * residual settle so free-space b/τc stay continuous
+				 * while speed varies (mid blank was grindy until sit).
+				 */
+				wall_release_armed = 0U;
+				free_space_restore = 1U;
+				settle_armed = 0U;
+				settle_timeout_count = 0U;
+				settle_peak_abs = 0.0f;
+				ring_flip_count = 0U;
+				ring_flip_window = 0U;
+			} else if (abs_filt > quiet_exit_rad_s) {
+				/* Light free-space motion: clear wall blank only */
+				wall_release_armed = 0U;
+			}
+		}
 	}
 
 	if (ring_flip_window > 0U) {
@@ -211,7 +287,7 @@ valve_update_settle_residual(struct valve_state *state)
 			sgn = 0;
 		}
 		if (sgn != 0 && ring_last_sign != 0 && sgn != ring_last_sign &&
-		    abs_filt < 1.20f) {
+		    abs_filt < VALVE_SETTLE_BLANK_WIDE_MAX_RAD_S) {
 			if (ring_flip_count < 0xFFU) {
 				ring_flip_count++;
 			}
@@ -219,6 +295,10 @@ valve_update_settle_residual(struct valve_state *state)
 			if (ring_flip_count >= VALVE_RING_FLIP_COUNT) {
 				settle_armed = 1U;
 				settle_timeout_count = VALVE_SETTLE_TIMEOUT_SAMPLES;
+				/* Eligible for mid free-space blank (ring residual) */
+				if (settle_peak_abs < VALVE_SETTLE_PEAK_BLANK_RAD_S) {
+					settle_peak_abs = VALVE_SETTLE_PEAK_BLANK_RAD_S;
+				}
 			}
 		}
 		if (sgn != 0) {
@@ -228,7 +308,7 @@ valve_update_settle_residual(struct valve_state *state)
 		ring_last_sign = 0;
 	}
 
-	if (abs_filt >= VALVE_SETTLE_ARM_RAD_S) {
+	if (abs_filt >= valve_auto_settle_arm()) {
 		settle_armed = 1U;
 		settle_timeout_count = VALVE_SETTLE_TIMEOUT_SAMPLES;
 	}
@@ -236,29 +316,89 @@ valve_update_settle_residual(struct valve_state *state)
 	if (state->quiet_active != 0U) {
 		settle_armed = 0U;
 		settle_timeout_count = 0U;
+		settle_peak_abs = 0.0f;
+		wall_release_armed = 0U;
+		free_space_restore = 0U;
 		ring_flip_count = 0U;
 		ring_flip_window = 0U;
 		return false;
 	}
-	if (settle_armed == 0U) {
+
+	/*
+	 * Intentional free-space after over-travel: do not blank free-space.
+	 * settle_arm re-triggers on |ω|≥arm every sample; without this flag,
+	 * mid blank would kill b/τc whenever speed dips below blank (~0.45).
+	 */
+	if (free_space_restore != 0U) {
 		return false;
 	}
 
-	if (abs_filt > quiet_enter_rad_s) {
-		if (settle_timeout_count < 800U) {
-			settle_timeout_count = 800U;
+	/*
+	 * Wall-release residual: blank free-space only while coasting slowly
+	 * after wall contact (not during intentional re-entry into legal range).
+	 * Wide blank (2 rad/s) made quick pull-back feel grindy/dead until sit.
+	 */
+	wall_residual = false;
+	if (wall_release_armed != 0U) {
+		if (abs_filt > quiet_enter_rad_s) {
+			if (settle_timeout_count < 1200U) {
+				settle_timeout_count = 1200U;
+			}
+		} else if (settle_timeout_count > 0U) {
+			settle_timeout_count--;
+		} else {
+			wall_release_armed = 0U;
 		}
-	} else if (settle_timeout_count > 0U) {
-		settle_timeout_count--;
-	} else {
-		settle_armed = 0U;
-		return false;
+		/* Residual coast only — same scale as mid-range blank, not 2 rad/s */
+		if (wall_release_armed != 0U &&
+		    abs_filt < valve_auto_settle_blank()) {
+			wall_residual = true;
+		}
 	}
 
-	if (abs_filt >= VALVE_SETTLE_BLANK_RAD_S) {
-		return false;
+	/* --- Mid-range residual path --- */
+	mid_residual = false;
+	if (settle_armed != 0U) {
+		if (abs_filt > settle_peak_abs) {
+			settle_peak_abs = abs_filt;
+		}
+		if (abs_filt > quiet_enter_rad_s) {
+			if (settle_timeout_count < 800U) {
+				settle_timeout_count = 800U;
+			}
+		} else if (settle_timeout_count > 0U && wall_release_armed == 0U) {
+			settle_timeout_count--;
+		} else if (settle_timeout_count == 0U && wall_release_armed == 0U) {
+			settle_armed = 0U;
+			settle_peak_abs = 0.0f;
+		}
+
+		if (settle_armed != 0U &&
+		    settle_peak_abs >= VALVE_SETTLE_PEAK_BLANK_RAD_S) {
+			/*
+			 * Free-space blank only after energetic peak / ring.
+			 * Ordinary hand motion arms settle for quiet debounce
+			 * but keeps continuous b/τc (anti-grind at 0.3+).
+			 */
+			blank_eff = valve_auto_settle_blank();
+			if (valve_auto_at_baseline() == 0U &&
+			    settle_peak_abs > VALVE_SETTLE_PEAK_WIDE_RAD_S) {
+				peak_extra = 0.55f *
+				    (settle_peak_abs - VALVE_SETTLE_PEAK_WIDE_RAD_S);
+				blank_eff = blank_eff + peak_extra;
+				if (blank_eff > VALVE_SETTLE_BLANK_WIDE_MAX_RAD_S) {
+					blank_eff = VALVE_SETTLE_BLANK_WIDE_MAX_RAD_S;
+				}
+			}
+			if (abs_filt < blank_eff) {
+				mid_residual = true;
+			}
+		}
+	} else {
+		settle_peak_abs = 0.0f;
 	}
-	return true;
+
+	return (wall_residual || mid_residual);
 }
 
 /* Clamp filter alpha to [0,1] for stability and to prevent invalid filter behavior */
@@ -562,6 +702,7 @@ status_t valve_haptic_stage_config(struct valve_context *ctx, const struct valve
         ctx->config.degrees_per_turn : VALVE_DEFAULT_DEGREES_PER_TURN;
     ctx->staged_pending = 0U;
     ctx->staged_field_mask = 0U;
+    valve_auto_params_update(&ctx->config);
     return STATUS_OK;
 }
 
@@ -607,6 +748,9 @@ status_t valve_haptic_start(struct valve_context *ctx)
     
 	/* Validate configuration before starting */
 	validation_result = valve_preset_validate(&ctx->config);
+	if (validation_result == STATUS_OK) {
+		valve_auto_params_update(&ctx->config);
+	}
 	if (validation_result != STATUS_OK) {
 		return STATUS_ERROR_INVALID_CONFIG;  /* Configuration invalid */
 	}
@@ -714,6 +858,9 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		state->command_position_deg = 0.0f;
 		settle_armed = 0U;
 		settle_timeout_count = 0U;
+		settle_peak_abs = 0.0f;
+		wall_release_armed = 0U;
+		free_space_restore = 0U;
 		rest_latch_count = 0;
 		ring_last_sign = 0;
 		ring_flip_count = 0U;
@@ -797,6 +944,9 @@ void valve_haptic_stop(struct valve_context *ctx)
 	state->quiet_active = 0U;
 	settle_armed = 0U;
 	settle_timeout_count = 0U;
+	settle_peak_abs = 0.0f;
+	wall_release_armed = 0U;
+	free_space_restore = 0U;
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -829,6 +979,9 @@ static void valve_haptic_emergency_stop(struct valve_context *ctx)
 	state->quiet_active = 0U;
 	settle_armed = 0U;
 	settle_timeout_count = 0U;
+	settle_peak_abs = 0.0f;
+	wall_release_armed = 0U;
+	free_space_restore = 0U;
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -1107,7 +1260,7 @@ valve_haptic_process(struct valve_context *ctx)
 	state->command_position_deg = state->position_deg;
 
 	/* === TORQUE COMMAND PATH === */
-	bool settle_residual = valve_update_settle_residual(state);
+	bool settle_residual = valve_update_settle_residual(state, cfg);
 	valve_update_quiet_gate(state);
 	if (state->quiet_active != 0U) {
 		settle_residual = false;
@@ -1133,10 +1286,15 @@ valve_haptic_process(struct valve_context *ctx)
 		/* snap filter — no residual LPF memory buzz */
 	} else {
 		float prev_filtered = state->filtered_torque_nm;
+		float lpf_hz = valve_auto_torque_lpf_hz();
+
+		if (lpf_hz < 1.0f) {
+			lpf_hz = VALVE_TORQUE_FILTER_CUTOFF_HZ;
+		}
 		torque_nm = valve_filter_lowpass_simple(
 		    torque_nm,
 		    prev_filtered,
-		    VALVE_TORQUE_FILTER_CUTOFF_HZ,
+		    lpf_hz,
 		    VALVE_TORQUE_FILTER_SAMPLE_RATE_HZ);
 	}
 
@@ -1173,6 +1331,22 @@ valve_haptic_process(struct valve_context *ctx)
 			state->passivity_energy_j = 0.0f;
 		}
 	} /* end passivity block (ODRIVE mode only) */
+
+	/* Slew only when gains > 0.2/0.2 (baseline path has no slew) */
+	if (valve_auto_at_baseline() == 0U) {
+		float prev_cmd = state->previous_torque_nm;
+		float max_step = valve_auto_torque_slew_nm_per_s() * VALVE_LOOP_DT_S;
+		float dtau = torque_nm - prev_cmd;
+
+		if (max_step < 1e-4f) {
+			max_step = 1e-4f;
+		}
+		if (dtau > max_step) {
+			torque_nm = prev_cmd + max_step;
+		} else if (dtau < -max_step) {
+			torque_nm = prev_cmd - max_step;
+		}
+	}
 
 	state->filtered_torque_nm = torque_nm;
 	state->previous_torque_nm = torque_nm;

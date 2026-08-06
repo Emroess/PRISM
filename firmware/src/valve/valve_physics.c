@@ -9,6 +9,7 @@
  */
 
 #include "valve_physics.h"
+#include "valve_auto_params.h"
 #include "config/valve.h"
 #include "arm_math.h"
 #include <stdbool.h>
@@ -64,20 +65,22 @@ static inline float valve_hil_smooth_sign(float omega, float eps)
 	return omega / sqrt_denominator;
 }
 
-/* Ramp Coulomb 0→1 from deadband to full (slow turns pure viscous). */
+/* Ramp Coulomb 0→1 from auto deadband→full (slow turns pure viscous). */
 static inline float valve_coulomb_speed_scale(float abs_omega)
 {
 	float span;
 	float u;
+	float w_db = valve_auto_coulomb_deadband();
+	float w_full = valve_auto_coulomb_full();
 
-	if (abs_omega <= VALVE_COULOMB_DEADBAND_RAD_S) {
+	if (abs_omega <= w_db) {
 		return 0.0f;
 	}
-	span = VALVE_COULOMB_FULL_RAD_S - VALVE_COULOMB_DEADBAND_RAD_S;
+	span = w_full - w_db;
 	if (span < 1e-3f) {
 		return 1.0f;
 	}
-	u = (abs_omega - VALVE_COULOMB_DEADBAND_RAD_S) / span;
+	u = (abs_omega - w_db) / span;
 	if (u >= 1.0f) {
 		return 1.0f;
 	}
@@ -121,14 +124,38 @@ static inline float valve_hil_compute_wall_torque(
 	omega_rad_s = omega_turns_per_s * VALVE_TWO_PI;
 	into_wall = penetration * omega_turns_per_s;
 
-	/* Exit: no spring energy return into free ring */
+	/*
+	 * Soft spring: force rises then soft-saturates with depth so deep
+	 * over-travel feels more like a solid stop, less like a charged spring.
+	 */
+	{
+		float pen_abs = valve_fabsf(penetration);
+		float p0 = VALVE_WALL_SOFT_PEN_TURNS;
+		float pen_soft;
+
+		if (p0 < 1e-4f) {
+			p0 = 1e-4f;
+		}
+		pen_soft = penetration / (1.0f + pen_abs / p0);
+		penetration = pen_soft;
+	}
+
+	/*
+	 * Holding steady past the stop: |ω| is small but noisy. Killing spring
+	 * whenever into_wall<0 (old HOLD=0.12) flickered k on/off → strong
+	 * in-place vibration. Only exit-kill spring at clear exit speed.
+	 */
 	if (into_wall < 0.0f &&
-	    valve_fabsf(omega_rad_s) > VALVE_WALL_HOLD_OMEGA_RAD_S) {
+	    valve_fabsf(omega_rad_s) > VALVE_WALL_EXIT_OMEGA_RAD_S) {
 		k_eff = 0.0f;
+		c_eff = cw * VALVE_WALL_EXIT_C_MULT;
+	} else if (valve_fabsf(omega_rad_s) < VALVE_WALL_DAMP_DEADBAND_RAD_S) {
+		/* Pure static force while holding — no −c·ω noise */
+		c_eff = 0.0f;
 	}
 
 	tau = (-k_eff * penetration) + (-c_eff * omega_turns_per_s);
-	return valve_clamp_sym(tau, VALVE_WALL_TAU_MAX_NM);
+	return valve_clamp_sym(tau, valve_auto_wall_tau_max());
 }
 
 static inline float valve_hil_compute_virtual_torque(
@@ -165,6 +192,17 @@ static inline float valve_hil_compute_virtual_torque(
 	viscous_torque = -b * omega_filt_rad_s;
 
 	abs_w = valve_fabsf(omega_filt_rad_s);
+	/*
+	 * Soft-sign ε from auto-params (identity at 0.2/0.2). Scales up with
+	 * τc so Coulomb slope τc/ε stays ≤ baseline — higher friction without
+	 * sharper zero-cross grind. Never use a smaller ε than auto.
+	 */
+	{
+		float eps_auto = valve_auto_coulomb_eps();
+		if (eps_auto > eps) {
+			eps = eps_auto;
+		}
+	}
 	cscale = valve_coulomb_speed_scale(abs_w);
 	if (cscale <= 0.0f || tau_c <= 0.0f) {
 		friction_torque = 0.0f;
@@ -174,6 +212,18 @@ static inline float valve_hil_compute_virtual_torque(
 	} else {
 		friction_torque = -(tau_c * cscale) *
 		    valve_signf(omega_filt_rad_s);
+	}
+
+	/*
+	 * Free-space FOC cap only when gains elevated. At b=τc=0.2 this path
+	 * is skipped so feel matches the hand-tuned baseline exactly.
+	 */
+	if (valve_auto_at_baseline() == 0U) {
+		float free_space = viscous_torque + friction_torque;
+		free_space = valve_clamp_sym(free_space,
+		    valve_auto_free_space_tau_max());
+		viscous_torque = free_space;
+		friction_torque = 0.0f;
 	}
 
 	omega_turns_s = (omega_filt_rad_s * VALVE_RAD_TO_DEG) / degrees_per_turn;

@@ -38,6 +38,7 @@ src/app/cli.c \
 src/protocols/can_simple.c \
 src/valve/valve_haptic.c \
 src/valve/valve_physics.c \
+src/valve/valve_auto_params.c \
 src/valve/valve_presets.c \
 src/valve/valve_nvm.c \
 src/valve/valve_filters.c \
