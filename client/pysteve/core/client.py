@@ -279,6 +279,28 @@ class SteveClient:
         """
         return self._request("GET", "status")
 
+    def get_interaction_mode(self) -> str:
+        """
+        Get interaction mode: "human" (smoothed haptics) or "robot" (training).
+        """
+        data = self._request("GET", "interaction")
+        return str(data.get("mode", "human"))
+
+    def set_interaction_mode(self, mode: str) -> Dict[str, Any]:
+        """
+        Set interaction mode.
+
+        Args:
+            mode: "human" keeps haptic smoothing; "robot" strips quiet gate,
+                Coulomb speed schedule, epsilon smoothing, settle blank, and
+                torque LPF so Coulomb/stiction is present at rest.
+        """
+        if mode not in ("human", "robot", "0", "1"):
+            raise SteveValidationError(
+                f"Invalid interaction mode: {mode!r} (use 'human' or 'robot')"
+            )
+        return self._request("POST", "interaction", json={"mode": mode})
+
     # Configuration Methods
 
     def get_config(self) -> ValveConfig:

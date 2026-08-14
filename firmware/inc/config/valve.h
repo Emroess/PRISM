@@ -112,6 +112,15 @@
 #define VALVE_QUIET_EXIT_DEFAULT_RAD_S       0.16f
 
 /*
+ * Interaction mode: human haptics vs robot-training physics.
+ * Human keeps quiet-gate / Coulomb schedule / ε / settle / torque LPF.
+ * Robot strips those feel hacks so Coulomb is present at rest (stiction).
+ */
+#define VALVE_INTERACTION_MODE_HUMAN         0U
+#define VALVE_INTERACTION_MODE_ROBOT         1U
+#define VALVE_INTERACTION_MODE_DEFAULT       VALVE_INTERACTION_MODE_HUMAN
+
+/*
  * Coulomb: pure viscous when slow; full τc when firm.
  * Deadband / full / ε are gain-scheduled in valve_auto_params (identity
  * at b=τc=0.2). Raising gains widens onset and ε so τc/ε stays bounded

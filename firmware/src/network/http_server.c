@@ -119,6 +119,9 @@ const char index_html[] =
 ".config-input:focus{outline:none;border-color:var(--accent)}"
 ".theme-toggle{background:transparent;color:var(--text);border:1px solid var(--border);padding:8px 16px;border-radius:20px}"
 ".theme-toggle:hover{background:var(--border)}"
+".mode-btn{background:var(--bg);color:var(--text);border:1px solid var(--border)}"
+".mode-btn.active{background:var(--accent);color:var(--bg);border:none}"
+".mode-hint{font-size:12px;opacity:0.7;margin-top:4px}"
 "</style></head>"
 "<body><div class=\"container\">"
 "<div class=\"header\">"
@@ -129,9 +132,11 @@ const char index_html[] =
 "<div class=\"metric\"><div class=\"metric-label\">Position (deg)</div><div class=\"metric-value\" id=\"pos\">--</div><canvas class=\"metric-spark\" id=\"sp\"></canvas></div>"
 "<div class=\"metric\"><div class=\"metric-label\">Velocity (rad/s)</div><div class=\"metric-value\" id=\"vel\">--</div><canvas class=\"metric-spark\" id=\"sv\"></canvas></div>"
 "<div class=\"metric\"><div class=\"metric-label\">Torque (Nm)</div><div class=\"metric-value\" id=\"tor\">--</div><canvas class=\"metric-spark\" id=\"st\"></canvas></div>"
+"<div class=\"metric\"><div class=\"metric-label\">State</div><div class=\"metric-value\" id=\"stt\">--</div><div class=\"mode-hint\" id=\"sttHint\">waiting for /api/v1/status</div></div>"
 "</div>"
 "<div class=\"card controls\">"
 "<div class=\"btn-group\"><span class=\"config-label\">System Control</span><div style=\"display:flex;gap:8px\"><button onclick=\"ctrl('start')\">Start</button><button class=\"stop\" onclick=\"ctrl('stop')\">Stop</button></div></div>"
+"<div class=\"btn-group\"><span class=\"config-label\">Interaction</span><div style=\"display:flex;gap:8px\"><button id=\"modeHuman\" class=\"mode-btn active\" onclick=\"setInteraction('human')\">Human</button><button id=\"modeRobot\" class=\"mode-btn\" onclick=\"setInteraction('robot')\">Robot Training</button></div><div class=\"mode-hint\" id=\"modeHint\">Smoothed haptics for hand motion</div></div>"
 "<div class=\"btn-group\"><span class=\"config-label\">Quick Preset Load</span><div style=\"display:flex;gap:8px\"><select id=\"presetLoad\" onchange=\"loadPresetIntoFields()\"></select></div></div>"
 "</div>"
 "<div class=\"card\">"
@@ -183,9 +188,20 @@ const char index_html[] =
 "x.strokeStyle=isDark?'#f8fafc':'#0f172a';x.lineWidth=2;x.beginPath();a.forEach((e,t)=>{const px=(t/(a.length-1))*w,py=h-((e-i)/r)*h;"
 "0===t?x.moveTo(px,py):x.lineTo(px,py)});x.stroke();x.fillStyle=isDark?'#94a3b8':'#64748b';x.font='11px monospace';"
 "x.fillText(i.toFixed(1),2,h-2);x.fillText(o.toFixed(1),2,12)}"
-"function update(){fetch('/api/v1/status',{headers:{'X-API-Key':'" HTTP_API_KEY "'}}).then(r=>r.json()).then(j=>{[j.pos_deg,j.vel_rad_s,j.torque_nm].forEach((e,t)=>{"
-"v[t].textContent=e.toFixed(2);d[t].push(e);d[t].length>m&&d[t].shift();drawSpark(s[t],d[t])})}).catch(()=>{})}"
-"function ctrl(a){fetch('/api/v1/control',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':'" HTTP_API_KEY "'},body:JSON.stringify({action:a})})}"
+"function syncInteraction(m){const h=document.getElementById('modeHuman'),r=document.getElementById('modeRobot'),hint=document.getElementById('modeHint');"
+"if(!h||!r)return;h.classList.toggle('active',m==='human');r.classList.toggle('active',m==='robot');"
+"if(hint)hint.textContent=m==='robot'?'Physics training: stiction on, feel hacks off':'Smoothed haptics for hand motion'}"
+"function setInteraction(m){fetch('/api/v1/interaction',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':'" HTTP_API_KEY "'},body:JSON.stringify({mode:m})})"
+".then(r=>r.json()).then(j=>syncInteraction(j.mode||m)).catch(()=>{})}"
+"function update(){fetch('/api/v1/status',{headers:{'X-API-Key':'" HTTP_API_KEY "'}}).then(r=>{if(!r.ok)throw new Error('status '+r.status);return r.json()}).then(j=>{[j.pos_deg,j.vel_rad_s,j.torque_nm].forEach((e,t)=>{"
+"const n=Number(e);v[t].textContent=Number.isFinite(n)?n.toFixed(2):'--';if(Number.isFinite(n)){d[t].push(n);d[t].length>m&&d[t].shift();drawSpark(s[t],d[t])}});"
+"const stEl=document.getElementById('stt'),hint=document.getElementById('sttHint');"
+"const names={0:'IDLE',1:'INIT',2:'RUNNING',3:'ERROR'};"
+"if(stEl)stEl.textContent=names[j.status]||('?'+j.status);"
+"if(hint)hint.textContent=j.safety&&j.safety.last_error?('last err '+j.safety.last_error):'';"
+"if(j.interaction)syncInteraction(j.interaction)}).catch(e=>{const h=document.getElementById('sttHint');if(h)h.textContent='status poll failed'})}"
+"function ctrl(a){fetch('/api/v1/control',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':'" HTTP_API_KEY "'},body:JSON.stringify({action:a})})"
+".then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok){alert((a==='start'?'Start failed: ':'Stop failed: ')+(j.error||r.status));return;}if(a==='start'&&j.mode!=='running')alert('Start did not enter RUNNING ('+(j.mode||'?')+')')})}"
 "function saveConfig(){const btn=event.target;btn.disabled=true;btn.textContent='Applying...';const c={viscous:parseFloat(document.getElementById('viscous').value),"
 "coulomb:parseFloat(document.getElementById('coulomb').value),"
 "wall_stiffness:parseFloat(document.getElementById('stiffness').value),"
@@ -772,6 +788,8 @@ handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
       rest_api_handle_get_stream(tpcb);
     } else if (strcmp(hs->uri, "/api/v1/hitl") == 0) {
       rest_api_handle_get_hitl(tpcb);
+    } else if (strcmp(hs->uri, "/api/v1/interaction") == 0) {
+      rest_api_handle_get_interaction(tpcb);
     } else if (strcmp(hs->uri, "/") == 0) {
       rest_api_handle_get_index(tpcb);
     } else {
@@ -803,6 +821,9 @@ handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
       return true;
     } else if (strcmp(hs->uri, "/api/v1/hitl") == 0) {
       rest_api_handle_post_hitl(tpcb, body, body_len);
+      return true;
+    } else if (strcmp(hs->uri, "/api/v1/interaction") == 0) {
+      rest_api_handle_post_interaction(tpcb, body, body_len);
       return true;
     } else {
       http_send_json_error(tpcb, 404, "not_found");

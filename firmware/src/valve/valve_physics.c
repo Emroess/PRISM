@@ -6,6 +6,9 @@
  * State snapshot: residual free-space blank + Coulomb speed schedule +
  * wall exit k=0 + wall τ cap 2.5 — BEFORE FOC free-space cap / slew /
  * soft-spring / impact derate / auto-params.
+ *
+ * Robot interaction mode disables the Coulomb speed schedule and ε
+ * smoothing so static friction is present at rest.
  */
 
 #include "valve_physics.h"
@@ -170,7 +173,8 @@ static inline float valve_hil_compute_virtual_torque(
     float cw,
     float eps,
     float max_torque,
-    float degrees_per_turn)
+    float degrees_per_turn,
+    bool robot_mode)
 {
 	float viscous_torque;
 	float friction_torque;
@@ -209,13 +213,21 @@ static inline float valve_hil_compute_virtual_torque(
 	viscous_torque = -b * omega_use;
 
 	abs_w = valve_fabsf(omega_use);
-	{
+	if (robot_mode) {
+		/*
+		 * Robot training: full Coulomb at every speed, hard sign.
+		 * Speed schedule and ε hide stiction from the force-torque
+		 * sensor; a Franka needs to feel breakaway resistance.
+		 */
+		eps = 0.0f;
+		cscale = 1.0f;
+	} else {
 		float eps_auto = valve_auto_coulomb_eps();
 		if (eps_auto > eps) {
 			eps = eps_auto;
 		}
+		cscale = valve_coulomb_speed_scale(abs_w);
 	}
-	cscale = valve_coulomb_speed_scale(abs_w);
 	if (cscale <= 0.0f || tau_c <= 0.0f) {
 		friction_torque = 0.0f;
 	} else if (eps > 0.0f) {
@@ -264,7 +276,8 @@ float valve_physics_calculate_torque_hil(
     float omega_filt_rad_s,
     float omega_raw_rad_s,
     bool quiet_active,
-    bool settle_residual)
+    bool settle_residual,
+    bool robot_mode)
 {
 	float degrees_per_turn;
 	float theta_turns;
@@ -293,6 +306,12 @@ float valve_physics_calculate_torque_hil(
 	eps = cfg->hil_eps_smoothing;
 	max_torque = cfg->hil_tau_max_limit_nm;
 
+	if (robot_mode) {
+		/* Robot must feel free-space friction at rest */
+		quiet_active = false;
+		settle_residual = false;
+	}
+
 	/* Quiet or residual coast: free-space off; walls stay */
 	if (quiet_active || settle_residual) {
 		b = 0.0f;
@@ -303,6 +322,7 @@ float valve_physics_calculate_torque_hil(
 	    valve_hil_compute_virtual_torque(
 		theta_turns, omega_filt_rad_s, omega_raw_rad_s,
 		theta_off_turns, theta_on_turns,
-		b, tau_c, kw, cw, eps, max_torque, degrees_per_turn),
+		b, tau_c, kw, cw, eps, max_torque, degrees_per_turn,
+		robot_mode),
 	    max_torque);
 }

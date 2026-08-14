@@ -83,11 +83,17 @@ main(void)
 		uart_write_string(uart, "\r\n", 100);
 	} else {
 		uart_write_string(uart, "FDCAN1 initialized successfully\r\n", 100);
-		uart_printf(uart, "  Bit rate:      %lu bps\r\n",
+		uart_printf(uart, "  Nominal:       %lu bps\r\n",
 		    (unsigned long)BOARD_FDCAN1_BITRATE);
+		uart_printf(uart, "  Data (BRS):    %lu bps\r\n",
+		    (unsigned long)BOARD_FDCAN1_DATA_BITRATE);
 		uart_printf(uart, "  Sample point:  %u%%\r\n",
 		    (unsigned int)BOARD_FDCAN1_SAMPLE_POINT_PERCENT);
-		uart_write_string(uart, "  Mode:          Normal\r\n", 100);
+#if BOARD_FDCAN1_TX_BRS
+		uart_write_string(uart, "  TX:            CAN FD + BRS\r\n", 100);
+#else
+		uart_write_string(uart, "  TX:            classic (RX still FD+BRS)\r\n", 100);
+#endif
 		uart_write_string(uart, "\r\n", 100);
 	}
 

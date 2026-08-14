@@ -25,8 +25,18 @@ Connect ODrive via USB C and run `odrivetool`
 
 ## CAN Configuration Parameters
 
+The Nucleo **receives** CAN FD+BRS (1 Mbps arbitration, 5 Mbps data) and **sends classic 1 Mbps** commands. That is enough: ODrive still understands classic frames when `tx_brs` is on.
+
+Set these on the **ODrive** (`odrv.can.config`, then `save_configuration()` and reboot).  
+Do **not** put 5000000 in `baud_rate` — that is the arbitration rate and must stay 1 Mbps.
+
+Also check `odrv.can.effective_baudrate` is `1000000` after reboot (not `0` / still autobauding).
+
 | Parameter                     | Path                                   | Value | Notes |
 |-------------------------------|----------------------------------------|-------|-------|
+| `baud_rate`                   | `can.config.baud_rate`                 | `1000000` | Arbitration / nominal. Must match STM32 1 Mbps. |
+| `data_baud_rate`              | `can.config.data_baud_rate`            | `5000000` | FD data phase (Adafruit transceiver max). |
+| `tx_brs`                      | `can.config.tx_brs`                    | `True` / `1` | ODrive transmits FD+BRS frames. |
 | `node_id`                     | `axis0.can.config.node_id`             | `1`   | Unique CAN node ID  |
 | `version_msg_rate_ms`         | `axis0.can.config.version_msg_rate_ms`| `0`   | Disabled |
 | `heartbeat_msg_rate_ms`       | `axis0.can.config.heartbeat_msg_rate_ms`| `100` | Heartbeat – axis state/error |

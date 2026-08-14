@@ -77,8 +77,13 @@
 #define BOARD_APB3_HZ           100000000U  /* 100 MHz APB3 (HCLK/2) */
 #define BOARD_APB4_HZ           100000000U  /* 100 MHz APB4 (HCLK/2) */
 
-/* FDCAN kernel clock (from PLL1Q) */
-#define BOARD_FDCAN_KERNEL_HZ   100000000U  /* 100 MHz for clean bit timing */
+/*
+ * FDCAN kernel clock (from PLL1Q).
+ * ODrive uses a fixed 8 tq / 87.5% sample point for every bitrate.
+ * 40 MHz makes that exact: 1 Mbps = presc 5, 5 Mbps = presc 1.
+ * 100 MHz cannot produce 8 tq at 5 Mbps (100/5 = 20 tq).
+ */
+#define BOARD_FDCAN_KERNEL_HZ   40000000U
 
 /* USART3 kernel clock (from APB1) */
 #define BOARD_USART3_KERNEL_HZ  BOARD_APB1_HZ
@@ -89,7 +94,7 @@
  * Input: HSE = 8 MHz (ST-LINK MCO)
  * VCO: 8 MHz / 2 * 200 = 800 MHz (within 192-836 MHz wide range)
  * P: 800 / 2 = 400 MHz (SYSCLK)
- * Q: 800 / 8 = 100 MHz (FDCAN kernel)
+ * Q: 800 / 20 = 40 MHz (FDCAN kernel, 8 tq at 1M/5M)
  * R: 800 / 2 = 400 MHz (unused but valid)
  * 
  * PLL input = 8/2 = 4 MHz → RGE = 10b (4-8 MHz range)
@@ -97,7 +102,7 @@
 #define BOARD_PLL1_M            2U
 #define BOARD_PLL1_N            200U
 #define BOARD_PLL1_P            2U
-#define BOARD_PLL1_Q            8U
+#define BOARD_PLL1_Q            20U
 #define BOARD_PLL1_R            2U
 
 /* Flash latency for 400 MHz @ VOS1 */
@@ -171,9 +176,15 @@ enum board_gpio_port {
 #define BOARD_FDCAN1_RX_PIN     0U
 #define BOARD_FDCAN1_RX_AF      9U
 
-#define BOARD_FDCAN1_BITRATE    1000000U    /* 1 Mbps */
-#define BOARD_FDCAN1_DATA_BITRATE 5000000U  /* 5 Mbps (FD Data Phase) */
+#define BOARD_FDCAN1_BITRATE    1000000U    /* 1 Mbps arbitration (must match odrv.can.config.baud_rate) */
+#define BOARD_FDCAN1_DATA_BITRATE 5000000U  /* 5 Mbps data phase (odrv.can.config.data_baud_rate) */
 #define BOARD_FDCAN1_SAMPLE_POINT_PERCENT 87U
+/*
+ * Transmit classic 8-byte CAN at the nominal rate. ODrive still sends
+ * FD+BRS when tx_brs=1; we receive those. Sending BRS ourselves needs
+ * perfect TDC and is the usual reason Set_Input_Torque never arrives.
+ */
+#define BOARD_FDCAN1_TX_BRS     0U
 
 /*
  * FDCAN Message RAM Configuration
@@ -211,8 +222,8 @@ enum board_gpio_port {
 _Static_assert(BOARD_SYSCLK_HZ == 400000000U,
 	"SYSCLK must be 400 MHz - verify PLL configuration");
 
-_Static_assert(BOARD_FDCAN_KERNEL_HZ == 100000000U,
-	"FDCAN kernel must be 100 MHz - update timing calculations if changed");
+_Static_assert(BOARD_FDCAN_KERNEL_HZ == 40000000U,
+	"FDCAN kernel must be 40 MHz so 8 tq timing matches ODrive");
 
 _Static_assert(BOARD_HCLK_HZ == (BOARD_SYSCLK_HZ / 2U),
 	"HCLK must be SYSCLK/2 (200 MHz)");

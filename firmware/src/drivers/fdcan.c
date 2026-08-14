@@ -185,6 +185,12 @@ fdcan_init(struct fdcan_handle *h, const struct fdcan_config *cfg)
 		return status;
 	}
 
+	/* Data-phase register limits (DBRP 5-bit, DTSEG1 5-bit, DTSEG2 4-bit) */
+	if (data_timing.prescaler > 32U || data_timing.tseg1 > 32U ||
+	    data_timing.tseg2 > 16U || data_timing.sjw > 16U) {
+		return STATUS_ERROR_INVALID_CONFIG;
+	}
+
 	/* Enable FDCAN1 clock */
 	RCC->APB1HENR |= RCC_APB1HENR_FDCANEN;
 	(void)RCC->APB1HENR;  /* Read back for write completion */
@@ -222,20 +228,35 @@ fdcan_init(struct fdcan_handle *h, const struct fdcan_config *cfg)
 	                    ((h->timing.tseg2 - 1U) << FDCAN_NBTP_NTSEG2_Pos) |
 	                    ((h->timing.prescaler - 1U) << FDCAN_NBTP_NBRP_Pos);
 
-	/* Configure data bit timing */
-	h->instance->DBTP = ((data_timing.sjw - 1U) << FDCAN_DBTP_DSJW_Pos) |
-	                    ((data_timing.tseg1 - 1U) << FDCAN_DBTP_DTSEG1_Pos) |
-	                    ((data_timing.tseg2 - 1U) << FDCAN_DBTP_DTSEG2_Pos) |
-	                    ((data_timing.prescaler - 1U) << FDCAN_DBTP_DBRP_Pos);
+	/*
+	 * Data-phase timing + TDC.
+	 * TDC is required when DBRP=0. TDCO is an *offset added to the
+	 * measured transceiver delay*, not the full sample-point position.
+	 * Setting it to tseg1 placed the SSP in the next bit and broke TX.
+	 * Typical 5 Mbps loop delay is 3–6 mtq at 25 ns; TDCO=3 → SSP≈7 tq.
+	 */
+	{
+		uint32_t dbtp;
 
-	/* Configure for CAN-FD mode with Bit Rate Switching */
-	h->instance->CCCR |= FDCAN_CCCR_FDOE;  /* Enable FD operation */
-	h->instance->CCCR |= FDCAN_CCCR_BRSE;  /* Enable bit rate switching */
+		dbtp = ((data_timing.sjw - 1U) << FDCAN_DBTP_DSJW_Pos) |
+		       ((data_timing.tseg1 - 1U) << FDCAN_DBTP_DTSEG1_Pos) |
+		       ((data_timing.tseg2 - 1U) << FDCAN_DBTP_DTSEG2_Pos) |
+		       ((data_timing.prescaler - 1U) << FDCAN_DBTP_DBRP_Pos);
+		if (data_timing.prescaler <= 2U) {
+			uint32_t tdco = 3U;
+			uint32_t tdcf = 8U;
 
-	/* CRITICAL: Disable automatic retransmission in all modes to prevent
-	 * retransmission storms during errors. High-rate control loops must
-	 * tolerate occasional dropped frames rather than retrying into bus-off. */
-	h->instance->CCCR |= FDCAN_CCCR_DAR;
+			dbtp |= FDCAN_DBTP_TDC;
+			h->instance->TDCR = (tdco << FDCAN_TDCR_TDCO_Pos) | tdcf;
+		}
+		h->instance->DBTP = dbtp;
+	}
+
+	/* Receive CAN FD + BRS (ODrive encoder/heartbeat when tx_brs=1). */
+	h->instance->CCCR |= FDCAN_CCCR_FDOE;
+	h->instance->CCCR |= FDCAN_CCCR_BRSE;
+
+	/* Keep automatic retransmission so startup commands are not dropped. */
 
 	/* Configure loopback mode if requested */
 	if (cfg->loopback_mode == FDCAN_MODE_INTERNAL_LOOPBACK) {
@@ -267,10 +288,9 @@ fdcan_init(struct fdcan_handle *h, const struct fdcan_config *cfg)
 	h->instance->RXBC = 0U;
 	h->instance->TXEFC = 0U;
 
-	/* Configure TX in FIFO mode (not dedicated buffers) */
+	/* TX FIFO (TFQM=0). TFQM=1 is queue-by-ID, not FIFO. */
 	h->instance->TXBC = (FDCAN_TX_BUFFER_OFFSET << FDCAN_TXBC_TBSA_Pos) |
-	                    (FDCAN_TX_BUFFER_COUNT << FDCAN_TXBC_TFQS_Pos) |
-	                    FDCAN_TXBC_TFQM;  /* TX FIFO mode */
+	                    (FDCAN_TX_BUFFER_COUNT << FDCAN_TXBC_TFQS_Pos);
 	
 	/* Read back to ensure write completed */
 	(void)h->instance->TXBC;
@@ -379,8 +399,10 @@ fdcan_transmit(struct fdcan_handle *h, const struct can_frame *frame,
 		header0 |= FDCAN_TX_HEADER_RTR;
 	}
 
-	header1 = (frame->dlc << FDCAN_TX_HEADER_DLC_Pos) |
-	          FDCAN_TX_HEADER_FDF | FDCAN_TX_HEADER_BRS;
+	header1 = (frame->dlc << FDCAN_TX_HEADER_DLC_Pos);
+#if BOARD_FDCAN1_TX_BRS
+	header1 |= FDCAN_TX_HEADER_FDF | FDCAN_TX_HEADER_BRS;
+#endif
 
 	/* Write header */
 	msg_ram[0] = header0;
@@ -472,13 +494,20 @@ fdcan_receive(struct fdcan_handle *h, struct can_frame *frame)
 	frame->dlc = (header1 & FDCAN_RX_HEADER_DLC_MASK) >> 
 	             FDCAN_RX_HEADER_DLC_Pos;
 
-	/* Read data */
-	for (i = 0; i < ((frame->dlc + 3U) / 4U); i++) {
-		uint32_t word = msg_ram[2 + i];
-		frame->data[i * 4U + 0U] = (uint8_t)(word & 0xFFU);
-		frame->data[i * 4U + 1U] = (uint8_t)((word >> 8) & 0xFFU);
-		frame->data[i * 4U + 2U] = (uint8_t)((word >> 16) & 0xFFU);
-		frame->data[i * 4U + 3U] = (uint8_t)((word >> 24) & 0xFFU);
+	/* CAN Simple uses 8-byte payloads. Clamp so FD DLC>8 cannot
+	 * overflow struct can_frame.data[8]. */
+	{
+		uint32_t nbytes = frame->dlc;
+		if (nbytes > 8U) {
+			nbytes = 8U;
+		}
+		for (i = 0; i < ((nbytes + 3U) / 4U); i++) {
+			uint32_t word = msg_ram[2 + i];
+			frame->data[i * 4U + 0U] = (uint8_t)(word & 0xFFU);
+			frame->data[i * 4U + 1U] = (uint8_t)((word >> 8) & 0xFFU);
+			frame->data[i * 4U + 2U] = (uint8_t)((word >> 16) & 0xFFU);
+			frame->data[i * 4U + 3U] = (uint8_t)((word >> 24) & 0xFFU);
+		}
 	}
 
 	/* Acknowledge read */
@@ -642,6 +671,25 @@ fdcan_calculate_timing(uint32_t kernel_hz, uint32_t bitrate,
 
 	/* Calculate time quanta per bit */
 	tq_per_bit = kernel_hz / bitrate;
+
+	/*
+	 * Prefer ODrive's fixed timing: 8 tq, sample 87.5% (1+6+1), SJW=1.
+	 * 40 MHz kernel hits this exactly at 1 Mbps and 5 Mbps.
+	 */
+	if ((bitrate != 0U) && ((kernel_hz % bitrate) == 0U)) {
+		uint32_t raw_tq = kernel_hz / bitrate;
+
+		if ((raw_tq % 8U) == 0U) {
+			prescaler = raw_tq / 8U;
+			if (prescaler >= 1U && prescaler <= 512U) {
+				timing->prescaler = prescaler;
+				timing->tseg1 = 6U;
+				timing->tseg2 = 1U;
+				timing->sjw = 1U;
+				return STATUS_OK;
+			}
+		}
+	}
 
 	/* Find suitable prescaler */
 	for (prescaler = 1U; prescaler <= 512U; prescaler++) {
@@ -875,12 +923,9 @@ fdcan_enable_interrupts(struct fdcan_handle *h)
 	/* Enable RX FIFO 0 new message interrupt */
 	h->instance->IE |= FDCAN_IE_RF0NE;
 	
-	/* Enable error interrupts for immediate fault detection */
-	h->instance->IE |= FDCAN_IE_BOE  |  /* Bus off */
-	                   FDCAN_IE_EPE  |  /* Error passive */
-	                   FDCAN_IE_EWE  |  /* Error warning */
-	                   FDCAN_IE_PEAE |  /* Protocol error (arbitration) */
-	                   FDCAN_IE_PEDE;   /* Protocol error (data phase) */
+	/* Only bus-off is fatal. Protocol / warning / passive fire constantly
+	 * while CAN FD timing is settling and must not ESTOP the valve. */
+	h->instance->IE |= FDCAN_IE_BOE;
 	
 	/* Enable interrupt line 0 */
 	h->instance->ILE = FDCAN_ILE_EINT0;
@@ -938,12 +983,18 @@ FDCAN1_IT0_IRQHandler(void)
 			frame.rtr = ((header0 & FDCAN_RX_HEADER_RTR) != 0U) ? 1U : 0U;
 			frame.dlc = (header1 & FDCAN_RX_HEADER_DLC_MASK) >> FDCAN_RX_HEADER_DLC_Pos;
 
-			for (i = 0; i < ((frame.dlc + 3U) / 4U); i++) {
-				uint32_t word = msg_ram[2 + i];
-				frame.data[i * 4U + 0U] = (uint8_t)(word & 0xFFU);
-				frame.data[i * 4U + 1U] = (uint8_t)((word >> 8) & 0xFFU);
-				frame.data[i * 4U + 2U] = (uint8_t)((word >> 16) & 0xFFU);
-				frame.data[i * 4U + 3U] = (uint8_t)((word >> 24) & 0xFFU);
+			{
+				uint32_t nbytes = frame.dlc;
+				if (nbytes > 8U) {
+					nbytes = 8U;
+				}
+				for (i = 0; i < ((nbytes + 3U) / 4U); i++) {
+					uint32_t word = msg_ram[2 + i];
+					frame.data[i * 4U + 0U] = (uint8_t)(word & 0xFFU);
+					frame.data[i * 4U + 1U] = (uint8_t)((word >> 8) & 0xFFU);
+					frame.data[i * 4U + 2U] = (uint8_t)((word >> 16) & 0xFFU);
+					frame.data[i * 4U + 3U] = (uint8_t)((word >> 24) & 0xFFU);
+				}
 			}
 
 			h->instance->RXF0A = get_index;

@@ -63,6 +63,17 @@ struct can_simple_handle;
 #define VALVE_OUTPUT_MODE_ODRIVE	0U  /* Physical ODrive (default) */
 #define VALVE_OUTPUT_MODE_HITL		1U  /* Isaac Sim HITL via Ethernet */
 
+/*
+ * Interaction mode (VALVE_INTERACTION_MODE_* in config/valve.h)
+ *
+ * HUMAN (default): full haptic smoothing — quiet gate, residual settle
+ *   blank, Coulomb speed schedule, ε sign smoothing, output torque LPF.
+ *
+ * ROBOT: those human-feel hacks are stripped so Coulomb is present at
+ *   rest (stiction-accurate). Viscous + Coulomb + walls stay; velocity
+ *   filter and passivity tank stay for signal quality and safety.
+ */
+
 /* Valve configuration (loaded from preset) */
 struct valve_config {
     /* Position limits */
@@ -205,6 +216,9 @@ void     valve_haptic_set_quiet_enter(float rad_s);
 float    valve_haptic_get_quiet_enter(void);
 void     valve_haptic_set_quiet_exit(float rad_s);
 float    valve_haptic_get_quiet_exit(void);
+
+status_t valve_haptic_set_interaction_mode(uint8_t mode);
+uint8_t  valve_haptic_get_interaction_mode(void);
 
 #ifdef __cplusplus
 }

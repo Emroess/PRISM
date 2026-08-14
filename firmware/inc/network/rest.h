@@ -110,4 +110,16 @@ void rest_api_handle_get_hitl(struct tcp_pcb *tpcb);
  */
 void rest_api_handle_post_hitl(struct tcp_pcb *tpcb, char *body, int len);
 
+/**
+ * @brief Handle GET /api/v1/interaction - Human vs robot physics mode
+ * Returns {"mode":"human"} or {"mode":"robot"}
+ */
+void rest_api_handle_get_interaction(struct tcp_pcb *tpcb);
+
+/**
+ * @brief Handle POST /api/v1/interaction
+ * Body: {"mode":"human"} or {"mode":"robot"} (also accepts 0/1)
+ */
+void rest_api_handle_post_interaction(struct tcp_pcb *tpcb, char *body, int len);
+
 #endif /* NETWORK_REST_H */

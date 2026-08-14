@@ -17,11 +17,11 @@ extern "C" {
 
 /*
  * HIL torque: position, ω_filt (quiet/Coulomb), ω_raw (viscous lead),
- * quiet, settle_residual. quiet / settle_residual: free-space b=τc=0;
- * walls always apply.
+ * quiet, settle_residual, robot_mode. quiet / settle_residual: free-space
+ * b=τc=0; walls always apply. robot_mode: no Coulomb schedule / ε.
  */
 float valve_physics_calculate_torque_hil(const struct valve_config *, float,
-    float, float, bool, bool);
+    float, float, bool, bool, bool);
 
 float valve_physics_clamp_torque(float, float);
 

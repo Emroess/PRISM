@@ -36,6 +36,7 @@ static volatile float velocity_lpf_hz = VALVE_VELOCITY_LPF_CUTOFF_HZ;
 static volatile uint8_t quiet_gate_enable = VALVE_QUIET_GATE_DEFAULT_ENABLE;
 static volatile float quiet_enter_rad_s = VALVE_QUIET_ENTER_DEFAULT_RAD_S;
 static volatile float quiet_exit_rad_s = VALVE_QUIET_EXIT_DEFAULT_RAD_S;
+static volatile uint8_t interaction_mode = VALVE_INTERACTION_MODE_DEFAULT;
 /* Residual settle + ring detect */
 static uint8_t settle_armed = 0;
 static uint16_t settle_timeout_count = 0;
@@ -575,8 +576,14 @@ static void valve_fdcan_error_callback(uint8_t error_code, void *context)
 {
 	struct valve_state *state = (struct valve_state *)context;
 	
-	(void)error_code;  /* Could log specific error, but minimal for ISR */
-	
+	/* Protocol / warning / passive are not fatal (CAN FD bit errors). */
+	if (error_code != FDCAN_ERR_BUS_OFF) {
+		if (state != NULL) {
+			state->diag.last_can_status = error_code;
+		}
+		return;
+	}
+
 	/* Stop TIM6 immediately */
 	TIM6->CR1 &= ~TIM_CR1_CEN;
 	
@@ -893,7 +900,11 @@ status_t valve_haptic_start(struct valve_context *ctx)
 	valve_velocity_filters_seed(state->omega_rad_s);
 	state->prev_omega_rad_s = state->omega_rad_s;
 	state->alpha_rad_s2 = 0.0f;
-	state->quiet_active = (state->omega_rad_s == 0.0f) ? 1U : 0U;
+	if (interaction_mode == VALVE_INTERACTION_MODE_ROBOT) {
+		state->quiet_active = 0U;
+	} else {
+		state->quiet_active = (state->omega_rad_s == 0.0f) ? 1U : 0U;
+	}
 
 	/* Clear diagnostics */
 	state->diag.loop_count = 0;
@@ -1193,7 +1204,11 @@ valve_process_encoder_data(struct valve_state *state)
 			    (float)VALVE_CONTROL_LOOP_HZ;
 		}
 	}
-	valve_update_quiet_gate(state);
+	if (interaction_mode == VALVE_INTERACTION_MODE_ROBOT) {
+		state->quiet_active = 0U;
+	} else {
+		valve_update_quiet_gate(state);
+	}
 	state->diag.can_retry_count = 0;
 
 	return STATUS_OK;
@@ -1340,10 +1355,17 @@ valve_haptic_process(struct valve_context *ctx)
 	state->command_position_deg = state->position_deg;
 
 	/* === TORQUE COMMAND PATH === */
-	bool settle_residual = valve_update_settle_residual(state, cfg);
-	valve_update_quiet_gate(state);
-	if (state->quiet_active != 0U) {
-		settle_residual = false;
+	bool robot_mode = (interaction_mode == VALVE_INTERACTION_MODE_ROBOT);
+	bool settle_residual = false;
+
+	if (robot_mode) {
+		state->quiet_active = 0U;
+	} else {
+		settle_residual = valve_update_settle_residual(state, cfg);
+		valve_update_quiet_gate(state);
+		if (state->quiet_active != 0U) {
+			settle_residual = false;
+		}
 	}
 
 	float torque_nm = valve_physics_calculate_torque_hil(cfg,
@@ -1351,7 +1373,8 @@ valve_haptic_process(struct valve_context *ctx)
 	    state->omega_rad_s,
 	    state->omega_raw_rad_s,
 	    state->quiet_active != 0U,
-	    settle_residual);
+	    settle_residual,
+	    robot_mode);
 
 	float torque_limit = 0.0f;
 	if (cfg->torque_limit_nm > 0.0f) {
@@ -1363,7 +1386,9 @@ valve_haptic_process(struct valve_context *ctx)
 	    torque_limit);
 	torque_nm = clamped_torque;
 
-	if (state->quiet_active != 0U || settle_residual) {
+	if (robot_mode) {
+		/* No torque LPF: transients are part of the force profile */
+	} else if (state->quiet_active != 0U || settle_residual) {
 		/* snap filter — no residual LPF memory buzz */
 	} else {
 		float prev_filtered = state->filtered_torque_nm;
@@ -1639,6 +1664,38 @@ float
 valve_haptic_get_quiet_exit(void)
 {
 	return quiet_exit_rad_s;
+}
+
+status_t
+valve_haptic_set_interaction_mode(uint8_t mode)
+{
+	if (mode != VALVE_INTERACTION_MODE_HUMAN &&
+	    mode != VALVE_INTERACTION_MODE_ROBOT) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
+
+	interaction_mode = mode;
+	if (mode == VALVE_INTERACTION_MODE_ROBOT) {
+		if (active_valve_context != NULL) {
+			active_valve_context->state.quiet_active = 0U;
+		}
+		settle_armed = 0U;
+		settle_timeout_count = 0U;
+		settle_peak_abs = 0.0f;
+		wall_release_armed = 0U;
+		free_space_restore = 0U;
+		rest_latch_count = 0;
+		ring_last_sign = 0;
+		ring_flip_count = 0U;
+		ring_flip_window = 0U;
+	}
+	return STATUS_OK;
+}
+
+uint8_t
+valve_haptic_get_interaction_mode(void)
+{
+	return interaction_mode;
 }
 
 /*

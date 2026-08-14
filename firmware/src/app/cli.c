@@ -198,6 +198,9 @@ cli_cmd_valve_status(struct cli_context *ctx, int argc, char *argv[])
 	
 	uart_printf(ctx->uart, "\r\nValve Status:\r\n");
 	uart_printf(ctx->uart, "State:              %s\r\n", state_str);
+	uart_printf(ctx->uart, "Interaction:        %s\r\n",
+	    valve_haptic_get_interaction_mode() == VALVE_INTERACTION_MODE_ROBOT ?
+	    "robot (physics training)" : "human (smoothed haptics)");
 	uart_printf(ctx->uart, "Position:           %.3f deg\r\n", state->position_deg);
 	uart_printf(ctx->uart, "Velocity:           %.3f rad/s\r\n", state->omega_rad_s);
 	uart_printf(ctx->uart, "Torque:             %.3f N·m\r\n", state->torque_nm);
@@ -576,6 +579,71 @@ cli_cmd_valve_vel_lpf(struct cli_context *ctx, int argc, char *argv[])
 		} else {
 			uart_printf(ctx->uart, "\r\nVelocity LPF cutoff set to %.1f Hz\r\n",
 			    hz);
+		}
+	}
+	(void)ctx;
+	return 0;
+}
+
+static int
+cli_cmd_valve_mode(struct cli_context *ctx, int argc, char *argv[])
+{
+	uint8_t cur = valve_haptic_get_interaction_mode();
+	const char *cur_name = (cur == VALVE_INTERACTION_MODE_ROBOT) ?
+	    "robot" : "human";
+
+	if (argc < 2) {
+		uart_printf(ctx->uart,
+		    "\r\nInteraction mode: %s\r\n", cur_name);
+		if (cur == VALVE_INTERACTION_MODE_ROBOT) {
+			uart_write_string(ctx->uart,
+			    "  Stripped: quiet gate, Coulomb speed schedule,\r\n"
+			    "            epsilon smoothing, settle blank, torque LPF\r\n"
+			    "  Coulomb applies at rest (stiction-accurate)\r\n",
+			    256);
+		} else {
+			uart_write_string(ctx->uart,
+			    "  Human haptics: quiet gate, Coulomb schedule,\r\n"
+			    "                 epsilon, settle blank, torque LPF ON\r\n",
+			    200);
+		}
+		uart_write_string(ctx->uart,
+		    "Usage: valve_mode <human|robot>\r\n", 80);
+		return 0;
+	}
+
+	{
+		uint8_t mode;
+		char c = argv[1][0];
+
+		if (c == 'r' || c == 'R' || c == '1') {
+			mode = VALVE_INTERACTION_MODE_ROBOT;
+		} else if (c == 'h' || c == 'H' || c == '0') {
+			mode = VALVE_INTERACTION_MODE_HUMAN;
+		} else {
+			uart_write_string(ctx->uart,
+			    "\r\nUsage: valve_mode <human|robot>\r\n", 80);
+			return 0;
+		}
+
+		if (valve_haptic_set_interaction_mode(mode) != STATUS_OK) {
+			uart_write_string(ctx->uart,
+			    "\r\nFailed to set interaction mode\r\n", 80);
+			return 0;
+		}
+
+		if (mode == VALVE_INTERACTION_MODE_ROBOT) {
+			uart_write_string(ctx->uart,
+			    "\r\nInteraction mode: robot\r\n", 80);
+			uart_write_string(ctx->uart,
+			    "  Quiet gate, Coulomb speed schedule, epsilon,\r\n"
+			    "  settle blank, and torque LPF disabled\r\n",
+			    160);
+		} else {
+			uart_write_string(ctx->uart,
+			    "\r\nInteraction mode: human\r\n", 80);
+			uart_write_string(ctx->uart,
+			    "  Haptic smoothing restored\r\n", 80);
 		}
 	}
 	(void)ctx;
@@ -1104,6 +1172,34 @@ cli_cmd_can_status(struct cli_context *ctx, int argc, char *argv[])
 	uart_printf(ctx->uart, "RX count:        %lu\r\n", (unsigned long)bus_status.rx_count);
 	uart_printf(ctx->uart, "Error count:     %lu\r\n", (unsigned long)bus_status.error_count);
 	uart_printf(ctx->uart, "Last error code: 0x%08lX\r\n", (unsigned long)bus_status.last_error_code);
+	{
+		uint32_t psr = 0U;
+		uint8_t tec = 0U;
+		uint8_t rec = 0U;
+		static const char *lec_names[] = {
+			"none", "stuff", "form", "ack", "bit1", "bit0", "crc", "no-change"
+		};
+		uint32_t lec;
+
+		(void)fdcan_get_protocol_status(ctx->can, &psr);
+		(void)fdcan_get_error_counters(ctx->can, &tec, &rec);
+		lec = psr & 0x7U;
+		uart_printf(ctx->uart, "TEC/REC:         %u / %u\r\n",
+		    (unsigned int)tec, (unsigned int)rec);
+		uart_printf(ctx->uart, "PSR:             0x%08lX  LEC=%s%s%s%s\r\n",
+		    (unsigned long)psr,
+		    lec_names[lec],
+		    (psr & (1U << 5)) ? " EP" : "",
+		    (psr & (1U << 6)) ? " EW" : "",
+		    (psr & (1U << 7)) ? " BO" : "");
+		uart_printf(ctx->uart, "STM32 nominal:   %lu bps\r\n",
+		    (unsigned long)BOARD_FDCAN1_BITRATE);
+		uart_printf(ctx->uart, "STM32 data/BRS:  %lu bps\r\n",
+		    (unsigned long)BOARD_FDCAN1_DATA_BITRATE);
+		uart_write_string(ctx->uart,
+		    "ODrive must use can.config.baud_rate=nominal,\r\n"
+		    "can.config.data_baud_rate=data, tx_brs=1\r\n", 100);
+	}
 	return 0;
 }
 
@@ -1294,6 +1390,7 @@ const struct cli_command cli_commands[] = {
 	{"valve_energy", cli_cmd_valve_energy, "Show passivity energy tank status"},
 	{"valve_epsilon", cli_cmd_valve_epsilon, "Set smoothing epsilon"},
 	{"valve_friction", cli_cmd_valve_friction, "Set Coulomb friction (N·m)"},
+	{"valve_mode", cli_cmd_valve_mode, "Interaction: human (haptics) or robot (training)"},
 	{"valve_preset", cli_cmd_valve_preset, "Load a valve preset configuration"},
 	{"valve_preset_save", cli_cmd_valve_preset_save, "Save current configuration as preset"},
 	{"valve_preset_show", cli_cmd_valve_preset_show, "Show all valve presets and their parameters"},

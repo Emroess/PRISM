@@ -320,6 +320,7 @@ void rest_api_handle_get_status(struct tcp_pcb *tpcb) {
     "\"vel_rad_s\":%s,"
     "\"torque_nm\":%s,"
     "\"status\":%d,"
+    "\"interaction\":\"%s\","
     "\"temp_fet\":%s,"
     "\"temp_motor\":%s,"
     "\"bus_voltage\":%s,"
@@ -333,6 +334,8 @@ void rest_api_handle_get_status(struct tcp_pcb *tpcb) {
     vel_buf,
     torque_buf,
     st->status,
+    (valve_haptic_get_interaction_mode() == VALVE_INTERACTION_MODE_ROBOT) ?
+	"robot" : "human",
     fet_buf,
     motor_buf,
     bus_buf,
@@ -1353,5 +1356,92 @@ void rest_api_handle_post_hitl(struct tcp_pcb *tpcb, char *body, int len)
   const char *mode_str = enabled_val ? "hitl" : "odrive";
   char resp[64];
   snprintf(resp, sizeof(resp), "{\"status\":\"ok\",\"mode\":\"%s\"}", mode_str);
+  rest_send_response(tpcb, 200, "application/json", resp);
+}
+
+/*
+ * rest_api_handle_get_interaction - GET /api/v1/interaction
+ *
+ * Returns {"mode":"human"} or {"mode":"robot"}
+ */
+void rest_api_handle_get_interaction(struct tcp_pcb *tpcb)
+{
+  uint8_t mode = valve_haptic_get_interaction_mode();
+  const char *name = (mode == VALVE_INTERACTION_MODE_ROBOT) ? "robot" : "human";
+  char resp[48];
+
+  snprintf(resp, sizeof(resp), "{\"mode\":\"%s\"}", name);
+  rest_send_response(tpcb, 200, "application/json", resp);
+}
+
+/*
+ * rest_api_handle_post_interaction - POST /api/v1/interaction
+ *
+ * Body: {"mode":"human"} or {"mode":"robot"} (also 0/1)
+ */
+void rest_api_handle_post_interaction(struct tcp_pcb *tpcb, char *body, int len)
+{
+  if (body == NULL || len <= 0) {
+    rest_send_json_error(tpcb, 400, "invalid_request");
+    return;
+  }
+
+  jsmn_parser p;
+  jsmntok_t t[MAX_JSON_TOKENS];
+
+  jsmn_init(&p);
+  int r = jsmn_parse(&p, body, len, t, MAX_JSON_TOKENS);
+  if (r < 0) {
+    rest_send_json_error(tpcb, 400, "json_parse_error");
+    return;
+  }
+
+  bool has_mode = false;
+  uint8_t mode_val = VALVE_INTERACTION_MODE_HUMAN;
+  char tok_buf[16];
+
+  for (int i = 1; i < r; i++) {
+    if (t[i].type != JSMN_STRING) {
+      continue;
+    }
+    if ((i + 1) >= r) {
+      rest_send_json_error(tpcb, 400, "malformed_json");
+      return;
+    }
+
+    jsmntok_t *val_tok = &t[i + 1];
+
+    if (jsoneq(body, &t[i], "mode") == 0) {
+      if (!rest_token_string(body, val_tok, tok_buf, sizeof(tok_buf))) {
+        rest_send_json_error(tpcb, 400, "invalid_mode");
+        return;
+      }
+      if (strcmp(tok_buf, "robot") == 0 || strcmp(tok_buf, "1") == 0) {
+        mode_val = VALVE_INTERACTION_MODE_ROBOT;
+      } else if (strcmp(tok_buf, "human") == 0 || strcmp(tok_buf, "0") == 0) {
+        mode_val = VALVE_INTERACTION_MODE_HUMAN;
+      } else {
+        rest_send_json_error(tpcb, 400, "invalid_mode_value");
+        return;
+      }
+      has_mode = true;
+      i++;
+    }
+  }
+
+  if (!has_mode) {
+    rest_send_json_error(tpcb, 400, "missing_mode");
+    return;
+  }
+
+  status_t st = valve_haptic_set_interaction_mode(mode_val);
+  if (st != STATUS_OK) {
+    rest_send_json_error(tpcb, rest_map_status_to_http(st), "mode_switch_failed");
+    return;
+  }
+
+  const char *name = (mode_val == VALVE_INTERACTION_MODE_ROBOT) ? "robot" : "human";
+  char resp[64];
+  snprintf(resp, sizeof(resp), "{\"status\":\"ok\",\"mode\":\"%s\"}", name);
   rest_send_response(tpcb, 200, "application/json", resp);
 }
