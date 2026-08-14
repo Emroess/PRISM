@@ -72,6 +72,7 @@ main(void)
 	can = fdcan_get_handle();
 	can_cfg.kernel_hz = BOARD_FDCAN_KERNEL_HZ;
 	can_cfg.bitrate = BOARD_FDCAN1_BITRATE;
+	can_cfg.data_bitrate = BOARD_FDCAN1_DATA_BITRATE;
 	can_cfg.sample_point_percent = BOARD_FDCAN1_SAMPLE_POINT_PERCENT;
 	can_cfg.loopback_mode = FDCAN_MODE_NORMAL;
 

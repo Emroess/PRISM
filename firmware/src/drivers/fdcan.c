@@ -34,6 +34,8 @@
 #define FDCAN_TX_HEADER_RTR            (1U << 29U)
 #define FDCAN_TX_HEADER_ID_Pos         18U
 #define FDCAN_TX_HEADER_DLC_Pos        16U
+#define FDCAN_TX_HEADER_BRS            (1U << 20U)
+#define FDCAN_TX_HEADER_FDF            (1U << 21U)
 
 #define FDCAN_RX_HEADER_XTD            (1U << 30U)
 #define FDCAN_RX_HEADER_XTD_MASK       0x1FFFFFFFU
@@ -166,10 +168,19 @@ fdcan_init(struct fdcan_handle *h, const struct fdcan_config *cfg)
 		return STATUS_ERROR_INVALID_CONFIG;
 	}
 
-	/* Calculate bit timing */
+	/* Calculate nominal bit timing */
 	status = fdcan_calculate_timing(cfg->kernel_hz, cfg->bitrate,
 	                                cfg->sample_point_percent,
 	                                &h->timing);
+	if (status != STATUS_OK) {
+		return status;
+	}
+
+	/* Calculate data bit timing */
+	struct fdcan_bit_timing data_timing;
+	status = fdcan_calculate_timing(cfg->kernel_hz, cfg->data_bitrate,
+	                                cfg->sample_point_percent,
+	                                &data_timing);
 	if (status != STATUS_OK) {
 		return status;
 	}
@@ -206,15 +217,20 @@ fdcan_init(struct fdcan_handle *h, const struct fdcan_config *cfg)
 	/* Clear the portion of message RAM we use */
 	fdcan_clear_message_ram();
 
-	/* Configure bit timing */
 	h->instance->NBTP = ((h->timing.sjw - 1U) << FDCAN_NBTP_NSJW_Pos) |
 	                    ((h->timing.tseg1 - 1U) << FDCAN_NBTP_NTSEG1_Pos) |
 	                    ((h->timing.tseg2 - 1U) << FDCAN_NBTP_NTSEG2_Pos) |
 	                    ((h->timing.prescaler - 1U) << FDCAN_NBTP_NBRP_Pos);
 
-	/* Configure for Classic CAN mode (not FD) */
-	h->instance->CCCR &= ~FDCAN_CCCR_FDOE;  /* Disable FD operation */
-	h->instance->CCCR &= ~FDCAN_CCCR_BRSE;  /* No bit rate switching */
+	/* Configure data bit timing */
+	h->instance->DBTP = ((data_timing.sjw - 1U) << FDCAN_DBTP_DSJW_Pos) |
+	                    ((data_timing.tseg1 - 1U) << FDCAN_DBTP_DTSEG1_Pos) |
+	                    ((data_timing.tseg2 - 1U) << FDCAN_DBTP_DTSEG2_Pos) |
+	                    ((data_timing.prescaler - 1U) << FDCAN_DBTP_DBRP_Pos);
+
+	/* Configure for CAN-FD mode with Bit Rate Switching */
+	h->instance->CCCR |= FDCAN_CCCR_FDOE;  /* Enable FD operation */
+	h->instance->CCCR |= FDCAN_CCCR_BRSE;  /* Enable bit rate switching */
 
 	/* CRITICAL: Disable automatic retransmission in all modes to prevent
 	 * retransmission storms during errors. High-rate control loops must
@@ -363,7 +379,8 @@ fdcan_transmit(struct fdcan_handle *h, const struct can_frame *frame,
 		header0 |= FDCAN_TX_HEADER_RTR;
 	}
 
-	header1 = (frame->dlc << FDCAN_TX_HEADER_DLC_Pos);
+	header1 = (frame->dlc << FDCAN_TX_HEADER_DLC_Pos) |
+	          FDCAN_TX_HEADER_FDF | FDCAN_TX_HEADER_BRS;
 
 	/* Write header */
 	msg_ram[0] = header0;

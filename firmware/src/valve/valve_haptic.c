@@ -587,7 +587,8 @@ static void valve_fdcan_error_callback(uint8_t error_code, void *context)
 	
 	/* Set error state */
 	state->status = VALVE_STATE_ERROR;
-	        state->diag.last_can_status = STATUS_ERROR_TIMEOUT;
+	state->diag.safety.last_error_code = 103;
+	state->diag.last_can_status = error_code;
 }
 
 /* Initialize valve haptic system with ODrive handle and default configuration for safe operation */
@@ -868,6 +869,7 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		ring_last_sign = 0;
 		ring_flip_count = 0U;
 		ring_flip_window = 0U;
+		runaway_omega_count = 0U;
 		float turn_to_rad = state->degrees_per_turn * VALVE_DEG_TO_RAD;
 		state->omega_rad_s = est.velocity * turn_to_rad;
 		if (state->omega_rad_s < (0.1f * VALVE_DEG_TO_RAD) &&
@@ -1297,7 +1299,8 @@ valve_haptic_process(struct valve_context *ctx)
 			if (can_simple_get_cached_heartbeat(state->odrive, &hb, &hb_age_ms) == STATUS_OK) {
 				state->diag.heartbeat_age_ms = hb_age_ms;
 				if (hb.axis_error != 0) {
-					/* ODrive has an error - emergency stop valve */
+					/* ODrive has an error - save it before emergency stop valve overwrites it */
+					state->diag.safety.last_error_code = hb.axis_error;
 					valve_haptic_emergency_stop(ctx);
 					return;
 				}
@@ -1312,6 +1315,7 @@ valve_haptic_process(struct valve_context *ctx)
 				abs_w = -abs_w;
 			}
 			if (abs_w >= VALVE_RUNAWAY_OMEGA_HARD_RAD_S) {
+				state->diag.safety.last_error_code = 101;
 				runaway_omega_count = 0U;
 				valve_haptic_emergency_stop(ctx);
 				return;
@@ -1321,6 +1325,7 @@ valve_haptic_process(struct valve_context *ctx)
 					runaway_omega_count++;
 				}
 				if (runaway_omega_count >= VALVE_RUNAWAY_HOLD_SAMPLES) {
+					state->diag.safety.last_error_code = 102;
 					runaway_omega_count = 0U;
 					valve_haptic_emergency_stop(ctx);
 					return;

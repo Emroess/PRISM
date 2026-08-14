@@ -172,6 +172,7 @@ enum board_gpio_port {
 #define BOARD_FDCAN1_RX_AF      9U
 
 #define BOARD_FDCAN1_BITRATE    1000000U    /* 1 Mbps */
+#define BOARD_FDCAN1_DATA_BITRATE 5000000U  /* 5 Mbps (FD Data Phase) */
 #define BOARD_FDCAN1_SAMPLE_POINT_PERCENT 87U
 
 /*

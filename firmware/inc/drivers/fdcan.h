@@ -51,6 +51,7 @@ struct can_frame {
 struct fdcan_config {
 	uint32_t kernel_hz;            /* FDCAN kernel clock frequency */
 	uint32_t bitrate;              /* Nominal bit rate (e.g., 500000) */
+	uint32_t data_bitrate;         /* Data bit rate (e.g., 5000000) */
 	uint32_t sample_point_percent; /* Sample point (e.g., 87 for 87.5%) */
 	uint8_t  loopback_mode;        /* FDCAN_MODE_* constant */
 };
