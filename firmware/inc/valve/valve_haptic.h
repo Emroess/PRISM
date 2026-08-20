@@ -70,8 +70,10 @@ struct can_simple_handle;
  *   blank, Coulomb speed schedule, ε sign smoothing, output torque LPF.
  *
  * ROBOT: those human-feel hacks are stripped so Coulomb is present at
- *   rest (stiction-accurate). Viscous + Coulomb + walls stay; velocity
- *   filter and passivity tank stay for signal quality and safety.
+ *   rest (stiction-accurate). End stops keep viscous, drop Coulomb
+ *   chatter, and apply stiffness-only (−k·pen) floored at Coulomb so
+ *   force does not dip at 0° / open. Velocity filter and passivity
+ *   tank stay for signal quality and safety.
  */
 
 /* Valve configuration (loaded from preset) */

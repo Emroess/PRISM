@@ -106,7 +106,9 @@ static inline float valve_hil_compute_wall_torque(
     float theta_off,
     float theta_on,
     float kw,
-    float cw)
+    float cw,
+    bool robot_mode,
+    float tau_c_preload)
 {
 	float penetration;
 	float k_eff;
@@ -143,21 +145,31 @@ static inline float valve_hil_compute_wall_torque(
 		penetration = pen_soft;
 	}
 
-	/*
-	 * Holding steady past the stop: |ω| is small but noisy. Killing spring
-	 * whenever into_wall<0 (old HOLD=0.12) flickered k on/off → strong
-	 * in-place vibration. Only exit-kill spring at clear exit speed.
-	 */
-	if (into_wall < 0.0f &&
+	if (robot_mode) {
+		/* Stiffness only. −c·ω on noisy encoder buzzes against the stop. */
+		c_eff = 0.0f;
+	} else if (into_wall < 0.0f &&
 	    valve_fabsf(omega_rad_s) > VALVE_WALL_EXIT_OMEGA_RAD_S) {
 		k_eff = 0.0f;
 		c_eff = cw * VALVE_WALL_EXIT_C_MULT;
-	} else if (valve_fabsf(omega_rad_s) < VALVE_WALL_DAMP_DEADBAND_RAD_S) {
-		/* Pure static force while holding — no −c·ω noise */
+	} else if (valve_fabsf(omega_rad_s) <
+	    VALVE_WALL_DAMP_DEADBAND_RAD_S) {
 		c_eff = 0.0f;
 	}
 
 	tau = (-k_eff * penetration) + (-c_eff * omega_turns_per_s);
+
+	/*
+	 * Robot: floor |wall| at Coulomb so handing off from free-space
+	 * friction does not dip to ~0 at the boundary (k·pen is tiny).
+	 */
+	if (robot_mode && tau_c_preload > 0.0f) {
+		if (valve_fabsf(tau) < tau_c_preload) {
+			tau = (penetration >= 0.0f) ?
+			    -tau_c_preload : tau_c_preload;
+		}
+	}
+
 	return valve_clamp_sym(tau, valve_auto_wall_tau_max());
 }
 
@@ -187,15 +199,25 @@ static inline float valve_hil_compute_virtual_torque(
 	float pen;
 	float free_space;
 	float free_cap;
+	float tau_c_preload;
 
 	(void)omega_raw_rad_s; /* raw-ω lead disabled (runaway at 0.3/0.3) */
 
 	pen = valve_hil_compute_wall_penetration(theta_turns, theta_off,
 	    theta_on);
 
-	/* In wall: free-space off (wall-only) */
+	/*
+	 * Inside the stop:
+	 *   Human: drop b and τc (clean dead end; wall damper handles it).
+	 *   Robot: keep viscous (drops with ω, no chatter) but drop Coulomb
+	 *   (hard sign(ω) buzzes at rest). Wall is −k·pen floored at τc so
+	 *   the Coulomb handoff does not dip at 0° / open.
+	 */
+	tau_c_preload = tau_c;
 	if (valve_fabsf(pen) >= 1e-6f) {
-		b = 0.0f;
+		if (!robot_mode) {
+			b = 0.0f;
+		}
 		tau_c = 0.0f;
 	}
 
@@ -262,7 +284,8 @@ static inline float valve_hil_compute_virtual_torque(
 
 	omega_turns_s = (omega_use * VALVE_RAD_TO_DEG) / degrees_per_turn;
 	wall_torque = valve_hil_compute_wall_torque(
-	    theta_turns, omega_turns_s, theta_off, theta_on, kw, cw);
+	    theta_turns, omega_turns_s, theta_off, theta_on, kw, cw,
+	    robot_mode, tau_c_preload);
 
 	total_torque = viscous_torque + friction_torque + wall_torque;
 	total_torque = valve_fmaxf(-max_torque, valve_fminf(max_torque, total_torque));

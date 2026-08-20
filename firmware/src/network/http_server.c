@@ -51,6 +51,10 @@ struct http_state {
 	char uri[HTTP_URI_MAX_LEN];
 	char auth_header[128];
 	uint8_t in_use;
+	/* Large-body TX (index HTML exceeds one TCP_SND_BUF) */
+	const char *tx_body;
+	uint16_t tx_off;
+	uint16_t tx_len;
 };
 
 static struct tcp_pcb *http_pcb;
@@ -88,6 +92,9 @@ static struct http_state *http_state_alloc(void);
 static void http_pool_init(void);
 static bool handle_request(struct tcp_pcb *, struct http_state *);
 static void send_response(struct tcp_pcb *, int, const char *, const char *);
+static err_t http_sent(void *, struct tcp_pcb *, u16_t);
+static void http_flush_tx(struct tcp_pcb *, struct http_state *);
+static void http_send_index(struct tcp_pcb *, struct http_state *);
 
 const char index_html[] = 
 "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
@@ -497,7 +504,7 @@ http_process_buffer(struct tcp_pcb *tpcb, struct http_state *hs)
 	if (hs->headers_parsed && hs->req_len >= hs->expected_len) {
 		hs->request_complete = 1U;
 		done = handle_request(tpcb, hs);
-		if (done && !hs->closed)
+		if (hs->in_use != 0U && done && !hs->closed)
 			http_close_conn(tpcb, hs);
 	}
 }
@@ -571,6 +578,7 @@ http_accept(void *arg, struct tcp_pcb *newpcb, err_t err)
   
   tcp_arg(newpcb, hs);
   tcp_recv(newpcb, http_recv);
+  tcp_sent(newpcb, http_sent);
   tcp_err(newpcb, http_err);
   tcp_poll(newpcb, http_poll, 4); /* Poll every 2s */
   
@@ -655,6 +663,11 @@ http_poll(void *arg, struct tcp_pcb *tpcb)
 	if (hs == NULL)
 		return ERR_OK;
 
+	if (hs->tx_body != NULL) {
+		http_flush_tx(tpcb, hs);
+		return ERR_OK;
+	}
+
 	now = board_get_systick_ms();
 	if ((uint32_t)(now - hs->last_activity_ms) > HTTP_CONN_TIMEOUT_MS) {
 		http_send_json_error(tpcb, 408, "timeout");
@@ -706,6 +719,98 @@ static void http_send_unauthorized(struct tcp_pcb *tpcb) {
   tcp_write(tpcb, header, hdr_len, TCP_WRITE_FLAG_COPY);
   tcp_write(tpcb, body, strlen(body), TCP_WRITE_FLAG_COPY);
   tcp_output(tpcb);
+}
+
+static err_t
+http_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
+{
+	struct http_state *hs = (struct http_state *)arg;
+
+	(void)len;
+	if (hs == NULL) {
+		return ERR_OK;
+	}
+	hs->last_activity_ms = board_get_systick_ms();
+	http_flush_tx(tpcb, hs);
+	return ERR_OK;
+}
+
+static void
+http_flush_tx(struct tcp_pcb *tpcb, struct http_state *hs)
+{
+	if (hs == NULL || tpcb == NULL || hs->tx_body == NULL) {
+		return;
+	}
+
+	while (hs->tx_off < hs->tx_len) {
+		u16_t avail = tcp_sndbuf(tpcb);
+		u16_t left;
+		u16_t n;
+		err_t err;
+
+		if (avail == 0U) {
+			break;
+		}
+		left = (u16_t)(hs->tx_len - hs->tx_off);
+		n = left;
+		if (n > avail) {
+			n = avail;
+		}
+		if (n > TCP_MSS) {
+			n = TCP_MSS;
+		}
+		err = tcp_write(tpcb, hs->tx_body + hs->tx_off, n, 0);
+		if (err == ERR_MEM) {
+			break;
+		}
+		if (err != ERR_OK) {
+			break;
+		}
+		hs->tx_off = (uint16_t)(hs->tx_off + n);
+	}
+	tcp_output(tpcb);
+
+	if (hs->tx_off >= hs->tx_len) {
+		hs->tx_body = NULL;
+		http_close_conn(tpcb, hs);
+	}
+}
+
+static void
+http_send_index(struct tcp_pcb *tpcb, struct http_state *hs)
+{
+	char header[192];
+	int hdr_len;
+	uint16_t body_len;
+	err_t err;
+
+	if (tpcb == NULL || hs == NULL) {
+		return;
+	}
+
+	body_len = (uint16_t)strlen(index_html);
+	hdr_len = snprintf(header, sizeof(header),
+	    "HTTP/1.1 200 OK\r\n"
+	    "Content-Type: text/html; charset=UTF-8\r\n"
+	    "Content-Length: %u\r\n"
+	    "Connection: close\r\n"
+	    "Cache-Control: no-store\r\n"
+	    "\r\n",
+	    (unsigned int)body_len);
+	if (hdr_len < 0) {
+		return;
+	}
+
+	err = tcp_write(tpcb, header, (u16_t)hdr_len, TCP_WRITE_FLAG_COPY);
+	if (err != ERR_OK) {
+		http_send_json_error(tpcb, 503, "send_failed");
+		return;
+	}
+
+	hs->tx_body = index_html;
+	hs->tx_off = 0;
+	hs->tx_len = body_len;
+	http_flush_tx(tpcb, hs);
 }
 
 static void send_response(struct tcp_pcb *tpcb, int code, const char *content_type, const char *body) {
@@ -790,8 +895,10 @@ handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
       rest_api_handle_get_hitl(tpcb);
     } else if (strcmp(hs->uri, "/api/v1/interaction") == 0) {
       rest_api_handle_get_interaction(tpcb);
-    } else if (strcmp(hs->uri, "/") == 0) {
-      rest_api_handle_get_index(tpcb);
+    } else if (strcmp(hs->uri, "/") == 0 ||
+               strcmp(hs->uri, "/index.html") == 0) {
+      http_send_index(tpcb, hs);
+      return false;
     } else {
       http_send_json_error(tpcb, 404, "not_found");
     }

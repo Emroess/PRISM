@@ -90,6 +90,7 @@ Optimized so a person feels a premium, quiet handle:
 | Coulomb speed schedule | On | τc ramps 0→1 so slow turns are purely viscous |
 | Coulomb ε smoothing | On | Soft sign around 0 rad/s to stop chatter |
 | Output torque LPF | On | Softens wall-entry / quiet-exit torque steps |
+| Wall free-space blank | On | Zeros b/τc inside the stops for a clean dead end |
 
 A robot trained in this mode learns the **wrong** physics: a tiny force starts the valve because friction is scaled to ~0 near rest. On a rusted industrial valve the policy then either stalls or slams.
 
@@ -106,11 +107,12 @@ Stripped (the Sim2Real domain-gap sources):
 3. **Coulomb speed schedule** — τc applies at 100% regardless of speed. Low-speed chatter is accepted; a 1 kHz Franka loop reads it as high resistance / stiction.
 4. **Coulomb ε smoothing** — hard `sign(ω)` so breakaway is a real step, not a soft yield.
 5. **Output torque LPF** — torque transients are part of the force profile the policy should see.
+6. **Wall as stiffness-only** — against 0° / open, robot mode keeps viscous (it goes to 0 with speed, no chatter) but drops Coulomb and wall damping. The stop is `−k·pen` floored at Coulomb so resistance does not dip at the boundary. Human still uses damper + exit-kill and zeros free-space in the wall.
 
 Kept on purpose (not “feel” hacks):
 
 * Viscous (`b`) + Coulomb (`τc`) static model — still the only friction law; easy to tune
-* Virtual walls (stiffness / damping / soft penetration)
+* Virtual walls — robot: stiffness + Coulomb floor; human: spring-damper with anti-chatter
 * Velocity low-pass — encoder noise would otherwise inject fake high-frequency torque
 * Passivity energy tank — safety against runaway, not a feel filter
 * Soft free-space saturation — motor stability at high hand/arm speed
