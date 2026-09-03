@@ -37,11 +37,23 @@
  * Control Loop Configuration
  * ===========================================================================
  */
-#define VALVE_CONTROL_LOOP_HZ          1000U
+/*
+ * Publish rate: torque is computed and sent every tick.
+ * 8 kHz matches typical ODrive S1 current-loop rate. Encoder CAN-Simple
+ * cyclic messages cannot go faster than 1 ms, so θ/ω are held between
+ * broadcasts. Bit clock is independent (CAN FD data phase 5 Mbps).
+ */
+#define VALVE_CONTROL_LOOP_HZ          8000U
+#define VALVE_ENCODER_BROADCAST_HZ     1000U
 #define VALVE_CONTROL_LOOP_PERIOD_S    (1.0f / (float)VALVE_CONTROL_LOOP_HZ)
 #define VALVE_CONTROL_LOOP_PERIOD_MS   (1000U / VALVE_CONTROL_LOOP_HZ)
 #define VALVE_CONTROL_LOOP_PERIOD_US   (1000000U / VALVE_CONTROL_LOOP_HZ)
 #define VALVE_LOOP_DT_S                VALVE_CONTROL_LOOP_PERIOD_S
+/* Convert a millisecond interval to loop ticks. Saturates at uint16. */
+#define VALVE_MS_TO_SAMPLES(ms) \
+	((uint16_t)((((uint32_t)(ms) * (uint32_t)VALVE_CONTROL_LOOP_HZ) / 1000U) \
+	    > 65535U ? 65535U : \
+	    (((uint32_t)(ms) * (uint32_t)VALVE_CONTROL_LOOP_HZ) / 1000U)))
 
 /* TIM6 timer configuration */
 #define TIM6_PRESCALER                 199U    /* 200MHz -> 1MHz */
@@ -100,7 +112,7 @@
 #define VALVE_ENCODER_DELTA_MAX_TURNS        0.025f /* ~9°/sample glitch reject */
 #define VALVE_RUNAWAY_OMEGA_RAD_S            10.0f  /* sustained → ESTOP */
 #define VALVE_RUNAWAY_OMEGA_HARD_RAD_S       18.0f  /* instant ESTOP */
-#define VALVE_RUNAWAY_HOLD_SAMPLES           30U    /* 30 ms at 1 kHz */
+#define VALVE_RUNAWAY_HOLD_SAMPLES           VALVE_MS_TO_SAMPLES(30U)
 #define VALVE_FREE_SPACE_TAU_HARD_MAX_NM     2.50f  /* absolute free-space ceiling */
 #define VALVE_TORQUE_SLEW_SAFE_NM_PER_S      100.0f /* always-on reverse rate limit */
 
@@ -133,8 +145,8 @@
 /*
  * Quiet enter debounce (faster after settle-arm).
  */
-#define VALVE_REST_LATCH_SAMPLES             40U
-#define VALVE_REST_LATCH_SETTLE_SAMPLES      12U
+#define VALVE_REST_LATCH_SAMPLES             VALVE_MS_TO_SAMPLES(40U)
+#define VALVE_REST_LATCH_SETTLE_SAMPLES      VALVE_MS_TO_SAMPLES(12U)
 
 /*
  * Residual settle: arm on |ω|≥ARM or ring flips. Mid free-space blank
@@ -144,8 +156,8 @@
  */
 #define VALVE_SETTLE_ARM_RAD_S               0.25f
 #define VALVE_SETTLE_BLANK_RAD_S             0.45f
-#define VALVE_SETTLE_TIMEOUT_SAMPLES         5000U
-#define VALVE_RING_FLIP_WINDOW_SAMPLES       300U
+#define VALVE_SETTLE_TIMEOUT_SAMPLES         VALVE_MS_TO_SAMPLES(5000U)
+#define VALVE_RING_FLIP_WINDOW_SAMPLES       VALVE_MS_TO_SAMPLES(300U)
 #define VALVE_RING_FLIP_COUNT               3U
 #define VALVE_WALL_TAU_MAX_NM                2.5f
 /*

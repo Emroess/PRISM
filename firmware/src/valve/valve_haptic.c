@@ -22,6 +22,11 @@
 #include "valve_physics.h"
 #include "valve_presets.h"
 
+_Static_assert((TIM6_BASE_FREQUENCY_HZ % VALVE_CONTROL_LOOP_HZ) == 0U,
+    "TIM6 1 MHz tick must divide evenly into the control loop rate");
+_Static_assert(((5000ULL * (unsigned long long)VALVE_CONTROL_LOOP_HZ) / 1000ULL) <= 65535ULL,
+    "settle timeout samples must fit in uint16_t");
+
 /* TIM6 handle (basic timer for valve control loop) */
 static TIM_TypeDef *htim6 = TIM6;
 static struct valve_context *active_valve_context;
@@ -67,6 +72,8 @@ static uint8_t free_space_restore = 0;
 #define VALVE_WALL_REENTRY_FREE_RAD_S        0.50f
 /* Sustained |ω| above runaway threshold → ESTOP */
 static uint16_t runaway_omega_count = 0;
+/* Last ODrive encoder broadcast seq — hold ω when the cache has not moved */
+static uint32_t last_encoder_seq = 0;
 /* Use BOARD_SYSCLK_HZ from board_config.h instead of local define */
 #define VALVE_CAN_FAILURE_MAX 3U
 #define VALVE_ENCODER_STALE_MS 10U
@@ -344,8 +351,8 @@ valve_update_settle_residual(struct valve_state *state,
 	wall_residual = false;
 	if (wall_release_armed != 0U) {
 		if (abs_filt > quiet_enter_rad_s) {
-			if (settle_timeout_count < 1200U) {
-				settle_timeout_count = 1200U;
+			if (settle_timeout_count < VALVE_MS_TO_SAMPLES(1200U)) {
+				settle_timeout_count = VALVE_MS_TO_SAMPLES(1200U);
 			}
 		} else if (settle_timeout_count > 0U) {
 			settle_timeout_count--;
@@ -366,8 +373,8 @@ valve_update_settle_residual(struct valve_state *state,
 			settle_peak_abs = abs_filt;
 		}
 		if (abs_filt > quiet_enter_rad_s) {
-			if (settle_timeout_count < 800U) {
-				settle_timeout_count = 800U;
+			if (settle_timeout_count < VALVE_MS_TO_SAMPLES(800U)) {
+				settle_timeout_count = VALVE_MS_TO_SAMPLES(800U);
 			}
 		} else if (settle_timeout_count > 0U && wall_release_armed == 0U) {
 			settle_timeout_count--;
@@ -877,6 +884,7 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		ring_flip_count = 0U;
 		ring_flip_window = 0U;
 		runaway_omega_count = 0U;
+		last_encoder_seq = 0U;
 		float turn_to_rad = state->degrees_per_turn * VALVE_DEG_TO_RAD;
 		state->omega_rad_s = est.velocity * turn_to_rad;
 		if (state->omega_rad_s < (0.1f * VALVE_DEG_TO_RAD) &&
@@ -966,6 +974,7 @@ void valve_haptic_stop(struct valve_context *ctx)
 	wall_release_armed = 0U;
 	free_space_restore = 0U;
 	runaway_omega_count = 0U;
+	last_encoder_seq = 0U;
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -1002,6 +1011,7 @@ static void valve_haptic_emergency_stop(struct valve_context *ctx)
 	wall_release_armed = 0U;
 	free_space_restore = 0U;
 	runaway_omega_count = 0U;
+	last_encoder_seq = 0U;
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -1052,10 +1062,13 @@ valve_process_encoder_data(struct valve_state *state)
 {
 	struct can_simple_encoder_estimates obs;
 	uint32_t age_ms = UINT32_MAX;
+	uint32_t enc_seq = 0U;
+	uint8_t new_encoder;
 	status_t obs_status;
 
-	/* Get cached encoder data (S1 broadcasts at 1kHz automatically) */
-	obs_status = can_simple_get_cached_encoder(state->odrive, &obs, &age_ms, NULL);
+	/* Cached encoder: ODrive cyclic broadcast is 1 kHz, loop may be faster */
+	obs_status = can_simple_get_cached_encoder(state->odrive, &obs, &age_ms,
+	    &enc_seq);
 	if (obs_status != STATUS_OK) {
 		state->diag.telemetry_age_ms = UINT32_MAX;
 		state->diag.can_retry_count++;
@@ -1114,6 +1127,11 @@ valve_process_encoder_data(struct valve_state *state)
 		return STATUS_ERROR_BUFFER_EMPTY;
 	}
 
+	new_encoder = (enc_seq != last_encoder_seq) ? 1U : 0U;
+	if (new_encoder != 0U) {
+		last_encoder_seq = enc_seq;
+	}
+
 	const float deg_per_turn = (state->degrees_per_turn > 0.0f) ?
 		state->degrees_per_turn : VALVE_DEFAULT_DEGREES_PER_TURN;
 	float prev_turns = state->raw_position_turns;
@@ -1139,8 +1157,10 @@ valve_process_encoder_data(struct valve_state *state)
 		    deg_per_turn;
 	}
 
+	/* Δθ/dt uses encoder broadcast period, not loop Hz — otherwise an
+	 * 8 kHz loop seeing a 1 kHz position step reports 8× ω. */
 	float vel_delta = delta_turns * deg_per_turn * VALVE_DEG_TO_RAD *
-	    (float)VALVE_CONTROL_LOOP_HZ;
+	    (float)VALVE_ENCODER_BROADCAST_HZ;
 	float vel_odrive = obs.velocity * deg_per_turn * VALVE_DEG_TO_RAD;
 	/* Hand-scale clamp (not ODrive 20 turn/s) */
 	const float max_vel_rad_s = VALVE_PHYSICS_OMEGA_MAX_RAD_S;
@@ -1167,8 +1187,9 @@ valve_process_encoder_data(struct valve_state *state)
 		}
 		alpha = valve_lowpass_alpha(lpf_hz, VALVE_LOOP_DT_S);
 
-		if (glitch != 0U) {
-			/* Hold filtered velocity through glitch sample */
+		if (glitch != 0U ||
+		    (new_encoder == 0U && src != VALVE_VEL_SOURCE_ODRIVE)) {
+			/* Hold through glitch or until the next encoder frame */
 			vel_out = state->omega_rad_s;
 			vel_delta = state->omega_raw_rad_s;
 		} else if (src == VALVE_VEL_SOURCE_ODRIVE) {

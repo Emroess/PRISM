@@ -1168,8 +1168,18 @@ cli_cmd_can_status(struct cli_context *ctx, int argc, char *argv[])
 	}
 	
 	uart_write_string(ctx->uart, "\r\nCAN Bus Status:\r\n", 100);
-	uart_printf(ctx->uart, "TX count:        %lu\r\n", (unsigned long)bus_status.tx_count);
+	uart_printf(ctx->uart, "TX count:        %lu  (fail %lu)\r\n",
+	    (unsigned long)bus_status.tx_count, (unsigned long)bus_status.tx_fail);
 	uart_printf(ctx->uart, "RX count:        %lu\r\n", (unsigned long)bus_status.rx_count);
+	uart_printf(ctx->uart, "RX FIFO lost:    %lu  (full %lu, ring drop %lu)\r\n",
+	    (unsigned long)bus_status.rx_fifo_lost,
+	    (unsigned long)bus_status.rx_fifo_full,
+	    (unsigned long)bus_status.rx_ring_drop);
+	uart_printf(ctx->uart, "Protocol errors: %lu  bus-off %lu\r\n",
+	    (unsigned long)bus_status.protocol_errors,
+	    (unsigned long)bus_status.bus_off);
+	uart_printf(ctx->uart, "Encoder seq:     %lu\r\n",
+	    (unsigned long)bus_status.encoder_seq);
 	uart_printf(ctx->uart, "Error count:     %lu\r\n", (unsigned long)bus_status.error_count);
 	uart_printf(ctx->uart, "Last error code: 0x%08lX\r\n", (unsigned long)bus_status.last_error_code);
 	{
@@ -1196,6 +1206,13 @@ cli_cmd_can_status(struct cli_context *ctx, int argc, char *argv[])
 		    (unsigned long)BOARD_FDCAN1_BITRATE);
 		uart_printf(ctx->uart, "STM32 data/BRS:  %lu bps\r\n",
 		    (unsigned long)BOARD_FDCAN1_DATA_BITRATE);
+#if BOARD_FDCAN1_TX_BRS
+		uart_write_string(ctx->uart,
+		    "STM32 TX:        CAN FD + BRS (payload 5 Mbps)\r\n", 100);
+#else
+		uart_write_string(ctx->uart,
+		    "STM32 TX:        classic 1 Mbps\r\n", 100);
+#endif
 		uart_write_string(ctx->uart,
 		    "ODrive must use can.config.baud_rate=nominal,\r\n"
 		    "can.config.data_baud_rate=data, tx_brs=1\r\n", 100);

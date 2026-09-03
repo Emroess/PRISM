@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "board.h"
+#include "fdcan.h"
 #include "odrive_manager.h"
 
 status_t
@@ -185,9 +186,51 @@ odrive_get_telemetry(struct can_simple_handle *odrive, struct odrive_telemetry *
 status_t
 can_get_bus_status(struct can_simple_handle *handle, struct can_bus_status *status)
 {
-	(void)handle;
-	/* For now, return placeholder values - would need CAN driver extension */
+	struct fdcan_handle *can;
+	struct fdcan_stats stats;
+	struct can_simple_encoder_estimates est;
+	uint32_t age_ms;
+	uint32_t seq;
+	uint32_t psr;
+
+	if (status == NULL) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
 	memset(status, 0, sizeof(*status));
+
+	can = fdcan_get_handle();
+	if (can == NULL) {
+		return STATUS_ERROR_NOT_INITIALIZED;
+	}
+
+	if (fdcan_get_stats(can, &stats) == STATUS_OK) {
+		status->tx_count = stats.tx_frames;
+		status->rx_count = stats.rx_frames;
+		status->tx_fail = stats.tx_fail;
+		status->rx_fifo_lost = stats.rx_fifo_lost;
+		status->rx_fifo_full = stats.rx_fifo_full;
+		status->rx_ring_drop = stats.rx_ring_drop;
+		status->protocol_errors = stats.protocol_errors;
+		status->bus_off = stats.bus_off;
+		status->tec = stats.tec;
+		status->rec = stats.rec;
+		status->cel = stats.cel;
+		status->error_count = stats.rx_fifo_lost + stats.protocol_errors +
+		    stats.bus_off + stats.tx_fail;
+	}
+
+	if (fdcan_get_protocol_status(can, &psr) == STATUS_OK) {
+		status->psr = psr;
+		status->last_error_code = psr & 0x7U;
+	}
+
+	if (handle != NULL &&
+	    can_simple_get_cached_encoder(handle, &est, &age_ms, &seq) == STATUS_OK) {
+		status->encoder_seq = seq;
+	}
+
+	status->nominal_bps = BOARD_FDCAN1_BITRATE;
+	status->data_bps = BOARD_FDCAN1_DATA_BITRATE;
 	return STATUS_OK;
 }
 

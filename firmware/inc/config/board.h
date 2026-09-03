@@ -177,14 +177,15 @@ enum board_gpio_port {
 #define BOARD_FDCAN1_RX_AF      9U
 
 #define BOARD_FDCAN1_BITRATE    1000000U    /* 1 Mbps arbitration (must match odrv.can.config.baud_rate) */
-#define BOARD_FDCAN1_DATA_BITRATE 5000000U  /* 5 Mbps data phase (odrv.can.config.data_baud_rate) */
+#define BOARD_FDCAN1_DATA_BITRATE 5000000U  /* 5 Mbps data phase — transceiver max */
 #define BOARD_FDCAN1_SAMPLE_POINT_PERCENT 87U
 /*
- * Transmit classic 8-byte CAN at the nominal rate. ODrive still sends
- * FD+BRS when tx_brs=1; we receive those. Sending BRS ourselves needs
- * perfect TDC and is the usual reason Set_Input_Torque never arrives.
+ * TX CAN FD + BRS: ID still at 1 Mbps, payload at 5 Mbps (hardware limit
+ * of the Adafruit FD transceiver). STM32 FDCAN can do 8 Mbps data, but
+ * the PHY cannot. TDC (TDCO=3) is required at 5 Mbps; a bad SSP is why
+ * Set_Input_Torque used to vanish with BRS.
  */
-#define BOARD_FDCAN1_TX_BRS     0U
+#define BOARD_FDCAN1_TX_BRS     1U
 
 /*
  * FDCAN Message RAM Configuration

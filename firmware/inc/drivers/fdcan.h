@@ -231,6 +231,30 @@ status_t fdcan_get_protocol_status(const struct fdcan_handle *h,
                                    uint32_t *psr);
 
 /*
+ * Frame counters for packet-loss / rate monitoring.
+ * rx_fifo_lost is the hardware drop count (RF0L) — true bus/FIFO loss.
+ * rx_ring_drop is software-ring overwrite; CANSIMPLE uses the RX callback
+ * so those frames were still delivered to the protocol layer.
+ */
+struct fdcan_stats {
+	uint32_t rx_frames;
+	uint32_t tx_frames;
+	uint32_t tx_fail;
+	uint32_t rx_fifo_lost;
+	uint32_t rx_fifo_full;
+	uint32_t rx_ring_drop;
+	uint32_t protocol_errors;
+	uint32_t bus_off;
+	uint32_t error_passive;
+	uint32_t error_warning;
+	uint8_t tec;
+	uint8_t rec;
+	uint8_t cel;
+};
+
+status_t fdcan_get_stats(const struct fdcan_handle *h, struct fdcan_stats *stats);
+
+/*
  * fdcan_set_std_range_filter - Configure standard ID range filter
  *
  * @h: Pointer to FDCAN handle

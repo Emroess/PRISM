@@ -106,6 +106,17 @@ struct fdcan_handle {
 	/* Error callback for bus-off, error passive, etc. */
 	fdcan_error_callback_t error_callback;
 	void *error_callback_user_data;
+	/* Packet counters (ISR-updated) */
+	volatile uint32_t rx_frames;
+	volatile uint32_t tx_frames;
+	volatile uint32_t tx_fail;
+	volatile uint32_t rx_fifo_lost;
+	volatile uint32_t rx_fifo_full;
+	volatile uint32_t rx_ring_drop;
+	volatile uint32_t protocol_errors;
+	volatile uint32_t bus_off;
+	volatile uint32_t error_passive;
+	volatile uint32_t error_warning;
 };
 
 /*
@@ -376,6 +387,7 @@ fdcan_transmit(struct fdcan_handle *h, const struct can_frame *frame,
 
 	/* Check for free TX buffer */
 	if ((h->instance->TXFQS & FDCAN_TXFQS_TFQF) != 0U) {
+		h->tx_fail++;
 		return STATUS_ERROR_BUFFER_FULL;
 	}
 
@@ -425,11 +437,13 @@ fdcan_transmit(struct fdcan_handle *h, const struct can_frame *frame,
 		while ((h->instance->TXBTO & (1U << put_index)) == 0U) {
 			elapsed = board_get_systick_ms() - start;
 			if (elapsed >= timeout_ms) {
+				h->tx_fail++;
 				return STATUS_ERROR_TIMEOUT;
 			}
 		}
 	}
 
+	h->tx_frames++;
 	return STATUS_OK;
 }
 
@@ -529,6 +543,7 @@ fdcan_push_rx_software(struct fdcan_handle *h, const struct can_frame *frame)
 	next = (uint8_t)((h->rx_head + 1U) & 0x0FU);
 	if (next == h->rx_tail) {
 		h->rx_tail = (uint8_t)((h->rx_tail + 1U) & 0x0FU);
+		h->rx_ring_drop++;
 	}
 
 	h->rx_ring[h->rx_head] = *frame;
@@ -922,6 +937,8 @@ fdcan_enable_interrupts(struct fdcan_handle *h)
 	
 	/* Enable RX FIFO 0 new message interrupt */
 	h->instance->IE |= FDCAN_IE_RF0NE;
+	/* FIFO full / message-lost: count packet drops */
+	h->instance->IE |= FDCAN_IE_RF0FE | FDCAN_IE_RF0LE;
 	
 	/* Only bus-off is fatal. Protocol / warning / passive fire constantly
 	 * while CAN FD timing is settling and must not ESTOP the valve. */
@@ -998,6 +1015,7 @@ FDCAN1_IT0_IRQHandler(void)
 			}
 
 			h->instance->RXF0A = get_index;
+			h->rx_frames++;
 			fdcan_push_rx_software(h, &frame);
 
 			if (h->rx_callback != NULL) {
@@ -1010,18 +1028,19 @@ FDCAN1_IT0_IRQHandler(void)
 	
 	/* Check for RX FIFO 0 full */
 	if ((ir & FDCAN_IR_RF0F) != 0U) {
-		/* FIFO full - frames may be lost */
+		h->rx_fifo_full++;
 		h->instance->IR = FDCAN_IR_RF0F;
 	}
 	
 	/* Check for RX FIFO 0 message lost */
 	if ((ir & FDCAN_IR_RF0L) != 0U) {
-		/* Message lost due to overflow */
+		h->rx_fifo_lost++;
 		h->instance->IR = FDCAN_IR_RF0L;
 	}
 	
 	/* Check for error interrupts - invoke callback for immediate fault handling */
 	if ((ir & FDCAN_IR_BO) != 0U) {
+		h->bus_off++;
 		h->instance->IR = FDCAN_IR_BO;
 		if (h->error_callback != NULL) {
 			h->error_callback(FDCAN_ERR_BUS_OFF, h->error_callback_user_data);
@@ -1029,6 +1048,7 @@ FDCAN1_IT0_IRQHandler(void)
 	}
 	
 	if ((ir & FDCAN_IR_EP) != 0U) {
+		h->error_passive++;
 		h->instance->IR = FDCAN_IR_EP;
 		if (h->error_callback != NULL) {
 			h->error_callback(FDCAN_ERR_ERROR_PASSIVE, h->error_callback_user_data);
@@ -1036,6 +1056,7 @@ FDCAN1_IT0_IRQHandler(void)
 	}
 	
 	if ((ir & FDCAN_IR_EW) != 0U) {
+		h->error_warning++;
 		h->instance->IR = FDCAN_IR_EW;
 		if (h->error_callback != NULL) {
 			h->error_callback(FDCAN_ERR_ERROR_WARNING, h->error_callback_user_data);
@@ -1043,6 +1064,7 @@ FDCAN1_IT0_IRQHandler(void)
 	}
 	
 	if ((ir & FDCAN_IR_PEA) != 0U) {
+		h->protocol_errors++;
 		h->instance->IR = FDCAN_IR_PEA;
 		if (h->error_callback != NULL) {
 			h->error_callback(FDCAN_ERR_PROTOCOL, h->error_callback_user_data);
@@ -1050,11 +1072,42 @@ FDCAN1_IT0_IRQHandler(void)
 	}
 	
 	if ((ir & FDCAN_IR_PED) != 0U) {
+		h->protocol_errors++;
 		h->instance->IR = FDCAN_IR_PED;
 		if (h->error_callback != NULL) {
 			h->error_callback(FDCAN_ERR_PROTOCOL, h->error_callback_user_data);
 		}
 	}
+}
+
+status_t
+fdcan_get_stats(const struct fdcan_handle *h, struct fdcan_stats *stats)
+{
+	if (h == NULL || stats == NULL) {
+		return STATUS_ERROR_INVALID_PARAM;
+	}
+	if (h->initialized == 0U) {
+		return STATUS_ERROR_NOT_INITIALIZED;
+	}
+
+	stats->rx_frames = h->rx_frames;
+	stats->tx_frames = h->tx_frames;
+	stats->tx_fail = h->tx_fail;
+	stats->rx_fifo_lost = h->rx_fifo_lost;
+	stats->rx_fifo_full = h->rx_fifo_full;
+	stats->rx_ring_drop = h->rx_ring_drop;
+	stats->protocol_errors = h->protocol_errors;
+	stats->bus_off = h->bus_off;
+	stats->error_passive = h->error_passive;
+	stats->error_warning = h->error_warning;
+	{
+		uint32_t ecr = h->instance->ECR;
+
+		stats->tec = (uint8_t)(ecr & 0xFFU);
+		stats->rec = (uint8_t)((ecr >> 8) & 0x7FU);
+		stats->cel = (uint8_t)((ecr >> 16) & 0xFFU);
+	}
+	return STATUS_OK;
 }
 
 /*

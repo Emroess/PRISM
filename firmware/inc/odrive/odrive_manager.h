@@ -83,6 +83,19 @@ struct can_bus_status {
 	uint32_t rx_count;
 	uint32_t error_count;
 	uint32_t last_error_code;
+	uint32_t rx_fifo_lost;
+	uint32_t rx_fifo_full;
+	uint32_t rx_ring_drop;
+	uint32_t tx_fail;
+	uint32_t protocol_errors;
+	uint32_t bus_off;
+	uint32_t encoder_seq;
+	uint8_t tec;
+	uint8_t rec;
+	uint8_t cel;
+	uint32_t psr;
+	uint32_t nominal_bps;
+	uint32_t data_bps;
 };
 
 status_t can_get_bus_status(struct can_simple_handle *handle, struct can_bus_status *status);

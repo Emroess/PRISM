@@ -1078,7 +1078,7 @@ void rest_api_handle_get_can(struct tcp_pcb *tpcb) {
     return;
   }
 
-  char resp[512];
+  char resp[MAX_RESP_SIZE];
   char pos_buf[24], vel_buf[24];
   char bus_v_buf[24], bus_i_buf[24], fet_t_buf[24], motor_t_buf[24];
 
@@ -1094,12 +1094,25 @@ void rest_api_handle_get_can(struct tcp_pcb *tpcb) {
     "\"bus\":{"
       "\"tx_count\":%lu,"
       "\"rx_count\":%lu,"
+      "\"tx_fail\":%lu,"
       "\"error_count\":%lu,"
-      "\"last_error\":\"0x%08lX\""
+      "\"rx_fifo_lost\":%lu,"
+      "\"rx_fifo_full\":%lu,"
+      "\"rx_ring_drop\":%lu,"
+      "\"protocol_errors\":%lu,"
+      "\"bus_off\":%lu,"
+      "\"tec\":%u,"
+      "\"rec\":%u,"
+      "\"cel\":%u,"
+      "\"psr\":\"0x%08lX\","
+      "\"last_error\":\"0x%08lX\","
+      "\"nominal_bps\":%lu,"
+      "\"data_bps\":%lu"
     "},"
     "\"encoder\":{"
       "\"position\":%s,"
-      "\"velocity\":%s"
+      "\"velocity\":%s,"
+      "\"seq\":%lu"
     "},"
     "\"telemetry\":{"
       "\"bus_voltage\":%s,"
@@ -1110,10 +1123,23 @@ void rest_api_handle_get_can(struct tcp_pcb *tpcb) {
     "}",
     (unsigned long)bus_status.tx_count,
     (unsigned long)bus_status.rx_count,
+    (unsigned long)bus_status.tx_fail,
     (unsigned long)bus_status.error_count,
+    (unsigned long)bus_status.rx_fifo_lost,
+    (unsigned long)bus_status.rx_fifo_full,
+    (unsigned long)bus_status.rx_ring_drop,
+    (unsigned long)bus_status.protocol_errors,
+    (unsigned long)bus_status.bus_off,
+    (unsigned int)bus_status.tec,
+    (unsigned int)bus_status.rec,
+    (unsigned int)bus_status.cel,
+    (unsigned long)bus_status.psr,
     (unsigned long)bus_status.last_error_code,
+    (unsigned long)bus_status.nominal_bps,
+    (unsigned long)bus_status.data_bps,
     pos_buf,
     vel_buf,
+    (unsigned long)bus_status.encoder_seq,
     bus_v_buf,
     bus_i_buf,
     fet_t_buf,
