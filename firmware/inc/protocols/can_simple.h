@@ -293,6 +293,11 @@ status_t can_simple_get_cached_encoder(struct can_simple_handle *h,
                                        struct can_simple_encoder_estimates *est,
                                        uint32_t *age_ms,
                                        uint32_t *seq);
+status_t can_simple_get_cached_encoder_ts(struct can_simple_handle *h,
+                                       struct can_simple_encoder_estimates *est,
+                                       uint32_t *age_ms,
+                                       uint32_t *seq,
+                                       uint32_t *rx_us);
 
 void can_simple_reset_encoder_cache(struct can_simple_handle *h);
 

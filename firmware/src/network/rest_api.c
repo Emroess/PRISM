@@ -1151,6 +1151,56 @@ void rest_api_handle_get_can(struct tcp_pcb *tpcb) {
 
 
 
+void rest_api_handle_get_timing(struct tcp_pcb *tpcb)
+{
+	struct valve_context *ctx = valve_haptic_get_context();
+	struct valve_diagnostics_simple *d;
+	char resp[512];
+	uint32_t n;
+	uint32_t avg_to_tx;
+	uint32_t avg_loop;
+
+	if (ctx == NULL) {
+		rest_send_json_error(tpcb, 503, "valve_uninitialized");
+		return;
+	}
+	d = &ctx->state.diag;
+	n = d->enc_event_count;
+	avg_to_tx = (n > 0U) ? (d->enc_to_tx_sum_us / n) : 0U;
+	avg_loop = (d->timing_sample_count > 0U) ?
+	    (d->loop_time_sum_us / d->timing_sample_count) : d->last_loop_time_us;
+
+	snprintf(resp, sizeof(resp),
+	    "{"
+	    "\"loop_hz\":%lu,"
+	    "\"encoder_hz_design\":%lu,"
+	    "\"loop_us\":{\"last\":%lu,\"min\":%lu,\"max\":%lu,\"avg\":%lu},"
+	    "\"enc_seq\":%lu,"
+	    "\"enc_period_us\":{\"last\":%lu,\"min\":%lu,\"max\":%lu},"
+	    "\"enc_age_us\":%lu,"
+	    "\"enc_to_tx_us\":{\"last\":%lu,\"min\":%lu,\"max\":%lu,\"avg\":%lu,\"n\":%lu},"
+	    "\"new_encoder\":%s"
+	    "}",
+	    (unsigned long)VALVE_CONTROL_LOOP_HZ,
+	    (unsigned long)VALVE_ENCODER_BROADCAST_HZ,
+	    (unsigned long)d->last_loop_time_us,
+	    (unsigned long)d->loop_time_min_us,
+	    (unsigned long)d->loop_time_max_us,
+	    (unsigned long)avg_loop,
+	    (unsigned long)d->encoder_seq,
+	    (unsigned long)d->enc_period_us,
+	    (unsigned long)d->enc_period_min_us,
+	    (unsigned long)d->enc_period_max_us,
+	    (unsigned long)d->encoder_age_us,
+	    (unsigned long)d->enc_to_tx_us,
+	    (unsigned long)d->enc_to_tx_min_us,
+	    (unsigned long)d->enc_to_tx_max_us,
+	    (unsigned long)avg_to_tx,
+	    (unsigned long)n,
+	    d->new_encoder ? "true" : "false");
+	rest_send_response(tpcb, 200, "application/json", resp);
+}
+
 void rest_api_handle_get_stream(struct tcp_pcb *tpcb) {
   ethernet_stream_stats_t stats;
   ethernet_stream_get_stats(&stats);

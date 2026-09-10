@@ -25,6 +25,7 @@ struct can_simple_handle {
 	uint32_t timeout_ms;       /* Default timeout */
 	volatile uint32_t encoder_seq;
 	volatile uint32_t encoder_timestamp_ms;
+	volatile uint32_t encoder_timestamp_us;
 	float encoder_pos_turns;
 	float encoder_vel_turns_s;
 	volatile uint32_t heartbeat_timestamp_ms;
@@ -142,6 +143,7 @@ can_simple_fdcan_rx_callback(const struct can_frame *frame, void *context)
 		h->encoder_pos_turns = pos;
 		h->encoder_vel_turns_s = vel;
 		h->encoder_timestamp_ms = now_ms;
+		h->encoder_timestamp_us = board_get_time_us();
 		h->encoder_seq = next_seq;
 		return;
 	}
@@ -764,14 +766,16 @@ can_simple_get_cached_heartbeat(struct can_simple_handle *h,
 }
 
 status_t
-can_simple_get_cached_encoder(struct can_simple_handle *h,
+can_simple_get_cached_encoder_ts(struct can_simple_handle *h,
                               struct can_simple_encoder_estimates *est,
                               uint32_t *age_ms,
-                              uint32_t *seq_out)
+                              uint32_t *seq_out,
+                              uint32_t *rx_us)
 {
 	uint32_t seq_before;
 	uint32_t seq_after;
 	uint32_t timestamp;
+	uint32_t timestamp_us;
 	float pos;
 	float vel;
 
@@ -788,6 +792,7 @@ can_simple_get_cached_encoder(struct can_simple_handle *h,
 		pos = h->encoder_pos_turns;
 		vel = h->encoder_vel_turns_s;
 		timestamp = h->encoder_timestamp_ms;
+		timestamp_us = h->encoder_timestamp_us;
 		seq_after = h->encoder_seq;
 	} while (seq_before != seq_after);
 
@@ -797,12 +802,24 @@ can_simple_get_cached_encoder(struct can_simple_handle *h,
 	if (seq_out != NULL) {
 		*seq_out = seq_after;
 	}
+	if (rx_us != NULL) {
+		*rx_us = timestamp_us;
+	}
 	if (age_ms != NULL) {
 		uint32_t now_ms = board_get_systick_ms();
 		*age_ms = now_ms - timestamp;
 	}
 
 	return STATUS_OK;
+}
+
+status_t
+can_simple_get_cached_encoder(struct can_simple_handle *h,
+                              struct can_simple_encoder_estimates *est,
+                              uint32_t *age_ms,
+                              uint32_t *seq_out)
+{
+	return can_simple_get_cached_encoder_ts(h, est, age_ms, seq_out, NULL);
 }
 
 void

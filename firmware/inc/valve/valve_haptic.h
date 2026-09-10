@@ -134,6 +134,19 @@ struct valve_diagnostics_simple {
     uint32_t encoder_age_max_us;  /* Maximum encoder data age (µs) */
     uint32_t encoder_age_sum_us;  /* Sum for median/average calculation (µs) */
     uint32_t encoder_age_count;   /* Number of encoder age samples */
+    /* I/O timeline (DWT µs): encoder RX ISR → torque TX */
+    uint32_t encoder_seq;         /* Last ODrive encoder broadcast seq */
+    uint32_t encoder_rx_us;       /* DWT µs when last encoder CAN frame arrived */
+    uint32_t encoder_age_us;      /* Age of that frame at last torque TX */
+    uint32_t enc_to_tx_us;        /* RX ISR → first torque TX that used it */
+    uint32_t enc_period_us;       /* Interval between encoder frames */
+    uint32_t enc_period_min_us;
+    uint32_t enc_period_max_us;
+    uint32_t enc_to_tx_min_us;
+    uint32_t enc_to_tx_max_us;
+    uint32_t enc_to_tx_sum_us;
+    uint32_t enc_event_count;
+    uint8_t  new_encoder;         /* 1 if this loop consumed a new encoder frame */
 };
 
 /* Simplified unified valve state */

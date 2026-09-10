@@ -891,6 +891,8 @@ handle_request(struct tcp_pcb *tpcb, struct http_state *hs)
       rest_api_handle_get_can(tpcb);
     } else if (strcmp(hs->uri, "/api/v1/stream") == 0) {
       rest_api_handle_get_stream(tpcb);
+    } else if (strcmp(hs->uri, "/api/v1/timing") == 0) {
+      rest_api_handle_get_timing(tpcb);
     } else if (strcmp(hs->uri, "/api/v1/hitl") == 0) {
       rest_api_handle_get_hitl(tpcb);
     } else if (strcmp(hs->uri, "/api/v1/interaction") == 0) {

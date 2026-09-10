@@ -84,6 +84,11 @@ void rest_api_handle_get_can(struct tcp_pcb *tpcb);
 void rest_api_handle_get_performance(struct tcp_pcb *tpcb);
 
 /**
+ * @brief Handle GET /api/v1/timing — encoder RX → torque TX latency stats
+ */
+void rest_api_handle_get_timing(struct tcp_pcb *tpcb);
+
+/**
  * @brief Handle GET /api/v1/stream request - Stream server status
  * @param tpcb TCP PCB for the connection
  */

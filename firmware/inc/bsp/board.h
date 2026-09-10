@@ -103,6 +103,13 @@ void board_panic(status_t error_code, const char *file, int line)
 uint32_t board_get_systick_ms(void);
 
 /*
+ * Monotonic microsecond clock from DWT CYCCNT (400 MHz / 400).
+ * 32-bit, wraps ~1.19 hours. ISR-safe. Subtract for intervals < wrap.
+ */
+void	board_dwt_init(void);
+uint32_t board_get_time_us(void);
+
+/*
  * board_delay_ms - Blocking delay in milliseconds
  *
  * Uses SysTick timer for accurate timing.

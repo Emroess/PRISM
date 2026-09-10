@@ -74,6 +74,7 @@ static uint8_t free_space_restore = 0;
 static uint16_t runaway_omega_count = 0;
 /* Last ODrive encoder broadcast seq — hold ω when the cache has not moved */
 static uint32_t last_encoder_seq = 0;
+static uint32_t prev_encoder_rx_us = 0;
 /* Use BOARD_SYSCLK_HZ from board_config.h instead of local define */
 #define VALVE_CAN_FAILURE_MAX 3U
 #define VALVE_ENCODER_STALE_MS 10U
@@ -474,9 +475,7 @@ static inline float valve_lowpass_alpha(float cutoff_hz, float dt_s)
 /* Initialize DWT cycle counter for performance profiling */
 static inline void dwt_init(void)
 {
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CYCCNT = 0;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	board_dwt_init();
 }
 
 /* Get current cycle count for timing measurements */
@@ -885,6 +884,7 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		ring_flip_window = 0U;
 		runaway_omega_count = 0U;
 		last_encoder_seq = 0U;
+		prev_encoder_rx_us = 0U;
 		float turn_to_rad = state->degrees_per_turn * VALVE_DEG_TO_RAD;
 		state->omega_rad_s = est.velocity * turn_to_rad;
 		if (state->omega_rad_s < (0.1f * VALVE_DEG_TO_RAD) &&
@@ -922,6 +922,18 @@ status_t valve_haptic_start(struct valve_context *ctx)
 	state->diag.t_us_accum = 0ULL;
 	state->diag.last_loop_time_us = 0U;
 	state->diag.sample_seq = 0U;
+	state->diag.encoder_seq = 0U;
+	state->diag.encoder_rx_us = 0U;
+	state->diag.encoder_age_us = 0U;
+	state->diag.enc_to_tx_us = 0U;
+	state->diag.enc_period_us = 0U;
+	state->diag.enc_period_min_us = 0U;
+	state->diag.enc_period_max_us = 0U;
+	state->diag.enc_to_tx_min_us = 0U;
+	state->diag.enc_to_tx_max_us = 0U;
+	state->diag.enc_to_tx_sum_us = 0U;
+	state->diag.enc_event_count = 0U;
+	state->diag.new_encoder = 0U;
 	state->torque_nm = 0.0f;
 	state->previous_torque_nm = 0.0f;
 	state->filtered_torque_nm = 0.0f;
@@ -975,6 +987,7 @@ void valve_haptic_stop(struct valve_context *ctx)
 	free_space_restore = 0U;
 	runaway_omega_count = 0U;
 	last_encoder_seq = 0U;
+	prev_encoder_rx_us = 0U;
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -1012,6 +1025,7 @@ static void valve_haptic_emergency_stop(struct valve_context *ctx)
 	free_space_restore = 0U;
 	runaway_omega_count = 0U;
 	last_encoder_seq = 0U;
+	prev_encoder_rx_us = 0U;
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -1063,12 +1077,13 @@ valve_process_encoder_data(struct valve_state *state)
 	struct can_simple_encoder_estimates obs;
 	uint32_t age_ms = UINT32_MAX;
 	uint32_t enc_seq = 0U;
+	uint32_t enc_rx_us = 0U;
 	uint8_t new_encoder;
 	status_t obs_status;
 
 	/* Cached encoder: ODrive cyclic broadcast is 1 kHz, loop may be faster */
-	obs_status = can_simple_get_cached_encoder(state->odrive, &obs, &age_ms,
-	    &enc_seq);
+	obs_status = can_simple_get_cached_encoder_ts(state->odrive, &obs, &age_ms,
+	    &enc_seq, &enc_rx_us);
 	if (obs_status != STATUS_OK) {
 		state->diag.telemetry_age_ms = UINT32_MAX;
 		state->diag.can_retry_count++;
@@ -1129,8 +1144,27 @@ valve_process_encoder_data(struct valve_state *state)
 
 	new_encoder = (enc_seq != last_encoder_seq) ? 1U : 0U;
 	if (new_encoder != 0U) {
+		if (prev_encoder_rx_us != 0U) {
+			uint32_t period = enc_rx_us - prev_encoder_rx_us;
+
+			/* Drop DWT wrap / first-sample garbage (encoder is ~1000 µs). */
+			if (period >= 200U && period <= 20000U) {
+				state->diag.enc_period_us = period;
+				if (state->diag.enc_period_min_us == 0U ||
+				    period < state->diag.enc_period_min_us) {
+					state->diag.enc_period_min_us = period;
+				}
+				if (period > state->diag.enc_period_max_us) {
+					state->diag.enc_period_max_us = period;
+				}
+			}
+		}
+		prev_encoder_rx_us = enc_rx_us;
 		last_encoder_seq = enc_seq;
 	}
+	state->diag.new_encoder = new_encoder;
+	state->diag.encoder_seq = enc_seq;
+	state->diag.encoder_rx_us = enc_rx_us;
 
 	const float deg_per_turn = (state->degrees_per_turn > 0.0f) ?
 		state->degrees_per_turn : VALVE_DEFAULT_DEGREES_PER_TURN;
@@ -1500,6 +1534,31 @@ valve_haptic_process(struct valve_context *ctx)
 		if (torque_status != STATUS_OK) {
 			valve_handle_can_failure(ctx, torque_status);
 			return;
+		}
+		{
+			uint32_t now_us = board_get_time_us();
+			uint32_t age = now_us - state->diag.encoder_rx_us;
+
+			state->diag.encoder_age_us = age;
+			if (state->diag.new_encoder != 0U) {
+				state->diag.enc_to_tx_us = age;
+				if (state->diag.enc_event_count == 0U) {
+					state->diag.enc_to_tx_min_us = age;
+					state->diag.enc_to_tx_max_us = age;
+					state->diag.enc_to_tx_sum_us = age;
+				} else {
+					if (age < state->diag.enc_to_tx_min_us) {
+						state->diag.enc_to_tx_min_us = age;
+					}
+					if (age > state->diag.enc_to_tx_max_us) {
+						state->diag.enc_to_tx_max_us = age;
+					}
+					state->diag.enc_to_tx_sum_us += age;
+				}
+				if (state->diag.enc_event_count < 0xFFFFFFFEU) {
+					state->diag.enc_event_count++;
+				}
+			}
 		}
 	}
 	state->diag.last_can_status = STATUS_OK;

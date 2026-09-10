@@ -65,7 +65,7 @@
  * Stream Timing Configuration
  * ===========================================================================
  */
-#define ETHERNET_STREAM_MIN_INTERVAL_MS      10U
+#define ETHERNET_STREAM_MIN_INTERVAL_MS      1U
 #define ETHERNET_STREAM_MAX_INTERVAL_MS      1000U
 #define ETHERNET_STREAM_DEFAULT_INTERVAL_MS  100U
 

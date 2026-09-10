@@ -141,7 +141,22 @@ board_init(void)
 		board_panic(status, __FILE__, __LINE__);
 	}
 
+	board_dwt_init();
+
 	return STATUS_OK;
+}
+
+void
+board_dwt_init(void)
+{
+	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+uint32_t
+board_get_time_us(void)
+{
+	return DWT->CYCCNT / (BOARD_SYSCLK_HZ / 1000000U);
 }
 
 /*

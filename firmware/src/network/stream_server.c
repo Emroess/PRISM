@@ -255,7 +255,7 @@ static void
 stream_send_data(struct stream_client *client)
 {
 	struct valve_context *ctx;
-	char json_buffer[384];
+	char json_buffer[512];
 	uint32_t timestamp_ms;
 	int32_t pos_turns_milli = 0;
 	int32_t pos_deg_tenths = 0;
@@ -269,6 +269,11 @@ stream_send_data(struct stream_client *client)
 	uint32_t seq = 0U;
 	uint32_t last_error_code = 0U;
 	uint32_t heartbeat_age_ms = 0U;
+	uint32_t enc_seq = 0U;
+	uint32_t enc_age_us = 0U;
+	uint32_t enc_to_tx_us = 0U;
+	uint32_t enc_period_us = 0U;
+	uint8_t new_enc = 0U;
 	char t_us_str[24];
 	const char *status_str = "NO_DATA";
 	bool pos_turns_valid = false;
@@ -299,6 +304,11 @@ stream_send_data(struct stream_client *client)
       last_error_code = state->diag.safety.last_error_code;
       heartbeat_age_ms = state->diag.heartbeat_age_ms;
       quiet_active = (state->quiet_active != 0);
+      enc_seq = state->diag.encoder_seq;
+      enc_age_us = state->diag.encoder_age_us;
+      enc_to_tx_us = state->diag.enc_to_tx_us;
+      enc_period_us = state->diag.enc_period_us;
+      new_enc = state->diag.new_encoder;
       
       u64_to_dec_str(t_us, t_us_str, sizeof(t_us_str));
       status_str = (state->status == VALVE_STATE_RUNNING) ? "RUNNING" :
@@ -321,7 +331,8 @@ stream_send_data(struct stream_client *client)
     "\"torque_nm\":%ld.%03ld,\"filt_torque_nm\":%ld.%03ld,"
     "\"status\":\"%s\",\"omega_rad_s\":%ld.%03ld,"
     "\"passivity_mj\":%ld,\"quiet\":%s,\"err\":%lu,\"hb_age\":%lu,"
-    "\"data_valid\":%s}\n",
+    "\"enc_seq\":%lu,\"enc_age_us\":%lu,\"enc_to_tx_us\":%lu,"
+    "\"enc_period_us\":%lu,\"new_enc\":%s,\"data_valid\":%s}\n",
     (unsigned long)timestamp_ms,
     t_us_str,
     (unsigned long)loop_time_us,
@@ -341,6 +352,11 @@ stream_send_data(struct stream_client *client)
     quiet_active ? "true" : "false",
     (unsigned long)last_error_code,
     (unsigned long)heartbeat_age_ms,
+    (unsigned long)enc_seq,
+    (unsigned long)enc_age_us,
+    (unsigned long)enc_to_tx_us,
+    (unsigned long)enc_period_us,
+    new_enc ? "true" : "false",
     data_valid ? "true" : "false");
 
   /* Safety-critical error handling */
