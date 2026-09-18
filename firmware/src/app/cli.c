@@ -36,6 +36,7 @@
 #include "valve_haptic.h"
 #include "valve_manager.h"
 #include "valve_nvm.h"
+#include "valve_physics.h"
 #include "valve_presets.h"
 
 extern struct netif gnetif;
@@ -528,6 +529,30 @@ cli_cmd_valve_epsilon(struct cli_context *ctx, int argc, char *argv[])
 	} else {
 		uart_write_string(ctx->uart, "\r\nSmoothing epsilon set\r\n", 100);
 	}
+	return 0;
+}
+
+static int
+cli_cmd_valve_hyst(struct cli_context *ctx, int argc, char *argv[])
+{
+	float cur = valve_physics_get_coulomb_hyst();
+
+	if (argc < 2) {
+		uart_printf(ctx->uart,
+		    "\r\nCoulomb hysteresis: %.3f rad/s (0=off)\r\n", cur);
+		uart_write_string(ctx->uart,
+		    "Usage: valve_hyst <rad_s>   hold last Coulomb dir, not a deadband\r\n",
+		    100);
+		return 0;
+	}
+	{
+		float w = strtof(argv[1], NULL);
+		valve_physics_set_coulomb_hyst(w);
+		valve_physics_reset_hysteresis();
+		uart_printf(ctx->uart, "\r\nCoulomb hysteresis set to %.3f rad/s\r\n",
+		    valve_physics_get_coulomb_hyst());
+	}
+	(void)ctx;
 	return 0;
 }
 
@@ -1407,6 +1432,7 @@ const struct cli_command cli_commands[] = {
 	{"valve_energy", cli_cmd_valve_energy, "Show passivity energy tank status"},
 	{"valve_epsilon", cli_cmd_valve_epsilon, "Set smoothing epsilon"},
 	{"valve_friction", cli_cmd_valve_friction, "Set Coulomb friction (N·m)"},
+	{"valve_hyst", cli_cmd_valve_hyst, "Coulomb sign hysteresis (rad/s), 0=off"},
 	{"valve_mode", cli_cmd_valve_mode, "Interaction: human (haptics) or robot (training)"},
 	{"valve_preset", cli_cmd_valve_preset, "Load a valve preset configuration"},
 	{"valve_preset_save", cli_cmd_valve_preset_save, "Save current configuration as preset"},

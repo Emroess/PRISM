@@ -25,6 +25,10 @@ float valve_physics_calculate_torque_hil(const struct valve_config *, float,
 
 float valve_physics_clamp_torque(float, float);
 
+void	valve_physics_reset_hysteresis(void);
+void	valve_physics_set_coulomb_hyst(float rad_s);
+float	valve_physics_get_coulomb_hyst(void);
+
 #ifdef __cplusplus
 }
 #endif

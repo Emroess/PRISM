@@ -885,6 +885,7 @@ status_t valve_haptic_start(struct valve_context *ctx)
 		runaway_omega_count = 0U;
 		last_encoder_seq = 0U;
 		prev_encoder_rx_us = 0U;
+		valve_physics_reset_hysteresis();
 		float turn_to_rad = state->degrees_per_turn * VALVE_DEG_TO_RAD;
 		state->omega_rad_s = est.velocity * turn_to_rad;
 		if (state->omega_rad_s < (0.1f * VALVE_DEG_TO_RAD) &&
@@ -988,6 +989,7 @@ void valve_haptic_stop(struct valve_context *ctx)
 	runaway_omega_count = 0U;
 	last_encoder_seq = 0U;
 	prev_encoder_rx_us = 0U;
+	valve_physics_reset_hysteresis();
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;
@@ -1026,6 +1028,7 @@ static void valve_haptic_emergency_stop(struct valve_context *ctx)
 	runaway_omega_count = 0U;
 	last_encoder_seq = 0U;
 	prev_encoder_rx_us = 0U;
+	valve_physics_reset_hysteresis();
 	rest_latch_count = 0;
 	ring_last_sign = 0;
 	ring_flip_count = 0U;

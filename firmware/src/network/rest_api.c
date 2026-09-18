@@ -32,6 +32,7 @@
 #include "odrive_manager.h"
 #include "valve_haptic.h"
 #include "valve_manager.h"
+#include "valve_physics.h"
 #include "valve_presets.h"
 
 /* String-ify port number for use in snprintf format strings */
@@ -257,6 +258,7 @@ void rest_api_handle_get_config(struct tcp_pcb *tpcb) {
   char wall_damp_buf[24];
   char smoothing_buf[24];
   char torque_buf[24];
+  char hyst_buf[24];
 
   rest_format_float(closed_buf, sizeof(closed_buf), cfg->closed_position_deg, 2U);
   rest_format_float(open_buf, sizeof(open_buf), cfg->open_position_deg, 2U);
@@ -266,6 +268,7 @@ void rest_api_handle_get_config(struct tcp_pcb *tpcb) {
   rest_format_float(wall_damp_buf, sizeof(wall_damp_buf), cfg->hil_c_w_wall_damping_nm_s_per_turn, 4U);
   rest_format_float(smoothing_buf, sizeof(smoothing_buf), cfg->hil_eps_smoothing, 6U);
   rest_format_float(torque_buf, sizeof(torque_buf), cfg->torque_limit_nm, 2U);
+  rest_format_float(hyst_buf, sizeof(hyst_buf), valve_physics_get_coulomb_hyst(), 3U);
   
   snprintf(resp, sizeof(resp),
     "{"
@@ -276,7 +279,8 @@ void rest_api_handle_get_config(struct tcp_pcb *tpcb) {
     "\"wall_stiffness\":%s,"
     "\"wall_damping\":%s,"
     "\"smoothing\":%s,"
-    "\"torque_limit\":%s"
+    "\"torque_limit\":%s,"
+    "\"coulomb_hyst\":%s"
     "}",
     closed_buf,
     open_buf,
@@ -285,7 +289,8 @@ void rest_api_handle_get_config(struct tcp_pcb *tpcb) {
     wall_stiff_buf,
     wall_damp_buf,
     smoothing_buf,
-    torque_buf
+    torque_buf,
+    hyst_buf
   );
   
   rest_send_response(tpcb, 200, "application/json", resp);
@@ -381,6 +386,8 @@ void rest_api_handle_post_config(struct tcp_pcb *tpcb, char *body, int len) {
   /* Build a new config based on current config, applying all field updates */
   struct valve_config new_cfg = ctx->config;
   uint32_t field_mask = 0U;
+  uint8_t has_hyst = 0U;
+  float hyst_val = 0.0f;
   
   /* Assume root is object */
   if (r < 1 || t[0].type != JSMN_OBJECT) {
@@ -474,10 +481,28 @@ void rest_api_handle_post_config(struct tcp_pcb *tpcb, char *body, int len) {
       new_cfg.closed_position_deg = value;
       field_mask |= CFG_FIELD_CLOSED_POS;
       i++;
+    } else if (jsoneq(body, &t[i], "coulomb_hyst") == 0) {
+      if (!rest_token_float(body, val_tok, &value)) {
+        rest_send_json_error(tpcb, 400, "invalid_coulomb_hyst");
+        return;
+      }
+      has_hyst = 1U;
+      hyst_val = value;
+      i++;
     }
   }
 
+  if (has_hyst != 0U) {
+    valve_physics_set_coulomb_hyst(hyst_val);
+    valve_physics_reset_hysteresis();
+  }
+
   if (field_mask == 0U) {
+    if (has_hyst != 0U) {
+      rest_send_response(tpcb, 200, "application/json",
+          "{\"status\":\"ok\",\"mask\":0}");
+      return;
+    }
     rest_send_json_error(tpcb, 400, "no_fields");
     return;
   }

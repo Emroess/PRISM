@@ -39,6 +39,50 @@ static inline float valve_signf(float x)
 	return 0.0f;
 }
 
+/* Hold-last-sign Coulomb. 0 = not yet committed. */
+static float g_coulomb_dir;
+static float g_coulomb_hyst_rad_s = VALVE_COULOMB_HYST_RAD_S;
+
+void
+valve_physics_reset_hysteresis(void)
+{
+	g_coulomb_dir = 0.0f;
+}
+
+void
+valve_physics_set_coulomb_hyst(float rad_s)
+{
+	if (rad_s < 0.0f) {
+		rad_s = 0.0f;
+	}
+	if (rad_s > 2.0f) {
+		rad_s = 2.0f;
+	}
+	g_coulomb_hyst_rad_s = rad_s;
+}
+
+float
+valve_physics_get_coulomb_hyst(void)
+{
+	return g_coulomb_hyst_rad_s;
+}
+
+static inline float
+valve_coulomb_hyst_dir(float omega)
+{
+	float w = g_coulomb_hyst_rad_s;
+
+	if (w <= 0.0f) {
+		return valve_signf(omega);
+	}
+	if (omega > w) {
+		g_coulomb_dir = 1.0f;
+	} else if (omega < -w) {
+		g_coulomb_dir = -1.0f;
+	}
+	return g_coulomb_dir;
+}
+
 static inline float valve_clamp_sym(float x, float lim)
 {
 	if (x > lim) return lim;
@@ -250,14 +294,32 @@ static inline float valve_hil_compute_virtual_torque(
 		}
 		cscale = valve_coulomb_speed_scale(abs_w);
 	}
-	if (cscale <= 0.0f || tau_c <= 0.0f) {
-		friction_torque = 0.0f;
-	} else if (eps > 0.0f) {
-		friction_torque = -(tau_c * cscale) *
-		    valve_hil_smooth_sign(omega_use, eps);
+	if (g_coulomb_hyst_rad_s <= 0.0f) {
+		if (cscale <= 0.0f || tau_c <= 0.0f) {
+			friction_torque = 0.0f;
+		} else if (eps > 0.0f) {
+			friction_torque = -(tau_c * cscale) *
+			    valve_hil_smooth_sign(omega_use, eps);
+		} else {
+			friction_torque = -(tau_c * cscale) *
+			    valve_signf(omega_use);
+		}
 	} else {
-		friction_torque = -(tau_c * cscale) *
-		    valve_signf(omega_use);
+		float dir = valve_coulomb_hyst_dir(omega_use);
+		float c_use = cscale;
+
+		/*
+		 * Inside the Schmitt band keep last kinetic Coulomb so a
+		 * reverse does not go frictionless. Viscous is unchanged.
+		 */
+		if (dir != 0.0f && abs_w < g_coulomb_hyst_rad_s) {
+			c_use = 1.0f;
+		}
+		if (c_use <= 0.0f || tau_c <= 0.0f || dir == 0.0f) {
+			friction_torque = 0.0f;
+		} else {
+			friction_torque = -(tau_c * c_use) * dir;
+		}
 	}
 
 	/*

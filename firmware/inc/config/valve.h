@@ -141,6 +141,12 @@
 #define VALVE_HIL_EPS_SMOOTHING_DEFAULT      0.30f
 #define VALVE_COULOMB_DEADBAND_RAD_S         0.50f
 #define VALVE_COULOMB_FULL_RAD_S             2.00f
+/*
+ * Coulomb sign Schmitt (hold last direction). Not a zero-friction band:
+ * τc stays on through a tiny |ω| < hyst window so reversals still resist.
+ * 0.08 rad/s ≈ quiet-enter; 0 disables (instant sign(ω)).
+ */
+#define VALVE_COULOMB_HYST_RAD_S             0.08f
 
 /*
  * Quiet enter debounce (faster after settle-arm).
