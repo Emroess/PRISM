@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PRISM Log Viewer</title>
+  <link rel="stylesheet" href="/static/style.css?v=4" />
+</head>
+<body>
+  <div id="drop-mask" hidden><div>Drop a <code>.log</code> file to open</div></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">PRISM</span>
+      <span class="sub">Log Viewer</span>
+      <span class="ver">1.0</span>
+    </div>
+    <nav class="tabs" id="view-tabs">
+      <button data-view="overview" class="active">Overview</button>
+      <button data-view="physics">Physics</button>
+      <button data-view="motor">Motor</button>
+      <button data-view="timing">Timing</button>
+      <button data-view="phase">Phase</button>
+      <button data-view="channels">All channels</button>
+    </nav>
+    <div class="top-actions">
+      <label class="btn">
+        Open
+        <input id="file-input" type="file" accept=".log,.gz,.jsonl,.csv,.json" hidden />
+      </label>
+      <button id="btn-demo" class="btn ghost" title="Load the bundled quarter-turn recording and play it from t = 0">Play demo</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <section>
+        <h2>Session</h2>
+        <div id="session-label" class="session-name">No log loaded</div>
+        <div id="session-meta" class="muted small"></div>
+        <div id="session-mode" class="mode-pill">replay</div>
+      </section>
+
+      <section>
+        <h2>Files</h2>
+        <div id="file-list" class="file-list muted small">Scanning…</div>
+      </section>
+
+      <section>
+        <h2>Live device</h2>
+        <div class="live-row">
+          <input id="live-ip" type="text" value="10.0.1.15" spellcheck="false" placeholder="Device IP" title="PRISM Ethernet IP" />
+        </div>
+        <div class="live-row">
+          <input id="live-key" type="password" value="steve-valve-2025" spellcheck="false" placeholder="API key" title="X-API-Key (REST password)" />
+          <button id="btn-live" class="btn">Connect</button>
+        </div>
+        <div id="live-status" class="muted small">Streams from the device on port 8888. REST on 8080 needs the API key.</div>
+      </section>
+
+      <section>
+        <h2>At playhead</h2>
+        <div id="kpis" class="kpis"></div>
+      </section>
+
+      <section>
+        <h2>Config</h2>
+        <dl id="config-dl" class="kv"></dl>
+      </section>
+
+      <section>
+        <h2>Stats (whole file)</h2>
+        <div id="stats-table"></div>
+      </section>
+
+      <section>
+        <h2>Events</h2>
+        <div id="event-list" class="event-list muted small"></div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <section class="hero" id="hero"></section>
+      <section class="transport" id="transport">
+        <button id="btn-restart" class="tbtn" title="Restart">⏮</button>
+        <button id="btn-play" class="tbtn play" title="Play / pause">▶</button>
+        <label class="follow">
+          <input type="checkbox" id="chk-follow" /> Follow live
+        </label>
+        <input id="scrub" type="range" min="0" max="1000" value="0" />
+        <span id="clock" class="clock">0.000 / 0.000 s</span>
+        <label class="speed">
+          Speed
+          <select id="speed">
+            <option value="0.25">0.25×</option>
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+        </label>
+        <label class="follow">
+          <input type="checkbox" id="chk-hide-future" /> Hide future
+        </label>
+      </section>
+      <section class="plots" id="plots"></section>
+      <section class="hint" id="hint">
+        Full traces are drawn for the whole recording. Play moves the playhead; KPIs follow it.
+        Wheel zooms time · drag pans (zoom in first if the whole file is shown) · click to scrub · double-click shows all time.
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js?v=4"></script>
+</body>
+</html>

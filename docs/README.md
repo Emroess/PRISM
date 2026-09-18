@@ -67,6 +67,11 @@ The valve feel is controlled by several key parameters:
 - Position, velocity, torque, and diagnostics
 - See [Streaming Guide](stream/streaming-guide.md) and [Examples](stream/streaming-examples.md)
 
+**PRISM-LOG session files** for offline analysis
+- Canonical `.log` format covering kinematics, haptic torque, motor electricals, thermal, CAN, timing, and HITL
+- Localhost viewer with default position / velocity / torque plots
+- See [PRISM Log Format 1.0](log/prism-log-standard.md) and [Log Viewer](../tools/log_viewer/README.md)
+
 ## Configuration and Customization
 
 ### Haptic Parameters

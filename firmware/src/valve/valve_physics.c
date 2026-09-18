@@ -276,8 +276,6 @@ static inline float valve_hil_compute_virtual_torque(
 		omega_use = -VALVE_PHYSICS_OMEGA_MAX_RAD_S;
 	}
 
-	viscous_torque = -b * omega_use;
-
 	abs_w = valve_fabsf(omega_use);
 	if (robot_mode) {
 		/*
@@ -294,6 +292,8 @@ static inline float valve_hil_compute_virtual_torque(
 		}
 		cscale = valve_coulomb_speed_scale(abs_w);
 	}
+
+	viscous_torque = -b * omega_use;
 	if (g_coulomb_hyst_rad_s <= 0.0f) {
 		if (cscale <= 0.0f || tau_c <= 0.0f) {
 			friction_torque = 0.0f;
@@ -309,9 +309,13 @@ static inline float valve_hil_compute_virtual_torque(
 		float c_use = cscale;
 
 		/*
-		 * Inside the Schmitt band keep last kinetic Coulomb so a
-		 * reverse does not go frictionless. Viscous is unchanged.
+		 * Same Schmitt for viscous: τ_v = −b|ω|·dir. Magnitude still
+		 * follows speed; sign cannot chatter with noisy ω. Not a
+		 * deadband — reverse is still damped until |ω| > hyst.
 		 */
+		if (dir != 0.0f) {
+			viscous_torque = -b * abs_w * dir;
+		}
 		if (dir != 0.0f && abs_w < g_coulomb_hyst_rad_s) {
 			c_use = 1.0f;
 		}

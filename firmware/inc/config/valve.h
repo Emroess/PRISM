@@ -142,9 +142,10 @@
 #define VALVE_COULOMB_DEADBAND_RAD_S         0.50f
 #define VALVE_COULOMB_FULL_RAD_S             2.00f
 /*
- * Coulomb sign Schmitt (hold last direction). Not a zero-friction band:
- * τc stays on through a tiny |ω| < hyst window so reversals still resist.
- * 0.08 rad/s ≈ quiet-enter; 0 disables (instant sign(ω)).
+ * Sign Schmitt (hold last direction) for Coulomb and viscous. Not a
+ * zero-friction band: τc stays on through |ω| < hyst, and viscous is
+ * −b|ω|·dir so noisy sign(ω) cannot reverse the damper. 0 disables
+ * (instant sign(ω), classic −bω).
  */
 #define VALVE_COULOMB_HYST_RAD_S             0.08f
 

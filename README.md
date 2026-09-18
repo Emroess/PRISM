@@ -140,9 +140,16 @@ Current handles:
 
 ---
 
-## Datasets
+## Logging
 
-Coming soon: Pre-collected demonstrations and benchmark datasets for offline RL training.
+Session recordings use **PRISM-LOG/1.0** (`.log`): newline-delimited JSON covering everything physically available on the plant — shaft kinematics, haptic torque, ODrive electricals, thermal, CAN, control-loop timing, and Isaac Sim HITL.
+
+- Spec: [docs/log/prism-log-standard.md](docs/log/prism-log-standard.md)
+- Localhost viewer (position, velocity, torque by default):
+
+```bash
+python3 tools/log_viewer/server.py --open
+```
 
 ---
 
