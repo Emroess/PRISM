@@ -18,7 +18,7 @@ PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hard
 
 <div align="left">
 <img src="docs/assets/images/Modular_PRISM_2026-Jun-02_08-51-12PM-000_CustomizedView6524810580_png.png" width=600" alt="PRISM Render">
-<img src="docs/assets/images/Modular_PRISM_2026-Jun-02_09-02-05PM-000_CustomizedView2943294589_png_alpha_cropped.png" width="300" alt="PRISM Render2">
+<img src="docs/assets/images/Modular_PRISM_2026-Jun-02_09-02-05PM-000_CustomizedView2943294589_png_alpha_cropped.png" width="250" alt="PRISM Render2">
 </div>
 
 ## Explore PRISM
