@@ -1,5 +1,6 @@
 <div align="center">
    <img src="docs/assets/images/PRISMlogo.png" width="700" alt="PRISM Logo">
+      
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Emroess/PRISM)
 [![C/STM32](https://img.shields.io/badge/C%2FSTM32-00599C?logo=c%2B%2B&logoColor=white)](https://github.com/Emroess/PRISM)
@@ -15,6 +16,10 @@
 
 PRISM (Programmable Rotary Impedance Suite for Manipulation) is a flexible, hardware-based haptic control system designed to help practitioners train policies on real-world rotational tasks. Unlike purely virtual simulations, PRISM can replicate the tactile force feedback of valves, handles, knobs, and fasteners. It delivers realistic haptic feedback to the policy through a modular, motor-driven interface.
 
+<div align="left">
+<img src="docs/assets/images/Modular_PRISM_2026-Jun-02_08-51-12PM-000_CustomizedView6524810580_png.png" width=600" alt="PRISM Render">
+<img src="docs/assets/images/Modular_PRISM_2026-Jun-02_09-02-05PM-000_CustomizedView2943294589_png_alpha_cropped.png" width="300" alt="PRISM Render2">
+</div>
 
 ## Explore PRISM
 <div align="center">  
